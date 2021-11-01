@@ -1,13 +1,22 @@
 name: 'Hello World'
 description: 'Greet someone and record the time'
 inputs:
-  who-to-greet:  # id of input
-    description: 'Who to greet'
+  github-token:
+    description: 'Your GitHub token'
     required: true
-    default: 'World'
-outputs:
-  time: # id of output
-    description: 'The time we greeted you'
+  blackduck-url:
+    description: 'Url of Black Duck instance'
+    required: true
+  blackduck-api-token:
+    description: 'API Token for Black Duck instance'
+    required: true
+  output-path:
+    description: 'Where to output rapidscan files'
+    required: false
+    default: '/tmp/detect_scan/'
+#outputs:
+#  time: # id of output
+#    description: 'The time we greeted you'
 runs:
   using: 'node12'
   main: 'index.ts'
