@@ -1,5 +1,5 @@
-name: 'Hello World'
-description: 'Greet someone and record the time'
+name: 'Detect Rapid Scan Action'
+description: 'A GitHub action to perform a Detect rapid scan and record the results'
 inputs:
   github-token:
     description: 'Your GitHub token'
