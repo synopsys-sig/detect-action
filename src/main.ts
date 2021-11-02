@@ -13,17 +13,27 @@ export function run() {
   const context = github.context;
   const octokit = github.getOctokit(githubToken);
 
-  const detectArgs = `--blackduck.url="${blackduckUrl}" --blackduck.api.token="${blackduckApiToken}" --detect.blackduck.scan.mode=RAPID --detect.scan.output.path="${outputPath}"`;
+  const detectArgs = [
+    `--blackduck.url="${blackduckUrl}"`,
+    `--blackduck.api.token="${blackduckApiToken}"`,
+    "--detect.blackduck.scan.mode=RAPID",
+    `--detect.scan.output.path="${outputPath}"`,
+  ];
 
+  let detectOut;
   if (process.platform === "win32") {
-    spawnSync(
-      `powershell "[Net.ServicePointManager]::SecurityProtocol = 'tls12'; irm https://detect.synopsys.com/detect7.ps1?$(Get-Random) | iex; detect ${detectArgs}"`
-    );
+    detectOut = spawnSync("powershell", [
+      `"[Net.ServicePointManager]::SecurityProtocol = 'tls12'; irm https://detect.synopsys.com/detect7.ps1?$(Get-Random) | iex; detect ${detectArgs}"`,
+    ]);
   } else {
-    spawnSync(
-      `bash <(curl -s -L https://detect.synopsys.com/detect7.sh) detect ${detectArgs}"`
+    detectOut = spawnSync(
+      "bash",
+      ["<(curl -s -L https://detect.synopsys.com/detect7.sh)", "detect"].concat(
+        detectArgs
+      )
     );
   }
+  console.log(detectOut);
 
   const scanJsonPaths = fs.readdirSync(outputPath);
 
