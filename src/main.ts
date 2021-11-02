@@ -22,18 +22,22 @@ export function run() {
 
   let detectOut;
   if (process.platform === "win32") {
-    detectOut = spawnSync("powershell", [
-      `"[Net.ServicePointManager]::SecurityProtocol = 'tls12'; irm https://detect.synopsys.com/detect7.ps1?$(Get-Random) | iex; detect ${detectArgs}"`,
-    ]);
+    detectOut = spawnSync(
+      "powershell",
+      [
+        `"[Net.ServicePointManager]::SecurityProtocol = 'tls12'; irm https://detect.synopsys.com/detect7.ps1?$(Get-Random) | iex; detect ${detectArgs}"`,
+      ],
+      { stdio: "inherit" }
+    );
   } else {
     detectOut = spawnSync(
       "bash",
       ["<(curl -s -L https://detect.synopsys.com/detect7.sh)", "detect"].concat(
         detectArgs
-      )
+      ),
+      { stdio: "inherit" }
     );
   }
-  console.log(detectOut);
 
   const scanJsonPaths = fs.readdirSync(outputPath);
 
