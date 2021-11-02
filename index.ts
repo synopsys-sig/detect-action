@@ -37,3 +37,5 @@ export function run() {
     });
   });
 }
+
+run();
