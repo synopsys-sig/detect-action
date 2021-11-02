@@ -36,37 +36,37 @@ const fs_1 = __importDefault(__nccwpck_require__(5747));
 const child_process_1 = __nccwpck_require__(3129);
 const uploadJson = __importStar(__nccwpck_require__(3178));
 function run() {
-    const githubToken = core.getInput("github-token");
-    const blackduckUrl = core.getInput("blackduck-url");
-    const blackduckApiToken = core.getInput("blackduck-api-token");
-    const outputPath = core.getInput("output-path");
+    const githubToken = core.getInput('github-token');
+    const blackduckUrl = core.getInput('blackduck-url');
+    const blackduckApiToken = core.getInput('blackduck-api-token');
+    const outputPath = core.getInput('output-path');
     const context = github.context;
     const octokit = github.getOctokit(githubToken);
     const detectArgs = [
         `--blackduck.url="${blackduckUrl}"`,
         `--blackduck.api.token="${blackduckApiToken}"`,
-        "--detect.blackduck.scan.mode=RAPID",
-        `--detect.scan.output.path="${outputPath}"`,
+        '--detect.blackduck.scan.mode=RAPID',
+        `--detect.scan.output.path="${outputPath}"`
     ];
     let detectOut;
-    if (process.platform === "win32") {
-        detectOut = (0, child_process_1.spawnSync)("powershell", [
-            `"[Net.ServicePointManager]::SecurityProtocol = 'tls12'; irm https://detect.synopsys.com/detect7.ps1?$(Get-Random) | iex; detect ${detectArgs}"`,
+    if (process.platform === 'win32') {
+        detectOut = (0, child_process_1.spawnSync)('powershell', [
+            `"[Net.ServicePointManager]::SecurityProtocol = 'tls12'; irm https://detect.synopsys.com/detect7.ps1?$(Get-Random) | iex; detect ${detectArgs}"`
         ], { stdio: 'inherit' });
     }
     else {
-        detectOut = (0, child_process_1.spawnSync)("bash", ["<(curl -s -L https://detect.synopsys.com/detect7.sh)", "detect"].concat(detectArgs), { stdio: 'inherit' });
+        detectOut = (0, child_process_1.spawnSync)('bash <(curl -s -L https://detect.synopsys.com/detect7.sh)', ['detect'].concat(detectArgs), { stdio: 'inherit' });
     }
     const scanJsonPaths = fs_1.default.readdirSync(outputPath);
     uploadJson.run(outputPath, scanJsonPaths);
-    scanJsonPaths.forEach((jsonPath) => {
+    scanJsonPaths.forEach(jsonPath => {
         const rawdata = fs_1.default.readFileSync(jsonPath);
         const scanJson = JSON.parse(rawdata.toString());
         octokit.rest.issues.createComment({
             issue_number: context.issue.number,
             owner: context.repo.owner,
             repo: context.repo.repo,
-            body: JSON.stringify(scanJson, undefined, 2),
+            body: JSON.stringify(scanJson, undefined, 2)
         });
     });
 }
@@ -118,9 +118,9 @@ function run(output_path, json_files) {
         const artifactClient = (0, artifact_1.create)();
         const options = {
             continueOnError: false,
-            retentionDays: 0,
+            retentionDays: 0
         };
-        const uploadResponse = yield artifactClient.uploadArtifact("Rapid Scan JSON", json_files, output_path, options);
+        const uploadResponse = yield artifactClient.uploadArtifact('Rapid Scan JSON', json_files, output_path, options);
         if (uploadResponse.failedItems.length > 0) {
             core.setFailed(`An error was encountered when uploading ${uploadResponse.artifactName}. There were ${uploadResponse.failedItems.length} items that failed to upload.`);
         }
