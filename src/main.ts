@@ -13,7 +13,7 @@ export function run() {
   const context = github.context
   const octokit = github.getOctokit(githubToken)
 
-  const detectArgs = `--blackduck.url="${blackduckUrl} --blackduck.api.token="${blackduckApiToken} --detect.blackduck.scan.mode=RAPID --detect.scan.output.path="${outputPath}"`
+  const detectArgs = `--blackduck.url="${blackduckUrl}" --blackduck.api.token="${blackduckApiToken}" --detect.blackduck.scan.mode=RAPID --detect.scan.output.path="${outputPath}"`
 
   let detectOut
   if (process.platform === 'win32') {
@@ -24,7 +24,7 @@ export function run() {
   } else {
     detectOut = execSync(
       `bash <(curl -s -L https://detect.synopsys.com/detect7.sh) detect ${detectArgs}`,
-      {stdio: 'inherit', shell: 'bash'}
+      {stdio: 'inherit', shell: '/bin/bash'}
     )
   }
 
