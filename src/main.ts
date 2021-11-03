@@ -24,7 +24,7 @@ export function run() {
   } else {
     detectOut = execSync(
       `bash <(curl -s -L https://detect.synopsys.com/detect7.sh) detect ${detectArgs}`,
-      {stdio: 'inherit'}
+      {stdio: 'inherit', shell: 'bash'}
     )
   }
 

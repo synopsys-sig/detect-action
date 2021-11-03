@@ -48,7 +48,8 @@ function run() {
         detectOut = (0, child_process_1.execSync)(`powershell "[Net.ServicePointManager]::SecurityProtocol = 'tls12'; irm https://detect.synopsys.com/detect7.ps1?$(Get-Random) | iex; detect ${detectArgs}"`, { stdio: 'inherit' });
     }
     else {
-        detectOut = (0, child_process_1.execSync)(`bash <(curl -s -L https://detect.synopsys.com/detect7.sh) detect ${detectArgs}`, { stdio: 'inherit' });
+        detectOut = (0, child_process_1.execSync)(`bash <(curl -s -L https://detect.synopsys.com/detect7.sh) detect ${detectArgs}`, { stdio: 'inherit',
+            shell: 'bash' });
     }
     const scanJsonPaths = fs_1.default.readdirSync(outputPath);
     uploadJson.run(outputPath, scanJsonPaths);
