@@ -6,60 +6,43 @@ require('./sourcemap-register.js');/******/ (() => { // webpackBootstrap
 
 "use strict";
 
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || function (mod) {
-    if (mod && mod.__esModule) return mod;
-    var result = {};
-    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
-    __setModuleDefault(result, mod);
-    return result;
-};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.run = void 0;
-const core = __importStar(__nccwpck_require__(2186));
-const github = __importStar(__nccwpck_require__(5438));
+const core_1 = __nccwpck_require__(2186);
+const github_1 = __nccwpck_require__(5438);
 const fs_1 = __importDefault(__nccwpck_require__(5747));
 const child_process_1 = __nccwpck_require__(3129);
-const uploadJson = __importStar(__nccwpck_require__(3178));
+const upload_json_1 = __nccwpck_require__(3178);
 function run() {
-    const githubToken = core.getInput('github-token');
-    const blackduckUrl = core.getInput('blackduck-url');
-    const blackduckApiToken = core.getInput('blackduck-api-token');
-    const outputPath = core.getInput('output-path');
-    const context = github.context;
-    const octokit = github.getOctokit(githubToken);
-    const detectArgs = `--blackduck.url="${blackduckUrl} --blackduck.api.token="${blackduckApiToken} --detect.blackduck.scan.mode=RAPID --detect.scan.output.path="${outputPath}"`;
-    let detectOut;
-    if (process.platform === 'win32') {
-        detectOut = (0, child_process_1.execSync)(`powershell "[Net.ServicePointManager]::SecurityProtocol = 'tls12'; irm https://detect.synopsys.com/detect7.ps1?$(Get-Random) | iex; detect ${detectArgs}"`, { stdio: 'inherit' });
+    const githubToken = (0, core_1.getInput)('github-token');
+    const blackduckUrl = (0, core_1.getInput)('blackduck-url');
+    const blackduckApiToken = (0, core_1.getInput)('blackduck-api-token');
+    const outputPath = (0, core_1.getInput)('output-path');
+    const octokit = (0, github_1.getOctokit)(githubToken);
+    const detectArgs = `--blackduck.url="${blackduckUrl}" --blackduck.api.token="${blackduckApiToken}" --detect.blackduck.scan.mode=RAPID --detect.scan.output.path="${outputPath}"`;
+    try {
+        if (process.platform === 'win32') {
+            (0, child_process_1.execSync)(`powershell "[Net.ServicePointManager]::SecurityProtocol = 'tls12'; irm https://detect.synopsys.com/detect7.ps1?$(Get-Random) | iex; detect ${detectArgs}"`, { stdio: 'inherit' });
+        }
+        else {
+            (0, child_process_1.execSync)(`bash <(curl -s -L https://detect.synopsys.com/detect7.sh) detect ${detectArgs}`, { stdio: 'inherit', shell: '/bin/bash' });
+        }
     }
-    else {
-        detectOut = (0, child_process_1.execSync)(`bash <(curl -s -L https://detect.synopsys.com/detect7.sh) detect ${detectArgs}`, { stdio: 'inherit',
-            shell: 'bash' });
+    catch (error) {
+        // ignored
     }
     const scanJsonPaths = fs_1.default.readdirSync(outputPath);
-    uploadJson.run(outputPath, scanJsonPaths);
+    (0, upload_json_1.uploadJson)(outputPath, scanJsonPaths);
     scanJsonPaths.forEach(jsonPath => {
         const rawdata = fs_1.default.readFileSync(jsonPath);
         const scanJson = JSON.parse(rawdata.toString());
         octokit.rest.issues.createComment({
-            issue_number: context.issue.number,
-            owner: context.repo.owner,
-            repo: context.repo.repo,
+            issue_number: github_1.context.issue.number,
+            owner: github_1.context.repo.owner,
+            repo: github_1.context.repo.repo,
             body: JSON.stringify(scanJson, undefined, 2)
         });
     });
@@ -75,25 +58,6 @@ run();
 
 "use strict";
 
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || function (mod) {
-    if (mod && mod.__esModule) return mod;
-    var result = {};
-    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
-    __setModuleDefault(result, mod);
-    return result;
-};
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -104,10 +68,10 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.run = void 0;
-const core = __importStar(__nccwpck_require__(2186));
+exports.uploadJson = void 0;
+const core_1 = __nccwpck_require__(2186);
 const artifact_1 = __nccwpck_require__(2605);
-function run(output_path, json_files) {
+function uploadJson(output_path, json_files) {
     return __awaiter(this, void 0, void 0, function* () {
         const artifactClient = (0, artifact_1.create)();
         const options = {
@@ -116,14 +80,14 @@ function run(output_path, json_files) {
         };
         const uploadResponse = yield artifactClient.uploadArtifact('Rapid Scan JSON', json_files, output_path, options);
         if (uploadResponse.failedItems.length > 0) {
-            core.setFailed(`An error was encountered when uploading ${uploadResponse.artifactName}. There were ${uploadResponse.failedItems.length} items that failed to upload.`);
+            (0, core_1.setFailed)(`An error was encountered when uploading ${uploadResponse.artifactName}. There were ${uploadResponse.failedItems.length} items that failed to upload.`);
         }
         else {
-            core.info(`Artifact ${uploadResponse.artifactName} has been successfully uploaded!`);
+            (0, core_1.info)(`Artifact ${uploadResponse.artifactName} has been successfully uploaded!`);
         }
     });
 }
-exports.run = run;
+exports.uploadJson = uploadJson;
 
 
 /***/ }),

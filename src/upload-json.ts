@@ -1,7 +1,7 @@
-import * as core from '@actions/core'
+import {setFailed, info} from '@actions/core'
 import {create, UploadOptions} from '@actions/artifact'
 
-export async function run(
+export async function uploadJson(
   output_path: string,
   json_files: string[]
 ): Promise<void> {
@@ -19,11 +19,11 @@ export async function run(
   )
 
   if (uploadResponse.failedItems.length > 0) {
-    core.setFailed(
+    setFailed(
       `An error was encountered when uploading ${uploadResponse.artifactName}. There were ${uploadResponse.failedItems.length} items that failed to upload.`
     )
   } else {
-    core.info(
+    info(
       `Artifact ${uploadResponse.artifactName} has been successfully uploaded!`
     )
   }
