@@ -31,12 +31,14 @@ export function run() {
     // ignored
   }
 
-  const scanJsonPaths = fs.readdirSync(outputPath)
+  const scanJsonPaths = fs
+    .readdirSync(outputPath)
+    .map(jsonPath => path.join(outputPath, jsonPath))
 
   uploadJson(outputPath, scanJsonPaths)
 
   scanJsonPaths.forEach(jsonPath => {
-    const rawdata = fs.readFileSync(path.join(outputPath, jsonPath))
+    const rawdata = fs.readFileSync(jsonPath)
     const scanJson = JSON.parse(rawdata.toString())
 
     octokit.rest.issues.createComment({

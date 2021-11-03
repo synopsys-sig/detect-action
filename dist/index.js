@@ -35,10 +35,10 @@ function run() {
     catch (error) {
         // ignored
     }
-    const scanJsonPaths = fs_1.default.readdirSync(outputPath);
+    const scanJsonPaths = fs_1.default.readdirSync(outputPath).map(jsonPath => path_1.default.join(outputPath, jsonPath));
     (0, upload_json_1.uploadJson)(outputPath, scanJsonPaths);
     scanJsonPaths.forEach(jsonPath => {
-        const rawdata = fs_1.default.readFileSync(path_1.default.join(outputPath, jsonPath));
+        const rawdata = fs_1.default.readFileSync(jsonPath);
         const scanJson = JSON.parse(rawdata.toString());
         octokit.rest.issues.createComment({
             issue_number: github_1.context.issue.number,
