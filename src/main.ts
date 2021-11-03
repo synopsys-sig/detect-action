@@ -4,7 +4,7 @@ import fs from 'fs'
 import path from 'path'
 import {uploadJson} from './upload-json'
 import {downloadAndRunDetect} from './detect-manager'
-import {RapidScanResult} from './rapid-scan-result'
+import {Violation} from './rapid-scan-result'
 
 export function run() {
   const githubToken = getInput('github-token')
@@ -26,13 +26,13 @@ export function run() {
 
   scanJsonPaths.forEach(jsonPath => {
     const rawdata = fs.readFileSync(jsonPath)
-    const scanJson: RapidScanResult = JSON.parse(rawdata.toString())
+    const scanJson: Violation[] = JSON.parse(rawdata.toString())
 
     let message = '✅ **No policy violations found!**'
-    if (scanJson.violations.length != 0) {
+    if (scanJson.length != 0) {
       message = '⚠️ **There were policy violations in your build!**\r\n'
 
-      const policyViolations = scanJson.violations
+      const policyViolations = scanJson
         .map(violation => {
           return `* ${violation.errorMessage}\r\n`
         })

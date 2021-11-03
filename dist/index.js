@@ -59,9 +59,9 @@ function run() {
         const rawdata = fs_1.default.readFileSync(jsonPath);
         const scanJson = JSON.parse(rawdata.toString());
         let message = '✅ **No policy violations found!**';
-        if (scanJson.violations.length != 0) {
+        if (scanJson.length != 0) {
             message = '⚠️ **There were policy violations in your build!**\r\n';
-            const policyViolations = scanJson.violations
+            const policyViolations = scanJson
                 .map(violation => {
                 return `* ${violation.errorMessage}\r\n`;
             })

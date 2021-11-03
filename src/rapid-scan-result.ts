@@ -1,7 +1,3 @@
-export interface RapidScanResult {
-  violations: Violation[]
-}
-
 export interface Violation {
   componentName: string
   versionName: string
