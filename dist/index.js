@@ -1,6 +1,32 @@
 require('./sourcemap-register.js');/******/ (() => { // webpackBootstrap
 /******/ 	var __webpack_modules__ = ({
 
+/***/ 3762:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.downloadAndRunDetect = void 0;
+const child_process_1 = __nccwpck_require__(3129);
+function downloadAndRunDetect(detectArgs) {
+    try {
+        if (process.platform === 'win32') {
+            (0, child_process_1.execSync)(`powershell "[Net.ServicePointManager]::SecurityProtocol = 'tls12'; irm https://detect.synopsys.com/detect7.ps1?$(Get-Random) | iex; detect ${detectArgs}"`, { stdio: 'inherit' });
+        }
+        else {
+            (0, child_process_1.execSync)(`bash <(curl -s -L https://detect.synopsys.com/detect7.sh) detect ${detectArgs}`, { stdio: 'inherit', shell: '/bin/bash' });
+        }
+    }
+    catch (error) {
+        // ignored
+    }
+}
+exports.downloadAndRunDetect = downloadAndRunDetect;
+
+
+/***/ }),
+
 /***/ 3109:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
@@ -15,8 +41,8 @@ const core_1 = __nccwpck_require__(2186);
 const github_1 = __nccwpck_require__(5438);
 const fs_1 = __importDefault(__nccwpck_require__(5747));
 const path_1 = __importDefault(__nccwpck_require__(5622));
-const child_process_1 = __nccwpck_require__(3129);
 const upload_json_1 = __nccwpck_require__(3178);
+const detect_manager_1 = __nccwpck_require__(3762);
 function run() {
     const githubToken = (0, core_1.getInput)('github-token');
     const blackduckUrl = (0, core_1.getInput)('blackduck-url');
@@ -24,27 +50,29 @@ function run() {
     const outputPath = (0, core_1.getInput)('output-path');
     const octokit = (0, github_1.getOctokit)(githubToken);
     const detectArgs = `--blackduck.trust.cert=TRUE --blackduck.url="${blackduckUrl}" --blackduck.api.token="${blackduckApiToken}" --detect.blackduck.scan.mode=RAPID --detect.scan.output.path="${outputPath}"`;
-    try {
-        if (process.platform === 'win32') {
-            (0, child_process_1.execSync)(`powershell "[Net.ServicePointManager]::SecurityProtocol = 'tls12'; irm https://detect.synopsys.com/detect7.ps1?$(Get-Random) | iex; detect ${detectArgs}"`, { stdio: 'inherit' });
-        }
-        else {
-            (0, child_process_1.execSync)(`bash <(curl -s -L https://detect.synopsys.com/detect7.sh) detect ${detectArgs}`, { stdio: 'inherit', shell: '/bin/bash' });
-        }
-    }
-    catch (error) {
-        // ignored
-    }
-    const scanJsonPaths = fs_1.default.readdirSync(outputPath).map(jsonPath => path_1.default.join(outputPath, jsonPath));
+    (0, detect_manager_1.downloadAndRunDetect)(detectArgs);
+    const scanJsonPaths = fs_1.default
+        .readdirSync(outputPath)
+        .map(jsonPath => path_1.default.join(outputPath, jsonPath));
     (0, upload_json_1.uploadJson)(outputPath, scanJsonPaths);
     scanJsonPaths.forEach(jsonPath => {
         const rawdata = fs_1.default.readFileSync(jsonPath);
         const scanJson = JSON.parse(rawdata.toString());
+        let message = '✅ **No policy violations found!**';
+        if (scanJson.violations.length != 0) {
+            message = '⚠️ **There were policy violations in your build!**\r\n';
+            const policyViolations = scanJson.violations
+                .map(violation => {
+                return `* ${violation.errorMessage}\r\n`;
+            })
+                .join();
+            message.concat(policyViolations);
+        }
         octokit.rest.issues.createComment({
             issue_number: github_1.context.issue.number,
             owner: github_1.context.repo.owner,
             repo: github_1.context.repo.repo,
-            body: JSON.stringify(scanJson, undefined, 2)
+            body: message
         });
     });
 }

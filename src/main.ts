@@ -2,8 +2,9 @@ import {getInput} from '@actions/core'
 import {context, getOctokit} from '@actions/github'
 import fs from 'fs'
 import path from 'path'
-import {execSync} from 'child_process'
 import {uploadJson} from './upload-json'
+import {downloadAndRunDetect} from './detect-manager'
+import {RapidScanResult} from './rapid-scan-result'
 
 export function run() {
   const githubToken = getInput('github-token')
@@ -15,21 +16,7 @@ export function run() {
 
   const detectArgs = `--blackduck.trust.cert=TRUE --blackduck.url="${blackduckUrl}" --blackduck.api.token="${blackduckApiToken}" --detect.blackduck.scan.mode=RAPID --detect.scan.output.path="${outputPath}"`
 
-  try {
-    if (process.platform === 'win32') {
-      execSync(
-        `powershell "[Net.ServicePointManager]::SecurityProtocol = 'tls12'; irm https://detect.synopsys.com/detect7.ps1?$(Get-Random) | iex; detect ${detectArgs}"`,
-        {stdio: 'inherit'}
-      )
-    } else {
-      execSync(
-        `bash <(curl -s -L https://detect.synopsys.com/detect7.sh) detect ${detectArgs}`,
-        {stdio: 'inherit', shell: '/bin/bash'}
-      )
-    }
-  } catch (error) {
-    // ignored
-  }
+  downloadAndRunDetect(detectArgs)
 
   const scanJsonPaths = fs
     .readdirSync(outputPath)
@@ -39,13 +26,26 @@ export function run() {
 
   scanJsonPaths.forEach(jsonPath => {
     const rawdata = fs.readFileSync(jsonPath)
-    const scanJson = JSON.parse(rawdata.toString())
+    const scanJson: RapidScanResult = JSON.parse(rawdata.toString())
+
+    let message = '✅ **No policy violations found!**'
+    if (scanJson.violations.length != 0) {
+      message = '⚠️ **There were policy violations in your build!**\r\n'
+
+      const policyViolations = scanJson.violations
+        .map(violation => {
+          return `* ${violation.errorMessage}\r\n`
+        })
+        .join()
+
+      message.concat(policyViolations)
+    }
 
     octokit.rest.issues.createComment({
       issue_number: context.issue.number,
       owner: context.repo.owner,
       repo: context.repo.repo,
-      body: JSON.stringify(scanJson, undefined, 2)
+      body: message
     })
   })
 }
