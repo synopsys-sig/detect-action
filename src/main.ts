@@ -1,6 +1,7 @@
 import {getInput} from '@actions/core'
 import {context, getOctokit} from '@actions/github'
 import fs from 'fs'
+import path from 'path'
 import {execSync} from 'child_process'
 import {uploadJson} from './upload-json'
 
@@ -35,7 +36,7 @@ export function run() {
   uploadJson(outputPath, scanJsonPaths)
 
   scanJsonPaths.forEach(jsonPath => {
-    const rawdata = fs.readFileSync(jsonPath)
+    const rawdata = fs.readFileSync(path.join(outputPath, jsonPath))
     const scanJson = JSON.parse(rawdata.toString())
 
     octokit.rest.issues.createComment({

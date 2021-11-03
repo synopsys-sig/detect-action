@@ -14,6 +14,7 @@ exports.run = void 0;
 const core_1 = __nccwpck_require__(2186);
 const github_1 = __nccwpck_require__(5438);
 const fs_1 = __importDefault(__nccwpck_require__(5747));
+const path_1 = __importDefault(__nccwpck_require__(5622));
 const child_process_1 = __nccwpck_require__(3129);
 const upload_json_1 = __nccwpck_require__(3178);
 function run() {
@@ -37,7 +38,7 @@ function run() {
     const scanJsonPaths = fs_1.default.readdirSync(outputPath);
     (0, upload_json_1.uploadJson)(outputPath, scanJsonPaths);
     scanJsonPaths.forEach(jsonPath => {
-        const rawdata = fs_1.default.readFileSync(jsonPath);
+        const rawdata = fs_1.default.readFileSync(path_1.default.join(outputPath, jsonPath));
         const scanJson = JSON.parse(rawdata.toString());
         octokit.rest.issues.createComment({
             issue_number: github_1.context.issue.number,
