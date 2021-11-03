@@ -22,7 +22,7 @@ function run() {
     const blackduckApiToken = (0, core_1.getInput)('blackduck-api-token');
     const outputPath = (0, core_1.getInput)('output-path');
     const octokit = (0, github_1.getOctokit)(githubToken);
-    const detectArgs = `--blackduck.url="${blackduckUrl}" --blackduck.api.token="${blackduckApiToken}" --detect.blackduck.scan.mode=RAPID --detect.scan.output.path="${outputPath}"`;
+    const detectArgs = `--blackduck.trust.cert=TRUE --blackduck.url="${blackduckUrl}" --blackduck.api.token="${blackduckApiToken}" --detect.blackduck.scan.mode=RAPID --detect.scan.output.path="${outputPath}"`;
     try {
         if (process.platform === 'win32') {
             (0, child_process_1.execSync)(`powershell "[Net.ServicePointManager]::SecurityProtocol = 'tls12'; irm https://detect.synopsys.com/detect7.ps1?$(Get-Random) | iex; detect ${detectArgs}"`, { stdio: 'inherit' });
