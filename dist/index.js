@@ -60,13 +60,13 @@ function run() {
         const scanJson = JSON.parse(rawdata.toString());
         let message = '✅ **No policy violations found!**';
         if (scanJson.length != 0) {
-            message = '⚠️ **There were policy violations in your build!**\r\n';
+            message = '⚠️  **There were policy violations in your build!**\r\n';
             const policyViolations = scanJson
                 .map(violation => {
                 return `* ${violation.errorMessage}\r\n`;
             })
                 .join();
-            message.concat(policyViolations);
+            message = message.concat(policyViolations);
         }
         octokit.rest.issues.createComment({
             issue_number: github_1.context.issue.number,

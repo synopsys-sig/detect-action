@@ -30,7 +30,7 @@ export function run() {
 
     let message = '✅ **No policy violations found!**'
     if (scanJson.length != 0) {
-      message = '⚠️ **There were policy violations in your build!**\r\n'
+      message = '⚠️  **There were policy violations in your build!**\r\n'
 
       const policyViolations = scanJson
         .map(violation => {
@@ -38,7 +38,7 @@ export function run() {
         })
         .join()
 
-      message.concat(policyViolations)
+      message = message.concat(policyViolations)
     }
 
     octokit.rest.issues.createComment({
