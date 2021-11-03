@@ -1,7 +1,7 @@
 import * as core from '@actions/core'
 import * as github from '@actions/github'
 import fs from 'fs'
-import {spawnSync} from 'child_process'
+import {execSync} from 'child_process'
 import * as uploadJson from './upload-json'
 
 export function run() {
@@ -13,26 +13,17 @@ export function run() {
   const context = github.context
   const octokit = github.getOctokit(githubToken)
 
-  const detectArgs = [
-    `--blackduck.url="${blackduckUrl}"`,
-    `--blackduck.api.token="${blackduckApiToken}"`,
-    '--detect.blackduck.scan.mode=RAPID',
-    `--detect.scan.output.path="${outputPath}"`
-  ]
+  const detectArgs = `--blackduck.url="${blackduckUrl} --blackduck.api.token="${blackduckApiToken} --detect.blackduck.scan.mode=RAPID --detect.scan.output.path="${outputPath}"`
 
   let detectOut
   if (process.platform === 'win32') {
-    detectOut = spawnSync(
-      'powershell',
-      [
-        `"[Net.ServicePointManager]::SecurityProtocol = 'tls12'; irm https://detect.synopsys.com/detect7.ps1?$(Get-Random) | iex; detect ${detectArgs}"`
-      ],
+    detectOut = execSync(
+      `powershell "[Net.ServicePointManager]::SecurityProtocol = 'tls12'; irm https://detect.synopsys.com/detect7.ps1?$(Get-Random) | iex; detect ${detectArgs}"`,
       {stdio: 'inherit'}
     )
   } else {
-    detectOut = spawnSync(
-      'bash <(curl -s -L https://detect.synopsys.com/detect7.sh)',
-      ['detect'].concat(detectArgs),
+    detectOut = execSync(
+      `bash <(curl -s -L https://detect.synopsys.com/detect7.sh) detect ${detectArgs}`,
       {stdio: 'inherit'}
     )
   }
