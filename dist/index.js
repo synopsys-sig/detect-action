@@ -65,7 +65,7 @@ function run() {
                 .map(violation => {
                 return `* ${violation.errorMessage}\r\n`;
             })
-                .join();
+                .join("");
             message = message.concat(policyViolations);
         }
         octokit.rest.issues.createComment({
