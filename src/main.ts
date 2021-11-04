@@ -18,9 +18,7 @@ export function run() {
 
   downloadAndRunDetect(detectArgs)
 
-  const scanJsonPaths = fs
-    .readdirSync(outputPath)
-    .map(jsonPath => path.join(outputPath, jsonPath))
+  const scanJsonPaths = fs.readdirSync(outputPath).map(jsonPath => path.join(outputPath, jsonPath))
 
   uploadJson(outputPath, scanJsonPaths)
 
@@ -30,11 +28,11 @@ export function run() {
 
     let message = '✅ **No policy violations found!**'
     if (scanJson.length != 0) {
-      message = '⚠️  **There were policy violations in your build!**\r\n'
+      message = '⚠️ **There were policy violations in your build!**\r\n'
 
       const policyViolations = scanJson
         .map(violation => {
-          return `* ${violation.errorMessage}\r\n`
+          return `* ${violation.componentName} ${violation.versionName} (${violation.componentIdentifier}) violates: ${violation.violatingPolicyNames.join()}\r\n`
         })
         .join('')
 
