@@ -8,13 +8,13 @@ export async function commentOnPR(githubToken: string, jsonPath: string) {
   const rawdata = fs.readFileSync(jsonPath)
   const scanJson: Violation[] = JSON.parse(rawdata.toString())
 
-  const messagePreface = '<!-- Comment automatically managed by Detect Action, do not remove this line -->\r\n'
+  const messagePreface = '<!-- Comment automatically managed by Detect Action, do not remove this line -->'
 
   let message = messagePreface
   if (scanJson.length == 0) {
-    message.concat('# :white_check_mark: None of your dependencies violate policy!')
+    message.concat('\r\n# :white_check_mark: None of your dependencies violate policy!')
   } else {
-    message.concat('# :warning: Found dependencies violating policy!\r\n')
+    message.concat('\r\n# :warning: Found dependencies violating policy!\r\n')
 
     const policyViolations = scanJson
       .map(violation => {
