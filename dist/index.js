@@ -15,19 +15,13 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.commentOnPR = void 0;
 const github_1 = __nccwpck_require__(5438);
-const fs_1 = __importDefault(__nccwpck_require__(5747));
-function commentOnPR(githubToken, jsonPath) {
+function commentOnPR(githubToken, scanJson) {
     var _a;
     return __awaiter(this, void 0, void 0, function* () {
         const octokit = (0, github_1.getOctokit)(githubToken);
-        const rawdata = fs_1.default.readFileSync(jsonPath);
-        const scanJson = JSON.parse(rawdata.toString());
         const messagePreface = '<!-- Comment automatically managed by Detect Action, do not remove this line -->';
         let message = messagePreface;
         if (scanJson.length == 0) {
@@ -126,7 +120,9 @@ function run() {
     const scanJsonPaths = fs_1.default.readdirSync(outputPath).map(jsonPath => path_1.default.join(outputPath, jsonPath));
     (0, upload_json_1.uploadJson)(outputPath, scanJsonPaths);
     scanJsonPaths.forEach(jsonPath => {
-        (0, comment_1.commentOnPR)(githubToken, jsonPath);
+        const rawdata = fs_1.default.readFileSync(jsonPath);
+        const scanJson = JSON.parse(rawdata.toString());
+        (0, comment_1.commentOnPR)(githubToken, scanJson);
     });
 }
 exports.run = run;

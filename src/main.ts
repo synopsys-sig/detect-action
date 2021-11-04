@@ -20,7 +20,10 @@ export function run() {
   uploadJson(outputPath, scanJsonPaths)
 
   scanJsonPaths.forEach(jsonPath => {
-    commentOnPR(githubToken, jsonPath)
+    const rawdata = fs.readFileSync(jsonPath)
+    const scanJson = JSON.parse(rawdata.toString())
+
+    commentOnPR(githubToken, scanJson)
   })
 }
 

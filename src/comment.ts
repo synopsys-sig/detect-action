@@ -1,12 +1,8 @@
 import {context, getOctokit} from '@actions/github'
 import {Violation} from './rapid-scan-result'
-import fs from 'fs'
 
-export async function commentOnPR(githubToken: string, jsonPath: string) {
+export async function commentOnPR(githubToken: string, scanJson: Violation[]) {
   const octokit = getOctokit(githubToken)
-
-  const rawdata = fs.readFileSync(jsonPath)
-  const scanJson: Violation[] = JSON.parse(rawdata.toString())
 
   const messagePreface = '<!-- Comment automatically managed by Detect Action, do not remove this line -->'
 
