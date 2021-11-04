@@ -1,6 +1,79 @@
 require('./sourcemap-register.js');/******/ (() => { // webpackBootstrap
 /******/ 	var __webpack_modules__ = ({
 
+/***/ 1667:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.commentOnPR = void 0;
+const github_1 = __nccwpck_require__(5438);
+const fs_1 = __importDefault(__nccwpck_require__(5747));
+function commentOnPR(githubToken, jsonPath) {
+    var _a;
+    return __awaiter(this, void 0, void 0, function* () {
+        const octokit = (0, github_1.getOctokit)(githubToken);
+        const rawdata = fs_1.default.readFileSync(jsonPath);
+        const scanJson = JSON.parse(rawdata.toString());
+        const messagePreface = '<!-- Comment automatically managed by Detect Action, do not remove this line -->';
+        let message = messagePreface;
+        if (scanJson.length == 0) {
+            message.concat('# :white_check_mark: None of your dependencies violate policy!');
+        }
+        else {
+            message.concat('# :warning: Found dependencies violating policy!\r\n');
+            const policyViolations = scanJson
+                .map(violation => {
+                return `- [ ] **${violation.componentName} ${violation.versionName}** violates ${violation.violatingPolicyNames.map(policyName => `**${policyName}**`).join(', ')}\r\n_${violation.componentIdentifier}_\r\n`;
+            })
+                .join('');
+            message = message.concat(policyViolations);
+        }
+        message = message.concat();
+        const contextIssue = github_1.context.issue.number;
+        const contextOwner = github_1.context.repo.owner;
+        const contextRepo = github_1.context.repo.repo;
+        const { data: existingComments } = yield octokit.rest.issues.listComments({
+            issue_number: contextIssue,
+            owner: contextOwner,
+            repo: contextRepo,
+        });
+        for (const comment of existingComments) {
+            const firstLine = (_a = comment.body) === null || _a === void 0 ? void 0 : _a.split('\r\n')[0];
+            if (firstLine === messagePreface) {
+                octokit.rest.issues.deleteComment({
+                    comment_id: comment.id,
+                    owner: github_1.context.repo.owner,
+                    repo: contextRepo
+                });
+            }
+        }
+        octokit.rest.issues.createComment({
+            issue_number: contextIssue,
+            owner: contextOwner,
+            repo: contextRepo,
+            body: message
+        });
+    });
+}
+exports.commentOnPR = commentOnPR;
+
+
+/***/ }),
+
 /***/ 3762:
 /***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
 
@@ -38,40 +111,22 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.run = void 0;
 const core_1 = __nccwpck_require__(2186);
-const github_1 = __nccwpck_require__(5438);
 const fs_1 = __importDefault(__nccwpck_require__(5747));
 const path_1 = __importDefault(__nccwpck_require__(5622));
 const upload_json_1 = __nccwpck_require__(3178);
 const detect_manager_1 = __nccwpck_require__(3762);
+const comment_1 = __nccwpck_require__(1667);
 function run() {
     const githubToken = (0, core_1.getInput)('github-token');
     const blackduckUrl = (0, core_1.getInput)('blackduck-url');
     const blackduckApiToken = (0, core_1.getInput)('blackduck-api-token');
     const outputPath = (0, core_1.getInput)('output-path');
-    const octokit = (0, github_1.getOctokit)(githubToken);
     const detectArgs = `--blackduck.trust.cert=TRUE --blackduck.url="${blackduckUrl}" --blackduck.api.token="${blackduckApiToken}" --detect.blackduck.scan.mode=RAPID --detect.scan.output.path="${outputPath}"`;
     (0, detect_manager_1.downloadAndRunDetect)(detectArgs);
     const scanJsonPaths = fs_1.default.readdirSync(outputPath).map(jsonPath => path_1.default.join(outputPath, jsonPath));
     (0, upload_json_1.uploadJson)(outputPath, scanJsonPaths);
     scanJsonPaths.forEach(jsonPath => {
-        const rawdata = fs_1.default.readFileSync(jsonPath);
-        const scanJson = JSON.parse(rawdata.toString());
-        let message = '# ✅  No policy violations found!';
-        if (scanJson.length != 0) {
-            message = '# ⚠️ There were policy violations in your build!\r\n';
-            const policyViolations = scanJson
-                .map(violation => {
-                return `- [ ] **${violation.componentName} ${violation.versionName}** violates ${violation.violatingPolicyNames.map(policyName => `**${policyName}**`).join(', ')}\r\n_${violation.componentIdentifier}_\r\n`;
-            })
-                .join('');
-            message = message.concat(policyViolations);
-        }
-        octokit.rest.issues.createComment({
-            issue_number: github_1.context.issue.number,
-            owner: github_1.context.repo.owner,
-            repo: github_1.context.repo.repo,
-            body: message
-        });
+        (0, comment_1.commentOnPR)(githubToken, jsonPath);
     });
 }
 exports.run = run;
