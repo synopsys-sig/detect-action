@@ -31,10 +31,10 @@ function commentOnPR(githubToken, jsonPath) {
         const messagePreface = '<!-- Comment automatically managed by Detect Action, do not remove this line -->';
         let message = messagePreface;
         if (scanJson.length == 0) {
-            message.concat('\r\n# :white_check_mark: None of your dependencies violate policy!');
+            message = message.concat('\r\n# :white_check_mark: None of your dependencies violate policy!');
         }
         else {
-            message.concat('\r\n# :warning: Found dependencies violating policy!\r\n');
+            message = message.concat('\r\n# :warning: Found dependencies violating policy!\r\n');
             const policyViolations = scanJson
                 .map(violation => {
                 return `- [ ] **${violation.componentName} ${violation.versionName}** violates ${violation.violatingPolicyNames.map(policyName => `**${policyName}**`).join(', ')}\r\n_${violation.componentIdentifier}_\r\n`;

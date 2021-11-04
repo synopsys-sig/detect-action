@@ -12,9 +12,9 @@ export async function commentOnPR(githubToken: string, jsonPath: string) {
 
   let message = messagePreface
   if (scanJson.length == 0) {
-    message.concat('\r\n# :white_check_mark: None of your dependencies violate policy!')
+    message = message.concat('\r\n# :white_check_mark: None of your dependencies violate policy!')
   } else {
-    message.concat('\r\n# :warning: Found dependencies violating policy!\r\n')
+    message = message.concat('\r\n# :warning: Found dependencies violating policy!\r\n')
 
     const policyViolations = scanJson
       .map(violation => {
