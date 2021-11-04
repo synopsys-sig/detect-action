@@ -56,7 +56,7 @@ function commentOnPR(githubToken, jsonPath) {
             if (firstLine === messagePreface) {
                 octokit.rest.issues.deleteComment({
                     comment_id: comment.id,
-                    owner: github_1.context.repo.owner,
+                    owner: contextOwner,
                     repo: contextRepo
                 });
             }

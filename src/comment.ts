@@ -41,7 +41,7 @@ export async function commentOnPR(githubToken: string, jsonPath: string) {
     if (firstLine === messagePreface) {
       octokit.rest.issues.deleteComment({
         comment_id: comment.id,
-        owner: context.repo.owner,
+        owner: contextOwner,
         repo: contextRepo
       })
     }
