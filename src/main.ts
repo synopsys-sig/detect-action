@@ -26,13 +26,13 @@ export function run() {
     const rawdata = fs.readFileSync(jsonPath)
     const scanJson: Violation[] = JSON.parse(rawdata.toString())
 
-    let message = '✅ **No policy violations found!**'
+    let message = '# ✅  No policy violations found!'
     if (scanJson.length != 0) {
-      message = '⚠️ **There were policy violations in your build!**\r\n'
+      message = '# ⚠️ There were policy violations in your build!\r\n'
 
       const policyViolations = scanJson
         .map(violation => {
-          return `* ${violation.componentName} ${violation.versionName} (${violation.componentIdentifier}) violates: ${violation.violatingPolicyNames.join()}\r\n`
+          return `- [ ] **${violation.componentName} ${violation.versionName}** violates: ${violation.violatingPolicyNames.join(', ')} (${violation.componentIdentifier})\r\n`
         })
         .join('')
 

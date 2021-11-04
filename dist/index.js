@@ -51,19 +51,17 @@ function run() {
     const octokit = (0, github_1.getOctokit)(githubToken);
     const detectArgs = `--blackduck.trust.cert=TRUE --blackduck.url="${blackduckUrl}" --blackduck.api.token="${blackduckApiToken}" --detect.blackduck.scan.mode=RAPID --detect.scan.output.path="${outputPath}"`;
     (0, detect_manager_1.downloadAndRunDetect)(detectArgs);
-    const scanJsonPaths = fs_1.default
-        .readdirSync(outputPath)
-        .map(jsonPath => path_1.default.join(outputPath, jsonPath));
+    const scanJsonPaths = fs_1.default.readdirSync(outputPath).map(jsonPath => path_1.default.join(outputPath, jsonPath));
     (0, upload_json_1.uploadJson)(outputPath, scanJsonPaths);
     scanJsonPaths.forEach(jsonPath => {
         const rawdata = fs_1.default.readFileSync(jsonPath);
         const scanJson = JSON.parse(rawdata.toString());
-        let message = '✅ **No policy violations found!**';
+        let message = '# ✅  No policy violations found!';
         if (scanJson.length != 0) {
-            message = '⚠️ **There were policy violations in your build!**\r\n';
+            message = '# ⚠️ There were policy violations in your build!\r\n';
             const policyViolations = scanJson
                 .map(violation => {
-                return `* ${violation.componentName} ${violation.versionName} (${violation.componentIdentifier}) violates: ${violation.violatingPolicyNames.join()}\r\n`;
+                return `- [ ] **${violation.componentName} ${violation.versionName}** violates: ${violation.violatingPolicyNames.join(', ')} (${violation.componentIdentifier})\r\n`;
             })
                 .join('');
             message = message.concat(policyViolations);
