@@ -32,8 +32,7 @@ export function run() {
 
       const policyViolations = scanJson
         .map(violation => {
-          return `- [ ] **${violation.componentName} ${violation.versionName}** violates policies ${violation.violatingPolicyNames.join(', ')}\r\n
-          _${violation.componentIdentifier}_\r\n`
+          return `- [ ] **${violation.componentName} ${violation.versionName}** violates policies ${violation.violatingPolicyNames.join(', ')}\r\n_${violation.componentIdentifier}_\r\n`
         })
         .join('')
 
