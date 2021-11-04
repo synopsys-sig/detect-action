@@ -28,7 +28,7 @@ function commentOnPR(githubToken, jsonPath) {
         const octokit = (0, github_1.getOctokit)(githubToken);
         const rawdata = fs_1.default.readFileSync(jsonPath);
         const scanJson = JSON.parse(rawdata.toString());
-        const messagePreface = '<!-- Comment automatically managed by Detect Action, do not remove this line -->';
+        const messagePreface = '<!-- Comment automatically managed by Detect Action, do not remove this line -->\r\n';
         let message = messagePreface;
         if (scanJson.length == 0) {
             message.concat('# :white_check_mark: None of your dependencies violate policy!');
@@ -49,7 +49,7 @@ function commentOnPR(githubToken, jsonPath) {
         const { data: existingComments } = yield octokit.rest.issues.listComments({
             issue_number: contextIssue,
             owner: contextOwner,
-            repo: contextRepo,
+            repo: contextRepo
         });
         for (const comment of existingComments) {
             const firstLine = (_a = comment.body) === null || _a === void 0 ? void 0 : _a.split('\r\n')[0];

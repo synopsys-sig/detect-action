@@ -8,7 +8,7 @@ export async function commentOnPR(githubToken: string, jsonPath: string) {
   const rawdata = fs.readFileSync(jsonPath)
   const scanJson: Violation[] = JSON.parse(rawdata.toString())
 
-  const messagePreface = '<!-- Comment automatically managed by Detect Action, do not remove this line -->'
+  const messagePreface = '<!-- Comment automatically managed by Detect Action, do not remove this line -->\r\n'
 
   let message = messagePreface
   if (scanJson.length == 0) {
