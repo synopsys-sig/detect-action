@@ -61,7 +61,7 @@ function run() {
             message = '# ⚠️ There were policy violations in your build!\r\n';
             const policyViolations = scanJson
                 .map(violation => {
-                return `- [ ] **${violation.componentName} ${violation.versionName}** violates policies ${violation.violatingPolicyNames.join(', ')}\r\n_${violation.componentIdentifier}_\r\n`;
+                return `- [ ] **${violation.componentName} ${violation.versionName}** violates ${violation.violatingPolicyNames.map(policyName => `**${policyName}**`).join(', ')}\r\n_${violation.componentIdentifier}_\r\n`;
             })
                 .join('');
             message = message.concat(policyViolations);
