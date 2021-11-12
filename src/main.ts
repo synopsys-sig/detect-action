@@ -18,7 +18,7 @@ export async function run() {
   if (outputPathOverride !== '') {
     outputPath = outputPathOverride
   } else if (runnerTemp === undefined) {
-    error('$RUNNER_TEMP is not defined and output-path-override was not set. Cannot determine where')
+    error('$RUNNER_TEMP is not defined and output-path-override was not set. Cannot determine where to store output files.')
     exit
   } else {
     outputPath = path.resolve(runnerTemp, 'blackduck')
