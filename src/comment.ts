@@ -1,3 +1,4 @@
+import {error} from '@actions/core'
 import {context, getOctokit} from '@actions/github'
 import {Violation} from './rapid-scan-result'
 
@@ -11,6 +12,7 @@ export async function commentOnPR(githubToken: string, scanJson: Violation[]) {
     message = message.concat('\r\n# :white_check_mark: None of your dependencies violate policy!')
   } else {
     message = message.concat('\r\n# :warning: Found dependencies violating policy!\r\n')
+    error('Found dependencies violating policy!')
 
     const policyViolations = scanJson
       .map(violation => {
