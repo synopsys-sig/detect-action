@@ -13,7 +13,7 @@ inputs:
   output-path:
     description: 'Where to output rapidscan files'
     required: false
-    default: '/tmp/detect_scan/'
+    default: ${{ env.RUNNER_TEMP }}
 #outputs:
 #  time: # id of output
 #    description: 'The time we greeted you'
