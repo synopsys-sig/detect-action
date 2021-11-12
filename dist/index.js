@@ -17,7 +17,6 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.commentOnPR = void 0;
-const core_1 = __nccwpck_require__(2186);
 const github_1 = __nccwpck_require__(5438);
 function commentOnPR(githubToken, scanJson) {
     var _a;
@@ -30,7 +29,6 @@ function commentOnPR(githubToken, scanJson) {
         }
         else {
             message = message.concat('\r\n# :warning: Found dependencies violating policy!\r\n');
-            (0, core_1.error)('Found dependencies violating policy!', { title: "Black Duck Policy Violations" });
             const policyViolations = scanJson
                 .map(violation => {
                 return `- [ ] **${violation.componentName} ${violation.versionName}** violates ${violation.violatingPolicyNames.map(policyName => `**${policyName}**`).join(', ')}\r\n_${violation.componentIdentifier}_\r\n`;
