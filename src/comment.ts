@@ -12,7 +12,7 @@ export async function commentOnPR(githubToken: string, scanJson: Violation[]) {
     message = message.concat('\r\n# :white_check_mark: None of your dependencies violate policy!')
   } else {
     message = message.concat('\r\n# :warning: Found dependencies violating policy!\r\n')
-    error('Found dependencies violating policy!')
+    error('Found dependencies violating policy!', {title: 'Black Duck Policy Violations'})
 
     const policyViolations = scanJson
       .map(violation => {

@@ -30,7 +30,7 @@ function commentOnPR(githubToken, scanJson) {
         }
         else {
             message = message.concat('\r\n# :warning: Found dependencies violating policy!\r\n');
-            (0, core_1.error)('Found dependencies violating policy!');
+            (0, core_1.error)('Found dependencies violating policy!', { title: "Black Duck Policy Violations" });
             const policyViolations = scanJson
                 .map(violation => {
                 return `- [ ] **${violation.componentName} ${violation.versionName}** violates ${violation.violatingPolicyNames.map(policyName => `**${policyName}**`).join(', ')}\r\n_${violation.componentIdentifier}_\r\n`;
