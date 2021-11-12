@@ -99,25 +99,6 @@ exports.downloadAndRunDetect = downloadAndRunDetect;
 
 "use strict";
 
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || function (mod) {
-    if (mod && mod.__esModule) return mod;
-    var result = {};
-    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
-    __setModuleDefault(result, mod);
-    return result;
-};
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -133,27 +114,41 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.run = void 0;
 const core_1 = __nccwpck_require__(2186);
-const glob = __importStar(__nccwpck_require__(8090));
+const glob_1 = __nccwpck_require__(8090);
+const path_1 = __importDefault(__nccwpck_require__(5622));
 const fs_1 = __importDefault(__nccwpck_require__(5747));
 const upload_artifacts_1 = __nccwpck_require__(2854);
 const detect_manager_1 = __nccwpck_require__(3762);
 const comment_1 = __nccwpck_require__(1667);
+const process_1 = __nccwpck_require__(1765);
 function run() {
     var _a, _b;
     return __awaiter(this, void 0, void 0, function* () {
         const githubToken = (0, core_1.getInput)('github-token');
         const blackduckUrl = (0, core_1.getInput)('blackduck-url');
         const blackduckApiToken = (0, core_1.getInput)('blackduck-api-token');
-        const outputPath = (0, core_1.getInput)('output-path');
+        const outputPathOverride = (0, core_1.getInput)('output-path-override');
+        const runnerTemp = process.env.RUNNER_TEMP;
+        let outputPath = '';
+        if (outputPathOverride !== '') {
+            outputPath = outputPathOverride;
+        }
+        else if (runnerTemp === undefined) {
+            (0, core_1.error)('$RUNNER_TEMP is not defined and output-path-override was not set. Cannot determine where');
+            process_1.exit;
+        }
+        else {
+            outputPath = path_1.default.resolve(runnerTemp, 'blackduck');
+        }
         const detectArgs = `--blackduck.trust.cert=TRUE --blackduck.url="${blackduckUrl}" --blackduck.api.token="${blackduckApiToken}" --detect.blackduck.scan.mode=RAPID --detect.output.path="${outputPath}" --detect.scan.output.path="${outputPath}"`;
         (0, detect_manager_1.downloadAndRunDetect)(detectArgs);
-        const jsonGlobber = yield glob.create(`${outputPath}/*.json`);
+        const jsonGlobber = yield (0, glob_1.create)(`${outputPath}/*.json`);
         const scanJsonPaths = yield jsonGlobber.glob();
         (0, upload_artifacts_1.uploadRapidScanJson)(outputPath, scanJsonPaths);
         const diagnosticMode = ((_a = process.env.DETECT_DIAGNOSTIC) === null || _a === void 0 ? void 0 : _a.toLowerCase()) === 'true';
         const extendedDiagnosticMode = ((_b = process.env.DETECT_DIAGNOSTIC_EXTENDED) === null || _b === void 0 ? void 0 : _b.toLowerCase()) === 'true';
         if (diagnosticMode || extendedDiagnosticMode) {
-            const diagnosticGlobber = yield glob.create(`${outputPath}/runs/*.zip`);
+            const diagnosticGlobber = yield (0, glob_1.create)(`${outputPath}/runs/*.zip`);
             const diagnosticZip = yield diagnosticGlobber.glob();
             (0, upload_artifacts_1.uploadDiagnosticZip)(outputPath, diagnosticZip);
         }
@@ -15945,6 +15940,14 @@ module.exports = require("path");
 
 "use strict";
 module.exports = require("perf_hooks");
+
+/***/ }),
+
+/***/ 1765:
+/***/ ((module) => {
+
+"use strict";
+module.exports = require("process");
 
 /***/ }),
 

@@ -1,28 +1,41 @@
-import {getInput} from '@actions/core'
-import * as glob from '@actions/glob'
+import {error, getInput} from '@actions/core'
+import {create} from '@actions/glob'
+import path from 'path'
 import fs from 'fs'
 import {uploadRapidScanJson, uploadDiagnosticZip} from './upload-artifacts'
 import {downloadAndRunDetect} from './detect-manager'
 import {commentOnPR} from './comment'
+import {exit} from 'process'
 
 export async function run() {
   const githubToken = getInput('github-token')
   const blackduckUrl = getInput('blackduck-url')
   const blackduckApiToken = getInput('blackduck-api-token')
-  const outputPath = getInput('output-path')
+  const outputPathOverride = getInput('output-path-override')
+
+  const runnerTemp = process.env.RUNNER_TEMP
+  let outputPath = ''
+  if (outputPathOverride !== '') {
+    outputPath = outputPathOverride
+  } else if (runnerTemp === undefined) {
+    error('$RUNNER_TEMP is not defined and output-path-override was not set. Cannot determine where')
+    exit
+  } else {
+    outputPath = path.resolve(runnerTemp, 'blackduck')
+  }
 
   const detectArgs = `--blackduck.trust.cert=TRUE --blackduck.url="${blackduckUrl}" --blackduck.api.token="${blackduckApiToken}" --detect.blackduck.scan.mode=RAPID --detect.output.path="${outputPath}" --detect.scan.output.path="${outputPath}"`
 
   downloadAndRunDetect(detectArgs)
 
-  const jsonGlobber = await glob.create(`${outputPath}/*.json`)
+  const jsonGlobber = await create(`${outputPath}/*.json`)
   const scanJsonPaths = await jsonGlobber.glob()
   uploadRapidScanJson(outputPath, scanJsonPaths)
 
   const diagnosticMode = process.env.DETECT_DIAGNOSTIC?.toLowerCase() === 'true'
   const extendedDiagnosticMode = process.env.DETECT_DIAGNOSTIC_EXTENDED?.toLowerCase() === 'true'
   if (diagnosticMode || extendedDiagnosticMode) {
-    const diagnosticGlobber = await glob.create(`${outputPath}/runs/*.zip`)
+    const diagnosticGlobber = await create(`${outputPath}/runs/*.zip`)
     const diagnosticZip = await diagnosticGlobber.glob()
     uploadDiagnosticZip(outputPath, diagnosticZip)
   }

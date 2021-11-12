@@ -10,10 +10,9 @@ inputs:
   blackduck-api-token:
     description: 'API Token for Black Duck instance'
     required: true
-  output-path:
-    description: 'Where to output rapidscan files'
+  output-path-override:
+    description: 'Override for where to output Detect files, default is $RUNNER_TEMP/blackduck/'
     required: false
-    default: ${{ env.RUNNER_TEMP }}
 #outputs:
 #  time: # id of output
 #    description: 'The time we greeted you'
