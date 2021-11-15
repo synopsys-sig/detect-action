@@ -7,7 +7,7 @@ import {downloadAndRunDetect} from './detect-manager'
 import {commentOnPR} from './comment'
 import {exit} from 'process'
 
-export async function run() {
+export async function run(): Promise<void> {
   const githubToken = getInput('github-token')
   const blackduckUrl = getInput('blackduck-url')
   const blackduckApiToken = getInput('blackduck-api-token')
