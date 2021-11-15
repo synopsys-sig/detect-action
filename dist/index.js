@@ -127,6 +127,7 @@ function run() {
         const githubToken = (0, core_1.getInput)('github-token');
         const blackduckUrl = (0, core_1.getInput)('blackduck-url');
         const blackduckApiToken = (0, core_1.getInput)('blackduck-api-token');
+        const scanMode = (0, core_1.getInput)('scan-mode').toUpperCase();
         const outputPathOverride = (0, core_1.getInput)('output-path-override');
         const runnerTemp = process.env.RUNNER_TEMP;
         let outputPath = '';
@@ -134,17 +135,24 @@ function run() {
             outputPath = outputPathOverride;
         }
         else if (runnerTemp === undefined) {
-            (0, core_1.error)('$RUNNER_TEMP is not defined and output-path-override was not set. Cannot determine where');
+            (0, core_1.error)('$RUNNER_TEMP is not defined and output-path-override was not set. Cannot determine where to store output files.');
             process_1.exit;
         }
         else {
             outputPath = path_1.default.resolve(runnerTemp, 'blackduck');
         }
-        const detectArgs = `--blackduck.trust.cert=TRUE --blackduck.url="${blackduckUrl}" --blackduck.api.token="${blackduckApiToken}" --detect.blackduck.scan.mode=RAPID --detect.output.path="${outputPath}" --detect.scan.output.path="${outputPath}"`;
+        const detectArgs = `--blackduck.trust.cert=TRUE --blackduck.url="${blackduckUrl}" --blackduck.api.token="${blackduckApiToken}" --detect.blackduck.scan.mode="${scanMode}" --detect.output.path="${outputPath}" --detect.scan.output.path="${outputPath}"`;
         (0, detect_manager_1.downloadAndRunDetect)(detectArgs);
-        const jsonGlobber = yield (0, glob_1.create)(`${outputPath}/*.json`);
-        const scanJsonPaths = yield jsonGlobber.glob();
-        (0, upload_artifacts_1.uploadRapidScanJson)(outputPath, scanJsonPaths);
+        if (scanMode === 'RAPID') {
+            const jsonGlobber = yield (0, glob_1.create)(`${outputPath}/*.json`);
+            const scanJsonPaths = yield jsonGlobber.glob();
+            (0, upload_artifacts_1.uploadRapidScanJson)(outputPath, scanJsonPaths);
+            scanJsonPaths.forEach(jsonPath => {
+                const rawdata = fs_1.default.readFileSync(jsonPath);
+                const scanJson = JSON.parse(rawdata.toString());
+                (0, comment_1.commentOnPR)(githubToken, scanJson);
+            });
+        }
         const diagnosticMode = ((_a = process.env.DETECT_DIAGNOSTIC) === null || _a === void 0 ? void 0 : _a.toLowerCase()) === 'true';
         const extendedDiagnosticMode = ((_b = process.env.DETECT_DIAGNOSTIC_EXTENDED) === null || _b === void 0 ? void 0 : _b.toLowerCase()) === 'true';
         if (diagnosticMode || extendedDiagnosticMode) {
@@ -152,11 +160,6 @@ function run() {
             const diagnosticZip = yield diagnosticGlobber.glob();
             (0, upload_artifacts_1.uploadDiagnosticZip)(outputPath, diagnosticZip);
         }
-        scanJsonPaths.forEach(jsonPath => {
-            const rawdata = fs_1.default.readFileSync(jsonPath);
-            const scanJson = JSON.parse(rawdata.toString());
-            (0, comment_1.commentOnPR)(githubToken, scanJson);
-        });
     });
 }
 exports.run = run;

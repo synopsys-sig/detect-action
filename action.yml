@@ -10,6 +10,10 @@ inputs:
   blackduck-api-token:
     description: 'API Token for Black Duck instance'
     required: true
+  scan-mode:
+    description: 'Either RAPID or INTELLIGENT, configures how Detect is invoked. RAPID will not persist the results and disables select Detect functionality for faster results. INTELLIGENT persists the results and permits all features of Detect.'
+    required: false
+    default: 'RAPID'
   output-path-override:
     description: 'Override for where to output Detect files, default is $RUNNER_TEMP/blackduck/'
     required: false

@@ -11,6 +11,7 @@ export async function run() {
   const githubToken = getInput('github-token')
   const blackduckUrl = getInput('blackduck-url')
   const blackduckApiToken = getInput('blackduck-api-token')
+  const scanMode = getInput('scan-mode').toUpperCase()
   const outputPathOverride = getInput('output-path-override')
 
   const runnerTemp = process.env.RUNNER_TEMP
@@ -24,13 +25,22 @@ export async function run() {
     outputPath = path.resolve(runnerTemp, 'blackduck')
   }
 
-  const detectArgs = `--blackduck.trust.cert=TRUE --blackduck.url="${blackduckUrl}" --blackduck.api.token="${blackduckApiToken}" --detect.blackduck.scan.mode=RAPID --detect.output.path="${outputPath}" --detect.scan.output.path="${outputPath}"`
+  const detectArgs = `--blackduck.trust.cert=TRUE --blackduck.url="${blackduckUrl}" --blackduck.api.token="${blackduckApiToken}" --detect.blackduck.scan.mode="${scanMode}" --detect.output.path="${outputPath}" --detect.scan.output.path="${outputPath}"`
 
   downloadAndRunDetect(detectArgs)
 
-  const jsonGlobber = await create(`${outputPath}/*.json`)
-  const scanJsonPaths = await jsonGlobber.glob()
-  uploadRapidScanJson(outputPath, scanJsonPaths)
+  if (scanMode === 'RAPID') {
+    const jsonGlobber = await create(`${outputPath}/*.json`)
+    const scanJsonPaths = await jsonGlobber.glob()
+    uploadRapidScanJson(outputPath, scanJsonPaths)
+
+    scanJsonPaths.forEach(jsonPath => {
+      const rawdata = fs.readFileSync(jsonPath)
+      const scanJson = JSON.parse(rawdata.toString())
+
+      commentOnPR(githubToken, scanJson)
+    })
+  }
 
   const diagnosticMode = process.env.DETECT_DIAGNOSTIC?.toLowerCase() === 'true'
   const extendedDiagnosticMode = process.env.DETECT_DIAGNOSTIC_EXTENDED?.toLowerCase() === 'true'
@@ -39,13 +49,6 @@ export async function run() {
     const diagnosticZip = await diagnosticGlobber.glob()
     uploadDiagnosticZip(outputPath, diagnosticZip)
   }
-
-  scanJsonPaths.forEach(jsonPath => {
-    const rawdata = fs.readFileSync(jsonPath)
-    const scanJson = JSON.parse(rawdata.toString())
-
-    commentOnPR(githubToken, scanJson)
-  })
 }
 
 run()
