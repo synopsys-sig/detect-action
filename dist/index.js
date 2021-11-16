@@ -94,15 +94,16 @@ const DETECT_BINARY_REPO_URL = 'https://sig-repo.synopsys.com';
 exports.TOOL_NAME = 'detect';
 function findOrDownloadDetect(detectVersion) {
     return __awaiter(this, void 0, void 0, function* () {
+        const jarName = `synopsys-detect-${detectVersion}.jar`;
         const cachedDetect = (0, tool_cache_1.find)(exports.TOOL_NAME, detectVersion);
         if (cachedDetect) {
-            return cachedDetect;
+            return path_1.default.resolve(cachedDetect, jarName);
         }
         const detectDownloadUrl = createDetectDownloadUrl(detectVersion);
-        return (0, tool_cache_1.downloadTool)(detectDownloadUrl)
-            .then(detectDownloadPath => (0, tool_cache_1.cacheFile)(detectDownloadPath, `synopsys-detect-${detectVersion}.jar`, exports.TOOL_NAME, detectVersion))
+        return ((0, tool_cache_1.downloadTool)(detectDownloadUrl)
+            .then(detectDownloadPath => (0, tool_cache_1.cacheFile)(detectDownloadPath, jarName, exports.TOOL_NAME, detectVersion))
             //TODO: Jarsigner?
-            .then(cachedFolder => path_1.default.resolve(cachedFolder, `synopsys-detect-${detectVersion}.jar`));
+            .then(cachedFolder => path_1.default.resolve(cachedFolder, jarName)));
     });
 }
 exports.findOrDownloadDetect = findOrDownloadDetect;

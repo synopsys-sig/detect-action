@@ -6,18 +6,20 @@ const DETECT_BINARY_REPO_URL = 'https://sig-repo.synopsys.com'
 export const TOOL_NAME = 'detect'
 
 export async function findOrDownloadDetect(detectVersion: string): Promise<string> {
+  const jarName = `synopsys-detect-${detectVersion}.jar`
+
   const cachedDetect = find(TOOL_NAME, detectVersion)
   if (cachedDetect) {
-    return cachedDetect
+    return path.resolve(cachedDetect, jarName)
   }
 
   const detectDownloadUrl = createDetectDownloadUrl(detectVersion)
 
   return (
     downloadTool(detectDownloadUrl)
-      .then(detectDownloadPath => cacheFile(detectDownloadPath, `synopsys-detect-${detectVersion}.jar`, TOOL_NAME, detectVersion))
+      .then(detectDownloadPath => cacheFile(detectDownloadPath, jarName, TOOL_NAME, detectVersion))
       //TODO: Jarsigner?
-      .then(cachedFolder => path.resolve(cachedFolder, `synopsys-detect-${detectVersion}.jar`))
+      .then(cachedFolder => path.resolve(cachedFolder, jarName))
   )
 }
 
