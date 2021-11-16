@@ -25,7 +25,7 @@ export async function run(): Promise<void> {
     outputPath = path.resolve(runnerTemp, 'blackduck')
   }
 
-  const detectArgs = `--blackduck.trust.cert=TRUE --blackduck.url="${blackduckUrl}" --blackduck.api.token="${blackduckApiToken}" --detect.blackduck.scan.mode="${scanMode}" --detect.output.path="${outputPath}" --detect.scan.output.path="${outputPath}"`
+  const detectArgs = ['--blackduck.trust.cert=TRUE', `--blackduck.url=${blackduckUrl}`, `--blackduck.api.token=${blackduckApiToken}`, `--detect.blackduck.scan.mode=${scanMode}`, `--detect.output.path=${outputPath}`, `--detect.scan.output.path=${outputPath}`]
 
   const detectPath = await findOrDownloadDetect(detectVersion).catch(reason => {
     setFailed(`Could not download ${TOOL_NAME} ${detectVersion}: ${reason}`)

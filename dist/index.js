@@ -109,7 +109,7 @@ function findOrDownloadDetect(detectVersion) {
 exports.findOrDownloadDetect = findOrDownloadDetect;
 function runDetect(detectPath, detectArguments) {
     return __awaiter(this, void 0, void 0, function* () {
-        return (0, exec_1.exec)(`java -jar ${detectPath} ${detectArguments}`);
+        return (0, exec_1.exec)(`java`, ['-jar', detectPath].concat(detectArguments), { ignoreReturnCode: true });
     });
 }
 exports.runDetect = runDetect;
@@ -167,7 +167,14 @@ function run() {
         else {
             outputPath = path_1.default.resolve(runnerTemp, 'blackduck');
         }
-        const detectArgs = `--blackduck.trust.cert=TRUE --blackduck.url="${blackduckUrl}" --blackduck.api.token="${blackduckApiToken}" --detect.blackduck.scan.mode="${scanMode}" --detect.output.path="${outputPath}" --detect.scan.output.path="${outputPath}"`;
+        const detectArgs = [
+            '--blackduck.trust.cert=TRUE',
+            `--blackduck.url=${blackduckUrl}`,
+            `--blackduck.api.token=${blackduckApiToken}`,
+            `--detect.blackduck.scan.mode=${scanMode}`,
+            `--detect.output.path=${outputPath}`,
+            `--detect.scan.output.path=${outputPath}`
+        ];
         const detectPath = yield (0, detect_manager_1.findOrDownloadDetect)(detectVersion).catch(reason => {
             (0, core_1.setFailed)(`Could not download ${detect_manager_1.TOOL_NAME} ${detectVersion}: ${reason}`);
         });

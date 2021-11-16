@@ -23,8 +23,8 @@ export async function findOrDownloadDetect(detectVersion: string): Promise<strin
   )
 }
 
-export async function runDetect(detectPath: string, detectArguments: string): Promise<number> {
-  return exec(`java -jar ${detectPath} ${detectArguments}`)
+export async function runDetect(detectPath: string, detectArguments: string[]): Promise<number> {
+  return exec(`java`, ['-jar', detectPath].concat(detectArguments), {ignoreReturnCode: true})
 }
 
 function createDetectDownloadUrl(version: string, repoUrl = DETECT_BINARY_REPO_URL): string {
