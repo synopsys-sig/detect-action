@@ -83,50 +83,31 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.downloadAndRunDetect = exports.runDetect = exports.findOrDownloadDetect = void 0;
-const child_process_1 = __nccwpck_require__(3129);
+exports.runDetect = exports.findOrDownloadDetect = exports.TOOL_NAME = void 0;
 const tool_cache_1 = __nccwpck_require__(7784);
 const exec_1 = __nccwpck_require__(1514);
 const DETECT_BINARY_REPO_URL = 'https://sig-repo.synopsys.com';
-const TOOL_NAME = 'detect';
+exports.TOOL_NAME = 'detect';
 function findOrDownloadDetect(detectVersion) {
     return __awaiter(this, void 0, void 0, function* () {
-        const cachedDetect = (0, tool_cache_1.find)(TOOL_NAME, detectVersion);
+        const cachedDetect = (0, tool_cache_1.find)(exports.TOOL_NAME, detectVersion);
         if (cachedDetect) {
             return cachedDetect;
         }
         const detectDownloadUrl = createDetectDownloadUrl(detectVersion);
-        return (0, tool_cache_1.downloadTool)(detectDownloadUrl)
-            .then(detectDownloadPath => (0, tool_cache_1.cacheFile)(detectDownloadPath, `synopsys-detect-${detectVersion}.jar`, TOOL_NAME, detectVersion)) //TODO: Jarsigner?
-            .catch(reason => new Error(`Could not execute ${TOOL_NAME} ${detectVersion}: ${reason}`));
+        return (0, tool_cache_1.downloadTool)(detectDownloadUrl).then(detectDownloadPath => (0, tool_cache_1.cacheFile)(detectDownloadPath, `synopsys-detect-${detectVersion}.jar`, exports.TOOL_NAME, detectVersion)); //TODO: Jarsigner?
     });
 }
 exports.findOrDownloadDetect = findOrDownloadDetect;
-function runDetect(detectVersion, detectArguments) {
+function runDetect(detectPath, detectArguments) {
     return __awaiter(this, void 0, void 0, function* () {
-        return findOrDownloadDetect(detectVersion)
-            .then(detectPath => (0, exec_1.exec)(`java -jar ${detectPath} ${detectArguments}`))
-            .catch(reason => new Error(`Could not execute ${TOOL_NAME} ${detectVersion}: ${reason}`));
+        return (0, exec_1.exec)(`java -jar ${detectPath} ${detectArguments}`);
     });
 }
 exports.runDetect = runDetect;
 function createDetectDownloadUrl(version, repoUrl = DETECT_BINARY_REPO_URL) {
     return `${repoUrl}/bds-integrations-release/com/synopsys/integration/synopsys-detect/${version}/synopsys-detect-${version}.jar`;
 }
-function downloadAndRunDetect(detectArgs) {
-    try {
-        if (process.platform === 'win32') {
-            (0, child_process_1.execSync)(`powershell "[Net.ServicePointManager]::SecurityProtocol = 'tls12'; irm https://detect.synopsys.com/detect7.ps1?$(Get-Random) | iex; detect ${detectArgs}"`, { stdio: 'inherit' });
-        }
-        else {
-            (0, child_process_1.execSync)(`bash <(curl -s -L https://detect.synopsys.com/detect7.sh) detect ${detectArgs}`, { stdio: 'inherit', shell: '/bin/bash' });
-        }
-    }
-    catch (error) {
-        // ignored
-    }
-}
-exports.downloadAndRunDetect = downloadAndRunDetect;
 
 
 /***/ }),
@@ -157,13 +138,13 @@ const fs_1 = __importDefault(__nccwpck_require__(5747));
 const upload_artifacts_1 = __nccwpck_require__(2854);
 const detect_manager_1 = __nccwpck_require__(3762);
 const comment_1 = __nccwpck_require__(1667);
-const process_1 = __nccwpck_require__(1765);
 function run() {
     var _a, _b;
     return __awaiter(this, void 0, void 0, function* () {
         const githubToken = (0, core_1.getInput)('github-token');
         const blackduckUrl = (0, core_1.getInput)('blackduck-url');
         const blackduckApiToken = (0, core_1.getInput)('blackduck-api-token');
+        const detectVersion = (0, core_1.getInput)('detect-version');
         const scanMode = (0, core_1.getInput)('scan-mode').toUpperCase();
         const outputPathOverride = (0, core_1.getInput)('output-path-override');
         const runnerTemp = process.env.RUNNER_TEMP;
@@ -172,14 +153,25 @@ function run() {
             outputPath = outputPathOverride;
         }
         else if (runnerTemp === undefined) {
-            (0, core_1.error)('$RUNNER_TEMP is not defined and output-path-override was not set. Cannot determine where to store output files.');
-            process_1.exit;
+            (0, core_1.setFailed)('$RUNNER_TEMP is not defined and output-path-override was not set. Cannot determine where to store output files.');
+            return;
         }
         else {
             outputPath = path_1.default.resolve(runnerTemp, 'blackduck');
         }
         const detectArgs = `--blackduck.trust.cert=TRUE --blackduck.url="${blackduckUrl}" --blackduck.api.token="${blackduckApiToken}" --detect.blackduck.scan.mode="${scanMode}" --detect.output.path="${outputPath}" --detect.scan.output.path="${outputPath}"`;
-        (0, detect_manager_1.downloadAndRunDetect)(detectArgs);
+        const detectPath = yield (0, detect_manager_1.findOrDownloadDetect)(detectVersion).catch(reason => {
+            (0, core_1.setFailed)(`Could not download ${detect_manager_1.TOOL_NAME} ${detectVersion}: ${reason}`);
+        });
+        if (!detectPath) {
+            return;
+        }
+        const detectExitCode = yield (0, detect_manager_1.runDetect)(detectPath, detectArgs).catch(reason => {
+            (0, core_1.setFailed)(`Could not execute ${detect_manager_1.TOOL_NAME} ${detectVersion}: ${reason}`);
+        });
+        if (!detectExitCode) {
+            return;
+        }
         if (scanMode === 'RAPID') {
             const jsonGlobber = yield (0, glob_1.create)(`${outputPath}/*.json`);
             const scanJsonPaths = yield jsonGlobber.glob();
@@ -19831,14 +19823,6 @@ module.exports = require("path");
 
 "use strict";
 module.exports = require("perf_hooks");
-
-/***/ }),
-
-/***/ 1765:
-/***/ ((module) => {
-
-"use strict";
-module.exports = require("process");
 
 /***/ }),
 
