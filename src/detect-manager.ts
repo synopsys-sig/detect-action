@@ -1,5 +1,6 @@
 import {find, downloadTool, cacheFile} from '@actions/tool-cache'
 import {exec} from '@actions/exec'
+import path from 'path'
 
 const DETECT_BINARY_REPO_URL = 'https://sig-repo.synopsys.com'
 export const TOOL_NAME = 'detect'
@@ -12,7 +13,12 @@ export async function findOrDownloadDetect(detectVersion: string): Promise<strin
 
   const detectDownloadUrl = createDetectDownloadUrl(detectVersion)
 
-  return downloadTool(detectDownloadUrl).then(detectDownloadPath => cacheFile(detectDownloadPath, `synopsys-detect-${detectVersion}.jar`, TOOL_NAME, detectVersion)) //TODO: Jarsigner?
+  return (
+    downloadTool(detectDownloadUrl)
+      .then(detectDownloadPath => cacheFile(detectDownloadPath, `synopsys-detect-${detectVersion}.jar`, TOOL_NAME, detectVersion))
+      //TODO: Jarsigner?
+      .then(cachedFolder => path.resolve(cachedFolder, `synopsys-detect-${detectVersion}.jar`))
+  )
 }
 
 export async function runDetect(detectPath: string, detectArguments: string): Promise<number> {

@@ -82,10 +82,14 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.runDetect = exports.findOrDownloadDetect = exports.TOOL_NAME = void 0;
 const tool_cache_1 = __nccwpck_require__(7784);
 const exec_1 = __nccwpck_require__(1514);
+const path_1 = __importDefault(__nccwpck_require__(5622));
 const DETECT_BINARY_REPO_URL = 'https://sig-repo.synopsys.com';
 exports.TOOL_NAME = 'detect';
 function findOrDownloadDetect(detectVersion) {
@@ -95,7 +99,10 @@ function findOrDownloadDetect(detectVersion) {
             return cachedDetect;
         }
         const detectDownloadUrl = createDetectDownloadUrl(detectVersion);
-        return (0, tool_cache_1.downloadTool)(detectDownloadUrl).then(detectDownloadPath => (0, tool_cache_1.cacheFile)(detectDownloadPath, `synopsys-detect-${detectVersion}.jar`, exports.TOOL_NAME, detectVersion)); //TODO: Jarsigner?
+        return (0, tool_cache_1.downloadTool)(detectDownloadUrl)
+            .then(detectDownloadPath => (0, tool_cache_1.cacheFile)(detectDownloadPath, `synopsys-detect-${detectVersion}.jar`, exports.TOOL_NAME, detectVersion))
+            //TODO: Jarsigner?
+            .then(cachedFolder => path_1.default.resolve(cachedFolder, `synopsys-detect-${detectVersion}.jar`));
     });
 }
 exports.findOrDownloadDetect = findOrDownloadDetect;
