@@ -4,6 +4,9 @@ inputs:
   github-token:
     description: 'Your GitHub token'
     required: true
+  detect-version:
+    description: 'The version of Detect to download'
+    required: true
   blackduck-url:
     description: 'Url of Black Duck instance'
     required: true
@@ -17,9 +20,6 @@ inputs:
   output-path-override:
     description: 'Override for where to output Detect files, default is $RUNNER_TEMP/blackduck/'
     required: false
-#outputs:
-#  time: # id of output
-#    description: 'The time we greeted you'
 runs:
   using: 'node12'
   main: 'dist/index.js'

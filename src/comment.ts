@@ -1,7 +1,7 @@
 import {context, getOctokit} from '@actions/github'
 import {Violation} from './rapid-scan-result'
 
-export async function commentOnPR(githubToken: string, scanJson: Violation[]) {
+export async function commentOnPR(githubToken: string, scanJson: Violation[]): Promise<void> {
   const octokit = getOctokit(githubToken)
 
   const messagePreface = '<!-- Comment automatically managed by Detect Action, do not remove this line -->'
