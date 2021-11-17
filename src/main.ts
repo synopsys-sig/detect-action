@@ -1,4 +1,4 @@
-import {getInput, setFailed} from '@actions/core'
+import {getInput, info, setFailed} from '@actions/core'
 import {create} from '@actions/glob'
 import path from 'path'
 import fs from 'fs'
@@ -62,6 +62,15 @@ export async function run(): Promise<void> {
     const diagnosticGlobber = await create(`${outputPath}/runs/*.zip`)
     const diagnosticZip = await diagnosticGlobber.glob()
     uploadDiagnosticZip(outputPath, diagnosticZip)
+  }
+
+  if (detectExitCode > 0) {
+    if (detectExitCode === 3) {
+      setFailed('Found dependencies violating policy!')
+    }
+    setFailed(`Detect exited with exit code: ${detectExitCode}`)
+  } else if (detectExitCode === 0) {
+    info('None of your dependencies violate your Black Duck policies!')
   }
 }
 
