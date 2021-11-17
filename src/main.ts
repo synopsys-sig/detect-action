@@ -67,8 +67,9 @@ export async function run(): Promise<void> {
   if (detectExitCode > 0) {
     if (detectExitCode === 3) {
       setFailed('Found dependencies violating policy!')
+    } else {
+      setFailed('Dependency check failed! See Detect output for more information.')
     }
-    setFailed(`Detect exited with exit code: ${detectExitCode}`)
   } else if (detectExitCode === 0) {
     info('None of your dependencies violate your Black Duck policies!')
   }

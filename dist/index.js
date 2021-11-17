@@ -201,7 +201,9 @@ function run() {
             if (detectExitCode === 3) {
                 (0, core_1.setFailed)('Found dependencies violating policy!');
             }
-            (0, core_1.setFailed)(`Detect exited with exit code: ${detectExitCode}`);
+            else {
+                (0, core_1.setFailed)('Dependency check failed! See Detect output for more information.');
+            }
         }
         else if (detectExitCode === 0) {
             (0, core_1.info)('None of your dependencies violate your Black Duck policies!');
