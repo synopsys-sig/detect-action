@@ -189,21 +189,22 @@ function run() {
                 const rawdata = fs_1.default.readFileSync(jsonPath);
                 const scanJson = JSON.parse(rawdata.toString());
                 (0, comment_1.commentOnPR)(githubToken, scanJson);
-                const octokit = (0, github_1.getOctokit)(githubToken);
-                octokit.rest.checks.create({
-                    owner: github_1.context.repo.owner,
-                    repo: github_1.context.repo.repo,
-                    name: 'Black Duck Policy Check',
-                    head_sha: github_1.context.sha,
-                    status: 'completed',
-                    conclusion: 'failure',
-                    output: {
-                        title: 'Black Duck Policy Check',
-                        summary: 'Found dependencies violating policy!'
-                    }
-                });
             });
         }
+        const octokit = (0, github_1.getOctokit)(githubToken);
+        const something = yield octokit.rest.checks.create({
+            owner: github_1.context.repo.owner,
+            repo: github_1.context.repo.repo,
+            name: 'Black Duck Policy Check',
+            head_sha: github_1.context.sha,
+            status: 'completed',
+            conclusion: 'failure',
+            output: {
+                title: 'Black Duck Policy Check',
+                summary: 'Found dependencies violating policy!'
+            }
+        });
+        (0, core_1.info)(JSON.stringify(something));
         const diagnosticMode = ((_a = process.env.DETECT_DIAGNOSTIC) === null || _a === void 0 ? void 0 : _a.toLowerCase()) === 'true';
         const extendedDiagnosticMode = ((_b = process.env.DETECT_DIAGNOSTIC_EXTENDED) === null || _b === void 0 ? void 0 : _b.toLowerCase()) === 'true';
         if (diagnosticMode || extendedDiagnosticMode) {

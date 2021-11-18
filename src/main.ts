@@ -54,22 +54,23 @@ export async function run(): Promise<void> {
       const scanJson = JSON.parse(rawdata.toString())
 
       commentOnPR(githubToken, scanJson)
-
-      const octokit = getOctokit(githubToken)
-      octokit.rest.checks.create({
-        owner: context.repo.owner,
-        repo: context.repo.repo,
-        name: 'Black Duck Policy Check',
-        head_sha: context.sha,
-        status: 'completed',
-        conclusion: 'failure',
-        output: {
-          title: 'Black Duck Policy Check',
-          summary: 'Found dependencies violating policy!'
-        }
-      })
     })
   }
+
+  const octokit = getOctokit(githubToken)
+  const something = await octokit.rest.checks.create({
+    owner: context.repo.owner,
+    repo: context.repo.repo,
+    name: 'Black Duck Policy Check',
+    head_sha: context.sha,
+    status: 'completed',
+    conclusion: 'failure',
+    output: {
+      title: 'Black Duck Policy Check',
+      summary: 'Found dependencies violating policy!'
+    }
+  })
+  info(JSON.stringify(something))
 
   const diagnosticMode = process.env.DETECT_DIAGNOSTIC?.toLowerCase() === 'true'
   const extendedDiagnosticMode = process.env.DETECT_DIAGNOSTIC_EXTENDED?.toLowerCase() === 'true'
