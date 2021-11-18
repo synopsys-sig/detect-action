@@ -140,6 +140,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.run = void 0;
 const core_1 = __nccwpck_require__(2186);
+const github_1 = __nccwpck_require__(5438);
 const glob_1 = __nccwpck_require__(8090);
 const path_1 = __importDefault(__nccwpck_require__(5622));
 const fs_1 = __importDefault(__nccwpck_require__(5747));
@@ -188,6 +189,19 @@ function run() {
                 const rawdata = fs_1.default.readFileSync(jsonPath);
                 const scanJson = JSON.parse(rawdata.toString());
                 (0, comment_1.commentOnPR)(githubToken, scanJson);
+                const octokit = (0, github_1.getOctokit)(githubToken);
+                octokit.rest.checks.create({
+                    owner: github_1.context.repo.owner,
+                    repo: github_1.context.repo.repo,
+                    name: 'Black Duck Policy Check',
+                    head_sha: github_1.context.sha,
+                    status: 'completed',
+                    conclusion: 'failure',
+                    output: {
+                        title: 'Black Duck Policy Check',
+                        summary: 'Found dependencies violating policy!'
+                    }
+                });
             });
         }
         const diagnosticMode = ((_a = process.env.DETECT_DIAGNOSTIC) === null || _a === void 0 ? void 0 : _a.toLowerCase()) === 'true';

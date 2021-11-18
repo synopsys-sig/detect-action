@@ -1,4 +1,5 @@
 import {getInput, info, setFailed} from '@actions/core'
+import {getOctokit, context} from '@actions/github'
 import {create} from '@actions/glob'
 import path from 'path'
 import fs from 'fs'
@@ -53,6 +54,20 @@ export async function run(): Promise<void> {
       const scanJson = JSON.parse(rawdata.toString())
 
       commentOnPR(githubToken, scanJson)
+
+      const octokit = getOctokit(githubToken)
+      octokit.rest.checks.create({
+        owner: context.repo.owner,
+        repo: context.repo.repo,
+        name: 'Black Duck Policy Check',
+        head_sha: context.sha,
+        status: 'completed',
+        conclusion: 'failure',
+        output: {
+          title: 'Black Duck Policy Check',
+          summary: 'Found dependencies violating policy!'
+        }
+      })
     })
   }
 
