@@ -191,11 +191,7 @@ function run() {
                 (0, comment_1.commentOnPR)(githubToken, scanJson);
             });
         }
-        const prEvents = [
-            'pull_request',
-            'pull_request_review',
-            'pull_request_review_comment',
-        ];
+        const prEvents = ['pull_request', 'pull_request_review', 'pull_request_review_comment'];
         let sha = github_1.context.sha;
         if (prEvents.includes(github_1.context.eventName)) {
             const pull = github_1.context.payload.pull_request;

@@ -6,6 +6,7 @@ import fs from 'fs'
 import {uploadRapidScanJson, uploadDiagnosticZip} from './upload-artifacts'
 import {TOOL_NAME, findOrDownloadDetect, runDetect} from './detect-manager'
 import {commentOnPR} from './comment'
+import {PullRequest} from './namespaces/Github'
 
 export async function run(): Promise<void> {
   const githubToken = getInput('github-token')
@@ -61,7 +62,7 @@ export async function run(): Promise<void> {
 
   let sha = context.sha
   if (prEvents.includes(context.eventName)) {
-    const pull = context.payload.pull_request
+    const pull = context.payload.pull_request as PullRequest
     if (pull?.head.sha) {
       sha = pull?.head.sha
     }
