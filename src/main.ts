@@ -57,12 +57,22 @@ export async function run(): Promise<void> {
     })
   }
 
+  const prEvents = ['pull_request', 'pull_request_review', 'pull_request_review_comment']
+
+  let sha = context.sha
+  if (prEvents.includes(context.eventName)) {
+    const pull = context.payload.pull_request
+    if (pull?.head.sha) {
+      sha = pull?.head.sha
+    }
+  }
+
   const octokit = getOctokit(githubToken)
   const something = await octokit.rest.checks.create({
     owner: context.repo.owner,
     repo: context.repo.repo,
     name: 'Black Duck Policy Check',
-    head_sha: context.sha,
+    head_sha: sha,
     status: 'completed',
     conclusion: 'failure',
     output: {

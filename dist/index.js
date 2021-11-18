@@ -191,12 +191,24 @@ function run() {
                 (0, comment_1.commentOnPR)(githubToken, scanJson);
             });
         }
+        const prEvents = [
+            'pull_request',
+            'pull_request_review',
+            'pull_request_review_comment',
+        ];
+        let sha = github_1.context.sha;
+        if (prEvents.includes(github_1.context.eventName)) {
+            const pull = github_1.context.payload.pull_request;
+            if (pull === null || pull === void 0 ? void 0 : pull.head.sha) {
+                sha = pull === null || pull === void 0 ? void 0 : pull.head.sha;
+            }
+        }
         const octokit = (0, github_1.getOctokit)(githubToken);
         const something = yield octokit.rest.checks.create({
             owner: github_1.context.repo.owner,
             repo: github_1.context.repo.repo,
             name: 'Black Duck Policy Check',
-            head_sha: github_1.context.sha,
+            head_sha: sha,
             status: 'completed',
             conclusion: 'failure',
             output: {
