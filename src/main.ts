@@ -1,10 +1,11 @@
-import {getInput, info, setFailed} from '@actions/core'
-import {create} from '@actions/glob'
+import { getInput, info, setFailed, warning } from '@actions/core'
+import { create } from '@actions/glob'
 import path from 'path'
 import fs from 'fs'
-import {uploadRapidScanJson, uploadDiagnosticZip} from './upload-artifacts'
-import {TOOL_NAME, findOrDownloadDetect, runDetect} from './detect-manager'
-import {commentOnPR} from './comment'
+import { uploadRapidScanJson, uploadDiagnosticZip } from './upload-artifacts'
+import { TOOL_NAME, findOrDownloadDetect, runDetect } from './detect-manager'
+import { commentOnPR } from './comment'
+import { BlackduckPolicyChecker } from './policy-checker'
 
 export async function run(): Promise<void> {
   const githubToken = getInput('github-token')
@@ -23,6 +24,13 @@ export async function run(): Promise<void> {
     return
   } else {
     outputPath = path.resolve(runnerTemp, 'blackduck')
+  }
+
+  const blackduckPolicyChecker = new BlackduckPolicyChecker(blackduckUrl, blackduckApiToken)
+  const policiesExist: boolean = await blackduckPolicyChecker.checkIfEnabledBlackduckPoliciesExist()
+  if (!policiesExist && scanMode === 'RAPID') {
+    setFailed(`Could not run ${TOOL_NAME} using ${scanMode} scan mode. No enabled policies found on the specified Black Duck server.`)
+    return
   }
 
   const detectArgs = ['--blackduck.trust.cert=TRUE', `--blackduck.url=${blackduckUrl}`, `--blackduck.api.token=${blackduckApiToken}`, `--detect.blackduck.scan.mode=${scanMode}`, `--detect.output.path=${outputPath}`, `--detect.scan.output.path=${outputPath}`]
