@@ -1,12 +1,13 @@
 import {getInput, info, setFailed} from '@actions/core'
-import {getOctokit, context} from '@actions/github'
 import {create} from '@actions/glob'
 import path from 'path'
 import fs from 'fs'
 import {uploadRapidScanJson, uploadDiagnosticZip} from './upload-artifacts'
 import {TOOL_NAME, findOrDownloadDetect, runDetect} from './detect-manager'
 import {commentOnPR} from './comment'
-import {PullRequest} from './namespaces/Github'
+import {createReport, PolicyViolation} from './rapid-scan'
+import {isPullRequest} from './github-context'
+import {createBlackDuckPolicyCheck} from './check'
 
 export async function run(): Promise<void> {
   const githubToken = getInput('github-token')
@@ -50,38 +51,17 @@ export async function run(): Promise<void> {
     const scanJsonPaths = await jsonGlobber.glob()
     uploadRapidScanJson(outputPath, scanJsonPaths)
 
-    scanJsonPaths.forEach(jsonPath => {
-      const rawdata = fs.readFileSync(jsonPath)
-      const scanJson = JSON.parse(rawdata.toString())
+    const scanJsonPath = scanJsonPaths[0]
+    const rawdata = fs.readFileSync(scanJsonPath)
+    const scanJson = JSON.parse(rawdata.toString()) as PolicyViolation[]
+    const rapidScanReport = await createReport(scanJson)
 
-      commentOnPR(githubToken, scanJson)
-    })
-  }
-
-  const prEvents = ['pull_request', 'pull_request_review', 'pull_request_review_comment']
-
-  let sha = context.sha
-  if (prEvents.includes(context.eventName)) {
-    const pull = context.payload.pull_request as PullRequest
-    if (pull?.head.sha) {
-      sha = pull?.head.sha
+    if (isPullRequest()) {
+      commentOnPR(githubToken, rapidScanReport)
     }
-  }
 
-  const octokit = getOctokit(githubToken)
-  const something = await octokit.rest.checks.create({
-    owner: context.repo.owner,
-    repo: context.repo.repo,
-    name: 'Black Duck Policy Check',
-    head_sha: sha,
-    status: 'completed',
-    conclusion: 'failure',
-    output: {
-      title: 'Black Duck Policy Check',
-      summary: 'Found dependencies violating policy!'
-    }
-  })
-  info(JSON.stringify(something))
+    createBlackDuckPolicyCheck(githubToken, scanJson.length > 0, rapidScanReport)
+  }
 
   const diagnosticMode = process.env.DETECT_DIAGNOSTIC?.toLowerCase() === 'true'
   const extendedDiagnosticMode = process.env.DETECT_DIAGNOSTIC_EXTENDED?.toLowerCase() === 'true'
