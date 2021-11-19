@@ -1,4 +1,4 @@
-import { getInput, info, setFailed, warning } from '@actions/core'
+import { getInput, info, setFailed } from '@actions/core'
 import { create } from '@actions/glob'
 import path from 'path'
 import fs from 'fs'

@@ -287,7 +287,7 @@ class BlackduckPolicyChecker {
                 .then(blackduckPolicyPage => {
                 var _a;
                 const policyCount = (_a = blackduckPolicyPage === null || blackduckPolicyPage === void 0 ? void 0 : blackduckPolicyPage.result) === null || _a === void 0 ? void 0 : _a.totalCount;
-                if (!policyCount) {
+                if (policyCount === undefined || policyCount === null) {
                     core.warning('Failed to check Black Duck for policies');
                     return false;
                 }

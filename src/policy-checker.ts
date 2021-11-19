@@ -25,7 +25,7 @@ export class BlackduckPolicyChecker {
             .then(bearerToken => this.retrieveBlackduckPolicies(bearerToken, 1, true))
             .then(blackduckPolicyPage => {
                 const policyCount = blackduckPolicyPage?.result?.totalCount
-                if (!policyCount) {
+                if (policyCount === undefined || policyCount === null) {
                     core.warning('Failed to check Black Duck for policies')
                     return false
                 } else if (policyCount > 0) {
