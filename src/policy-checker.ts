@@ -22,7 +22,7 @@ export class BlackduckPolicyChecker {
 
     async checkIfEnabledBlackduckPoliciesExist(): Promise<boolean> {
         return this.retrieveBearerTokenFromBlackduck()
-            .then(bearerToken => this.retrieveBlackduckPolicies(bearerToken, 1))
+            .then(bearerToken => this.retrieveBlackduckPolicies(bearerToken, 1, true))
             .then(blackduckPolicyPage => {
                 const policyCount = blackduckPolicyPage?.result?.totalCount
                 if (!policyCount) {
@@ -44,7 +44,7 @@ export class BlackduckPolicyChecker {
 
         const enabledFilter = (enabled === undefined || enabled === null) ? '' : `&filter=policyRuleEnabled%3A${enabled}`
         const requestUrl = `${this.blackduckUrl}/api/policy-rules?offset=0&limit=${limit}${enabledFilter}`
-        
+
         return blackduckRestClient.get(requestUrl) as Promise<IRestResponse<IBlackduckPage>>
     }
 
@@ -52,7 +52,7 @@ export class BlackduckPolicyChecker {
         core.info('Initiating authentication request to Black Duck...')
         const authenticationClient = new HttpClient(APPLICATION_NAME)
         const authorizationHeader: IHeaders = { "Authorization": `token ${this.blackduckApiToken}` }
-    
+
         return authenticationClient.post(`${this.blackduckUrl}/api/tokens/authenticate`, '', authorizationHeader)
             .then(authenticationResponse => authenticationResponse.readBody())
             .then(responseBody => JSON.parse(responseBody))
@@ -62,4 +62,4 @@ export class BlackduckPolicyChecker {
             })
     }
 
-} 
+}
