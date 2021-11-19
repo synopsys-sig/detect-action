@@ -60,7 +60,7 @@ export async function run(): Promise<void> {
       commentOnPR(githubToken, rapidScanReport)
     }
 
-    createBlackDuckPolicyCheck(githubToken, scanJson.length > 0, rapidScanReport)
+    createBlackDuckPolicyCheck(githubToken, scanJson.length === 0, rapidScanReport)
   }
 
   const diagnosticMode = process.env.DETECT_DIAGNOSTIC?.toLowerCase() === 'true'

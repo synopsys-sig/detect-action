@@ -262,7 +262,7 @@ function run() {
             if ((0, github_context_1.isPullRequest)()) {
                 (0, comment_1.commentOnPR)(githubToken, rapidScanReport);
             }
-            (0, check_1.createBlackDuckPolicyCheck)(githubToken, scanJson.length > 0, rapidScanReport);
+            (0, check_1.createBlackDuckPolicyCheck)(githubToken, scanJson.length === 0, rapidScanReport);
         }
         const diagnosticMode = ((_a = process.env.DETECT_DIAGNOSTIC) === null || _a === void 0 ? void 0 : _a.toLowerCase()) === 'true';
         const extendedDiagnosticMode = ((_b = process.env.DETECT_DIAGNOSTIC_EXTENDED) === null || _b === void 0 ? void 0 : _b.toLowerCase()) === 'true';
@@ -314,9 +314,7 @@ function createReport(scanJson) {
         }
         else {
             message = message.concat('# :warning: Found dependencies violating policy!\r\n');
-            const policyViolations = scanJson
-                .map(violation => `- [ ] **${violation.componentName} ${violation.versionName}** violates ${violation.violatingPolicyNames.map(policyName => `**${policyName}**`).join(', ')}\r\n_${violation.componentIdentifier}_\r\n`)
-                .join('');
+            const policyViolations = scanJson.map(violation => `- [ ] **${violation.componentName} ${violation.versionName}** violates ${violation.violatingPolicyNames.map(policyName => `**${policyName}**`).join(', ')}\r\n_${violation.componentIdentifier}_\r\n`).join('');
             message = message.concat(policyViolations);
         }
         message = message.concat();
