@@ -27,7 +27,15 @@ export async function run(): Promise<void> {
   }
 
   const blackduckPolicyChecker = new BlackduckPolicyChecker(BLACKDUCK_URL, BLACKDUCK_API_TOKEN)
-  const policiesExist: boolean = await blackduckPolicyChecker.checkIfEnabledBlackduckPoliciesExist()
+  let policiesExist: boolean | void = await blackduckPolicyChecker.checkIfEnabledBlackduckPoliciesExist().catch(reason => {
+    setFailed(`Could not verify if policies existed: ${reason}`)
+  })
+
+  if (policiesExist === undefined) {
+    skipBlackDuckPolicyCheck(policyCheckId)
+    return
+  }
+
   if (!policiesExist && SCAN_MODE === 'RAPID') {
     setFailed(`Could not run ${TOOL_NAME} using ${SCAN_MODE} scan mode. No enabled policies found on the specified Black Duck server.`)
     return

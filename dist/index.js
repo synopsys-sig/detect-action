@@ -305,7 +305,13 @@ function run() {
             outputPath = path_1.default.resolve(runnerTemp, 'blackduck');
         }
         const blackduckPolicyChecker = new policy_checker_1.BlackduckPolicyChecker(inputs_1.BLACKDUCK_URL, inputs_1.BLACKDUCK_API_TOKEN);
-        const policiesExist = yield blackduckPolicyChecker.checkIfEnabledBlackduckPoliciesExist();
+        let policiesExist = yield blackduckPolicyChecker.checkIfEnabledBlackduckPoliciesExist().catch(reason => {
+            (0, core_1.setFailed)(`Could not verify if policies existed: ${reason}`);
+        });
+        if (policiesExist === undefined) {
+            (0, check_1.skipBlackDuckPolicyCheck)(policyCheckId);
+            return;
+        }
         if (!policiesExist && inputs_1.SCAN_MODE === 'RAPID') {
             (0, core_1.setFailed)(`Could not run ${detect_manager_1.TOOL_NAME} using ${inputs_1.SCAN_MODE} scan mode. No enabled policies found on the specified Black Duck server.`);
             return;
@@ -444,7 +450,7 @@ class BlackduckPolicyChecker {
         return __awaiter(this, void 0, void 0, function* () {
             const bearerTokenHandler = new handlers_1.BearerCredentialHandler(bearerToken, true);
             const blackduckRestClient = new RestClient_1.RestClient(application_constants_1.APPLICATION_NAME, this.blackduckUrl, [bearerTokenHandler]);
-            const enabledFilter = (enabled === undefined || enabled === null) ? '' : `&filter=policyRuleEnabled%3A${enabled}`;
+            const enabledFilter = enabled === undefined || enabled === null ? '' : `&filter=policyRuleEnabled%3A${enabled}`;
             const requestUrl = `${this.blackduckUrl}/api/policy-rules?offset=0&limit=${limit}${enabledFilter}`;
             return blackduckRestClient.get(requestUrl);
         });
@@ -453,8 +459,9 @@ class BlackduckPolicyChecker {
         return __awaiter(this, void 0, void 0, function* () {
             core.info('Initiating authentication request to Black Duck...');
             const authenticationClient = new HttpClient_1.HttpClient(application_constants_1.APPLICATION_NAME);
-            const authorizationHeader = { "Authorization": `token ${this.blackduckApiToken}` };
-            return authenticationClient.post(`${this.blackduckUrl}/api/tokens/authenticate`, '', authorizationHeader)
+            const authorizationHeader = { Authorization: `token ${this.blackduckApiToken}` };
+            return authenticationClient
+                .post(`${this.blackduckUrl}/api/tokens/authenticate`, '', authorizationHeader)
                 .then(authenticationResponse => authenticationResponse.readBody())
                 .then(responseBody => JSON.parse(responseBody))
                 .then(responseBodyJson => {
