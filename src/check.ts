@@ -1,11 +1,12 @@
 import {debug, info, warning} from '@actions/core'
 import {context, getOctokit} from '@actions/github'
 import {getSha} from './github-context'
+import {GITHUB_TOKEN} from './inputs'
 
 export const CHECK_NAME = 'Black Duck Policy Check'
 
-export async function createBlackDuckPolicyCheck(githubToken: string): Promise<number> {
-  const octokit = getOctokit(githubToken)
+export async function createBlackDuckPolicyCheck(): Promise<number> {
+  const octokit = getOctokit(GITHUB_TOKEN)
 
   const head_sha = getSha()
 
@@ -26,20 +27,20 @@ export async function createBlackDuckPolicyCheck(githubToken: string): Promise<n
   return response.data.id
 }
 
-export async function passBlackDuckPolicyCheck(githubToken: string, checkRunId: number, text: string) {
-  return finishBlackDuckPolicyCheck(githubToken, checkRunId, 'success', 'No components found that violate your Black Duck policies!', text)
+export async function passBlackDuckPolicyCheck(checkRunId: number, text: string) {
+  return finishBlackDuckPolicyCheck(checkRunId, 'success', 'No components found that violate your Black Duck policies!', text)
 }
 
-export async function failBlackDuckPolicyCheck(githubToken: string, checkRunId: number, text: string) {
-  return finishBlackDuckPolicyCheck(githubToken, checkRunId, 'failure', 'Components found that violate your Black Duck Policies!', text)
+export async function failBlackDuckPolicyCheck(checkRunId: number, text: string) {
+  return finishBlackDuckPolicyCheck(checkRunId, 'failure', 'Components found that violate your Black Duck Policies!', text)
 }
 
-export async function skipBlackDuckPolicyCheck(githubToken: string, checkRunId: number) {
-  return finishBlackDuckPolicyCheck(githubToken, checkRunId, 'skipped', 'Policy check was skipped', '')
+export async function skipBlackDuckPolicyCheck(checkRunId: number) {
+  return finishBlackDuckPolicyCheck(checkRunId, 'skipped', 'Policy check was skipped', '')
 }
 
-export async function finishBlackDuckPolicyCheck(githubToken: string, checkRunId: number, conclusion: string, summary: string, text: string) {
-  const octokit = getOctokit(githubToken)
+export async function finishBlackDuckPolicyCheck(checkRunId: number, conclusion: string, summary: string, text: string) {
+  const octokit = getOctokit(GITHUB_TOKEN)
 
   const response = await octokit.rest.checks.update({
     owner: context.repo.owner,

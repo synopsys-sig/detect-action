@@ -1,9 +1,10 @@
 import {context, getOctokit} from '@actions/github'
+import {GITHUB_TOKEN} from './inputs'
 
 const COMMENT_PREFACE = '<!-- Comment automatically managed by Detect Action, do not remove this line -->'
 
-export async function commentOnPR(githubToken: string, report: string): Promise<void> {
-  const octokit = getOctokit(githubToken)
+export async function commentOnPR(report: string): Promise<void> {
+  const octokit = getOctokit(GITHUB_TOKEN)
 
   const message = COMMENT_PREFACE.concat('\r\n', report)
 
