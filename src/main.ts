@@ -9,6 +9,7 @@ import {createReport, PolicyViolation} from './rapid-scan'
 import {isPullRequest} from './github-context'
 import {createBlackDuckPolicyCheck, failBlackDuckPolicyCheck, passBlackDuckPolicyCheck, skipBlackDuckPolicyCheck} from './check'
 import {BLACKDUCK_API_TOKEN, BLACKDUCK_URL, DETECT_VERSION, OUTPUT_PATH_OVERRIDE, SCAN_MODE} from './inputs'
+import { BlackduckPolicyChecker } from './policy-checker'
 
 export async function run(): Promise<void> {
   const policyCheckId = await createBlackDuckPolicyCheck()
@@ -23,6 +24,13 @@ export async function run(): Promise<void> {
     return
   } else {
     outputPath = path.resolve(runnerTemp, 'blackduck')
+  }
+
+  const blackduckPolicyChecker = new BlackduckPolicyChecker(BLACKDUCK_URL, BLACKDUCK_API_TOKEN)
+  const policiesExist: boolean = await blackduckPolicyChecker.checkIfEnabledBlackduckPoliciesExist()
+  if (!policiesExist && SCAN_MODE === 'RAPID') {
+    setFailed(`Could not run ${TOOL_NAME} using ${SCAN_MODE} scan mode. No enabled policies found on the specified Black Duck server.`)
+    return
   }
 
   const detectArgs = ['--blackduck.trust.cert=TRUE', `--blackduck.url=${BLACKDUCK_URL}`, `--blackduck.api.token=${BLACKDUCK_API_TOKEN}`, `--detect.blackduck.scan.mode=${SCAN_MODE}`, `--detect.output.path=${outputPath}`, `--detect.scan.output.path=${outputPath}`]
