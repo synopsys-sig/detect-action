@@ -27,3 +27,15 @@ jobs:
             blackduck-url: ${{ secrets.BLACKDUCK_URL }}
             blackduck-api-token: ${{ secrets.BLACKDUCK_API_TOKEN }}
 ```
+
+### Troubleshooting
+To include one or more certificates, set `NODE_EXTRA_CA_CERTS` to the certificate file-path(s) in the environment. The certificate(s) must be in _pem_ format. Be sure to escape whitespace properly based on your runner's OS.  
+**Example**:   
+```yaml
+- name: Synopsys Detect
+        uses: synopsys-sig/detect-action@main
+        env:
+            NODE_EXTRA_CA_CERTS: ${{ secrets.LOCAL_CA_CERT_PATH }}
+        with:
+            . . .
+```
