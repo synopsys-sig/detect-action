@@ -16,29 +16,20 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.createBlackDuckPolicyCheck = void 0;
+exports.finishBlackDuckPolicyCheck = exports.skipBlackDuckPolicyCheck = exports.failBlackDuckPolicyCheck = exports.passBlackDuckPolicyCheck = exports.createBlackDuckPolicyCheck = exports.CHECK_NAME = void 0;
 const core_1 = __nccwpck_require__(2186);
 const github_1 = __nccwpck_require__(5438);
 const github_context_1 = __nccwpck_require__(4251);
-function createBlackDuckPolicyCheck(githubToken, checkPassed, text) {
+exports.CHECK_NAME = 'Black Duck Policy Check';
+function createBlackDuckPolicyCheck(githubToken) {
     return __awaiter(this, void 0, void 0, function* () {
         const octokit = (0, github_1.getOctokit)(githubToken);
-        const name = 'Black Duck Policy Check';
-        const summary = checkPassed ? 'No components found that violate your Black Duck policies!' : 'Components found that violate your Black Duck Policies!';
-        const conclusion = checkPassed ? 'success' : 'failure';
         const head_sha = (0, github_context_1.getSha)();
         const response = yield octokit.rest.checks.create({
             owner: github_1.context.repo.owner,
             repo: github_1.context.repo.repo,
-            name,
-            head_sha,
-            status: 'completed',
-            conclusion,
-            output: {
-                title: name,
-                summary,
-                text
-            }
+            name: exports.CHECK_NAME,
+            head_sha
         });
         if (response.status !== 201) {
             (0, core_1.warning)(`Unexpected status code recieved when creating check: ${response.status}`);
@@ -47,9 +38,53 @@ function createBlackDuckPolicyCheck(githubToken, checkPassed, text) {
         else {
             (0, core_1.info)(`Black Duck Policy Check created`);
         }
+        return response.data.id;
     });
 }
 exports.createBlackDuckPolicyCheck = createBlackDuckPolicyCheck;
+function passBlackDuckPolicyCheck(githubToken, checkRunId, text) {
+    return __awaiter(this, void 0, void 0, function* () {
+        return finishBlackDuckPolicyCheck(githubToken, checkRunId, 'success', 'No components found that violate your Black Duck policies!', text);
+    });
+}
+exports.passBlackDuckPolicyCheck = passBlackDuckPolicyCheck;
+function failBlackDuckPolicyCheck(githubToken, checkRunId, text) {
+    return __awaiter(this, void 0, void 0, function* () {
+        return finishBlackDuckPolicyCheck(githubToken, checkRunId, 'failure', 'Components found that violate your Black Duck Policies!', text);
+    });
+}
+exports.failBlackDuckPolicyCheck = failBlackDuckPolicyCheck;
+function skipBlackDuckPolicyCheck(githubToken, checkRunId) {
+    return __awaiter(this, void 0, void 0, function* () {
+        return finishBlackDuckPolicyCheck(githubToken, checkRunId, 'skipped', 'Policy check was skipped', '');
+    });
+}
+exports.skipBlackDuckPolicyCheck = skipBlackDuckPolicyCheck;
+function finishBlackDuckPolicyCheck(githubToken, checkRunId, conclusion, summary, text) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const octokit = (0, github_1.getOctokit)(githubToken);
+        const response = yield octokit.rest.checks.update({
+            owner: github_1.context.repo.owner,
+            repo: github_1.context.repo.repo,
+            check_run_id: checkRunId,
+            status: 'completed',
+            conclusion,
+            output: {
+                title: exports.CHECK_NAME,
+                summary,
+                text
+            }
+        });
+        if (response.status !== 200) {
+            (0, core_1.warning)(`Unexpected status code recieved when creating check: ${response.status}`);
+            (0, core_1.debug)(JSON.stringify(response, null, 2));
+        }
+        else {
+            (0, core_1.info)(`Black Duck Policy Check created`);
+        }
+    });
+}
+exports.finishBlackDuckPolicyCheck = finishBlackDuckPolicyCheck;
 
 
 /***/ }),
@@ -226,6 +261,7 @@ function run() {
         const detectVersion = (0, core_1.getInput)('detect-version');
         const scanMode = (0, core_1.getInput)('scan-mode').toUpperCase();
         const outputPathOverride = (0, core_1.getInput)('output-path-override');
+        const policyCheckId = yield (0, check_1.createBlackDuckPolicyCheck)(githubToken);
         const runnerTemp = process.env.RUNNER_TEMP;
         let outputPath = '';
         if (outputPathOverride !== '') {
@@ -233,6 +269,7 @@ function run() {
         }
         else if (runnerTemp === undefined) {
             (0, core_1.setFailed)('$RUNNER_TEMP is not defined and output-path-override was not set. Cannot determine where to store output files.');
+            (0, check_1.skipBlackDuckPolicyCheck)(githubToken, policyCheckId);
             return;
         }
         else {
@@ -243,12 +280,14 @@ function run() {
             (0, core_1.setFailed)(`Could not download ${detect_manager_1.TOOL_NAME} ${detectVersion}: ${reason}`);
         });
         if (!detectPath) {
+            (0, check_1.skipBlackDuckPolicyCheck)(githubToken, policyCheckId);
             return;
         }
         const detectExitCode = yield (0, detect_manager_1.runDetect)(detectPath, detectArgs).catch(reason => {
             (0, core_1.setFailed)(`Could not execute ${detect_manager_1.TOOL_NAME} ${detectVersion}: ${reason}`);
         });
         if (!detectExitCode) {
+            (0, check_1.skipBlackDuckPolicyCheck)(githubToken, policyCheckId);
             return;
         }
         if (scanMode === 'RAPID') {
@@ -262,7 +301,16 @@ function run() {
             if ((0, github_context_1.isPullRequest)()) {
                 (0, comment_1.commentOnPR)(githubToken, rapidScanReport);
             }
-            (0, check_1.createBlackDuckPolicyCheck)(githubToken, scanJson.length === 0, rapidScanReport);
+            if (scanJson.length === 0) {
+                (0, check_1.passBlackDuckPolicyCheck)(githubToken, policyCheckId, rapidScanReport);
+            }
+            else {
+                (0, check_1.failBlackDuckPolicyCheck)(githubToken, policyCheckId, rapidScanReport);
+            }
+        }
+        else {
+            // TODO: Implement policy check for non-rapid scan
+            (0, check_1.skipBlackDuckPolicyCheck)(githubToken, policyCheckId);
         }
         const diagnosticMode = ((_a = process.env.DETECT_DIAGNOSTIC) === null || _a === void 0 ? void 0 : _a.toLowerCase()) === 'true';
         const extendedDiagnosticMode = ((_b = process.env.DETECT_DIAGNOSTIC_EXTENDED) === null || _b === void 0 ? void 0 : _b.toLowerCase()) === 'true';

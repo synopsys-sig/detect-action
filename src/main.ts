@@ -7,7 +7,7 @@ import {TOOL_NAME, findOrDownloadDetect, runDetect} from './detect-manager'
 import {commentOnPR} from './comment'
 import {createReport, PolicyViolation} from './rapid-scan'
 import {isPullRequest} from './github-context'
-import {createBlackDuckPolicyCheck} from './check'
+import {createBlackDuckPolicyCheck, failBlackDuckPolicyCheck, passBlackDuckPolicyCheck, skipBlackDuckPolicyCheck} from './check'
 
 export async function run(): Promise<void> {
   const githubToken = getInput('github-token')
@@ -17,12 +17,15 @@ export async function run(): Promise<void> {
   const scanMode = getInput('scan-mode').toUpperCase()
   const outputPathOverride = getInput('output-path-override')
 
+  const policyCheckId = await createBlackDuckPolicyCheck(githubToken)
+
   const runnerTemp = process.env.RUNNER_TEMP
   let outputPath = ''
   if (outputPathOverride !== '') {
     outputPath = outputPathOverride
   } else if (runnerTemp === undefined) {
     setFailed('$RUNNER_TEMP is not defined and output-path-override was not set. Cannot determine where to store output files.')
+    skipBlackDuckPolicyCheck(githubToken, policyCheckId)
     return
   } else {
     outputPath = path.resolve(runnerTemp, 'blackduck')
@@ -35,6 +38,7 @@ export async function run(): Promise<void> {
   })
 
   if (!detectPath) {
+    skipBlackDuckPolicyCheck(githubToken, policyCheckId)
     return
   }
 
@@ -43,6 +47,7 @@ export async function run(): Promise<void> {
   })
 
   if (!detectExitCode) {
+    skipBlackDuckPolicyCheck(githubToken, policyCheckId)
     return
   }
 
@@ -60,7 +65,14 @@ export async function run(): Promise<void> {
       commentOnPR(githubToken, rapidScanReport)
     }
 
-    createBlackDuckPolicyCheck(githubToken, scanJson.length === 0, rapidScanReport)
+    if (scanJson.length === 0) {
+      passBlackDuckPolicyCheck(githubToken, policyCheckId, rapidScanReport)
+    } else {
+      failBlackDuckPolicyCheck(githubToken, policyCheckId, rapidScanReport)
+    }
+  } else {
+    // TODO: Implement policy check for non-rapid scan
+    skipBlackDuckPolicyCheck(githubToken, policyCheckId)
   }
 
   const diagnosticMode = process.env.DETECT_DIAGNOSTIC?.toLowerCase() === 'true'
