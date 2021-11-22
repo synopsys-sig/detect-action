@@ -1,9 +1,6 @@
 require('./sourcemap-register.js');/******/ (() => { // webpackBootstrap
 /******/ 	var __webpack_modules__ = ({
 
-<<<<<<< HEAD
-/***/ 7657:
-=======
 /***/ 9717:
 /***/ ((__unused_webpack_module, exports) => {
 
@@ -16,8 +13,7 @@ exports.APPLICATION_NAME = 'synopsys-sig/detect-action';
 
 /***/ }),
 
-/***/ 1667:
->>>>>>> origin/main
+/***/ 7657:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
 "use strict";
@@ -286,14 +282,11 @@ const fs_1 = __importDefault(__nccwpck_require__(5747));
 const upload_artifacts_1 = __nccwpck_require__(2854);
 const detect_manager_1 = __nccwpck_require__(3762);
 const comment_1 = __nccwpck_require__(1667);
-<<<<<<< HEAD
 const rapid_scan_1 = __nccwpck_require__(8631);
 const github_context_1 = __nccwpck_require__(4251);
 const check_1 = __nccwpck_require__(7657);
 const inputs_1 = __nccwpck_require__(6180);
-=======
 const policy_checker_1 = __nccwpck_require__(205);
->>>>>>> origin/main
 function run() {
     var _a, _b;
     return __awaiter(this, void 0, void 0, function* () {
@@ -311,21 +304,15 @@ function run() {
         else {
             outputPath = path_1.default.resolve(runnerTemp, 'blackduck');
         }
-<<<<<<< HEAD
+        const blackduckPolicyChecker = new policy_checker_1.BlackduckPolicyChecker(inputs_1.BLACKDUCK_URL, inputs_1.BLACKDUCK_API_TOKEN);
+        const policiesExist = yield blackduckPolicyChecker.checkIfEnabledBlackduckPoliciesExist();
+        if (!policiesExist && inputs_1.SCAN_MODE === 'RAPID') {
+            (0, core_1.setFailed)(`Could not run ${detect_manager_1.TOOL_NAME} using ${inputs_1.SCAN_MODE} scan mode. No enabled policies found on the specified Black Duck server.`);
+            return;
+        }
         const detectArgs = ['--blackduck.trust.cert=TRUE', `--blackduck.url=${inputs_1.BLACKDUCK_URL}`, `--blackduck.api.token=${inputs_1.BLACKDUCK_API_TOKEN}`, `--detect.blackduck.scan.mode=${inputs_1.SCAN_MODE}`, `--detect.output.path=${outputPath}`, `--detect.scan.output.path=${outputPath}`];
         const detectPath = yield (0, detect_manager_1.findOrDownloadDetect)().catch(reason => {
             (0, core_1.setFailed)(`Could not download ${detect_manager_1.TOOL_NAME} ${inputs_1.DETECT_VERSION}: ${reason}`);
-=======
-        const blackduckPolicyChecker = new policy_checker_1.BlackduckPolicyChecker(blackduckUrl, blackduckApiToken);
-        const policiesExist = yield blackduckPolicyChecker.checkIfEnabledBlackduckPoliciesExist();
-        if (!policiesExist && scanMode === 'RAPID') {
-            (0, core_1.setFailed)(`Could not run ${detect_manager_1.TOOL_NAME} using ${scanMode} scan mode. No enabled policies found on the specified Black Duck server.`);
-            return;
-        }
-        const detectArgs = ['--blackduck.trust.cert=TRUE', `--blackduck.url=${blackduckUrl}`, `--blackduck.api.token=${blackduckApiToken}`, `--detect.blackduck.scan.mode=${scanMode}`, `--detect.output.path=${outputPath}`, `--detect.scan.output.path=${outputPath}`];
-        const detectPath = yield (0, detect_manager_1.findOrDownloadDetect)(detectVersion).catch(reason => {
-            (0, core_1.setFailed)(`Could not download ${detect_manager_1.TOOL_NAME} ${detectVersion}: ${reason}`);
->>>>>>> origin/main
         });
         if (!detectPath) {
             (0, check_1.skipBlackDuckPolicyCheck)(policyCheckId);
@@ -386,13 +373,6 @@ run();
 
 /***/ }),
 
-<<<<<<< HEAD
-/***/ 8631:
-/***/ (function(__unused_webpack_module, exports) {
-
-"use strict";
-
-=======
 /***/ 205:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
@@ -417,7 +397,6 @@ var __importStar = (this && this.__importStar) || function (mod) {
     __setModuleDefault(result, mod);
     return result;
 };
->>>>>>> origin/main
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -428,25 +407,6 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-<<<<<<< HEAD
-exports.createReport = void 0;
-function createReport(scanJson) {
-    return __awaiter(this, void 0, void 0, function* () {
-        let message = '';
-        if (scanJson.length == 0) {
-            message = message.concat('# :white_check_mark: None of your dependencies violate policy!');
-        }
-        else {
-            message = message.concat('# :warning: Found dependencies violating policy!\r\n');
-            const policyViolations = scanJson.map(violation => `- [ ] **${violation.componentName} ${violation.versionName}** violates ${violation.violatingPolicyNames.map(policyName => `**${policyName}**`).join(', ')}\r\n_${violation.componentIdentifier}_\r\n`).join('');
-            message = message.concat(policyViolations);
-        }
-        message = message.concat();
-        return message;
-    });
-}
-exports.createReport = createReport;
-=======
 exports.BlackduckPolicyChecker = void 0;
 const core = __importStar(__nccwpck_require__(2186));
 const HttpClient_1 = __nccwpck_require__(5538);
@@ -505,7 +465,42 @@ class BlackduckPolicyChecker {
     }
 }
 exports.BlackduckPolicyChecker = BlackduckPolicyChecker;
->>>>>>> origin/main
+
+
+/***/ }),
+
+/***/ 8631:
+/***/ (function(__unused_webpack_module, exports) {
+
+"use strict";
+
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.createReport = void 0;
+function createReport(scanJson) {
+    return __awaiter(this, void 0, void 0, function* () {
+        let message = '';
+        if (scanJson.length == 0) {
+            message = message.concat('# :white_check_mark: None of your dependencies violate policy!');
+        }
+        else {
+            message = message.concat('# :warning: Found dependencies violating policy!\r\n');
+            const policyViolations = scanJson.map(violation => `- [ ] **${violation.componentName} ${violation.versionName}** violates ${violation.violatingPolicyNames.map(policyName => `**${policyName}**`).join(', ')}\r\n_${violation.componentIdentifier}_\r\n`).join('');
+            message = message.concat(policyViolations);
+        }
+        message = message.concat();
+        return message;
+    });
+}
+exports.createReport = createReport;
 
 
 /***/ }),

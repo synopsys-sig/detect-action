@@ -9,7 +9,7 @@ import {createReport, PolicyViolation} from './rapid-scan'
 import {isPullRequest} from './github-context'
 import {createBlackDuckPolicyCheck, failBlackDuckPolicyCheck, passBlackDuckPolicyCheck, skipBlackDuckPolicyCheck} from './check'
 import {BLACKDUCK_API_TOKEN, BLACKDUCK_URL, DETECT_VERSION, OUTPUT_PATH_OVERRIDE, SCAN_MODE} from './inputs'
-import { BlackduckPolicyChecker } from './policy-checker'
+import {BlackduckPolicyChecker} from './policy-checker'
 
 export async function run(): Promise<void> {
   const policyCheckId = await createBlackDuckPolicyCheck()
