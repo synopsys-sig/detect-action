@@ -7,7 +7,7 @@ import {TOOL_NAME, findOrDownloadDetect, runDetect} from './detect-manager'
 import {commentOnPR} from './comment'
 import {createReport, PolicyViolation} from './rapid-scan'
 import {isPullRequest} from './github-context'
-import {createBlackDuckPolicyCheck, failBlackDuckPolicyCheck, passBlackDuckPolicyCheck, skipBlackDuckPolicyCheck} from './check'
+import {createBlackDuckPolicyCheck, failBlackDuckPolicyCheck, passBlackDuckPolicyCheck, skipBlackDuckPolicyCheck, cancelBlackDuckPolicyCheck} from './check'
 import {BLACKDUCK_API_TOKEN, BLACKDUCK_URL, DETECT_VERSION, OUTPUT_PATH_OVERRIDE, SCAN_MODE} from './inputs'
 import {BlackduckPolicyChecker} from './policy-checker'
 
@@ -20,7 +20,7 @@ export async function run(): Promise<void> {
     outputPath = OUTPUT_PATH_OVERRIDE
   } else if (runnerTemp === undefined) {
     setFailed('$RUNNER_TEMP is not defined and output-path-override was not set. Cannot determine where to store output files.')
-    skipBlackDuckPolicyCheck(policyCheckId)
+    cancelBlackDuckPolicyCheck(policyCheckId)
     return
   } else {
     outputPath = path.resolve(runnerTemp, 'blackduck')
@@ -32,7 +32,7 @@ export async function run(): Promise<void> {
   })
 
   if (policiesExist === undefined) {
-    skipBlackDuckPolicyCheck(policyCheckId)
+    cancelBlackDuckPolicyCheck(policyCheckId)
     return
   }
 
@@ -48,7 +48,7 @@ export async function run(): Promise<void> {
   })
 
   if (!detectPath) {
-    skipBlackDuckPolicyCheck(policyCheckId)
+    cancelBlackDuckPolicyCheck(policyCheckId)
     return
   }
 
@@ -57,7 +57,7 @@ export async function run(): Promise<void> {
   })
 
   if (!detectExitCode) {
-    skipBlackDuckPolicyCheck(policyCheckId)
+    cancelBlackDuckPolicyCheck(policyCheckId)
     return
   }
 

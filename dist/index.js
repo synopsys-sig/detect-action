@@ -28,7 +28,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.finishBlackDuckPolicyCheck = exports.skipBlackDuckPolicyCheck = exports.failBlackDuckPolicyCheck = exports.passBlackDuckPolicyCheck = exports.createBlackDuckPolicyCheck = exports.CHECK_NAME = void 0;
+exports.finishBlackDuckPolicyCheck = exports.cancelBlackDuckPolicyCheck = exports.skipBlackDuckPolicyCheck = exports.failBlackDuckPolicyCheck = exports.passBlackDuckPolicyCheck = exports.createBlackDuckPolicyCheck = exports.CHECK_NAME = void 0;
 const core_1 = __nccwpck_require__(2186);
 const github_1 = __nccwpck_require__(5438);
 const github_context_1 = __nccwpck_require__(4251);
@@ -69,10 +69,16 @@ function failBlackDuckPolicyCheck(checkRunId, text) {
 exports.failBlackDuckPolicyCheck = failBlackDuckPolicyCheck;
 function skipBlackDuckPolicyCheck(checkRunId) {
     return __awaiter(this, void 0, void 0, function* () {
-        return finishBlackDuckPolicyCheck(checkRunId, 'skipped', 'Policy check was skipped', '');
+        return finishBlackDuckPolicyCheck(checkRunId, 'skipped', 'Black Duck Policy Check was skipped', '');
     });
 }
 exports.skipBlackDuckPolicyCheck = skipBlackDuckPolicyCheck;
+function cancelBlackDuckPolicyCheck(checkRunId) {
+    return __awaiter(this, void 0, void 0, function* () {
+        return finishBlackDuckPolicyCheck(checkRunId, 'cancelled', 'Black Duck Policy Check could not be completed', 'Something went wrong and the Black Duck Policy Check could not be completed. Check your action logs for more details.');
+    });
+}
+exports.cancelBlackDuckPolicyCheck = cancelBlackDuckPolicyCheck;
 function finishBlackDuckPolicyCheck(checkRunId, conclusion, summary, text) {
     return __awaiter(this, void 0, void 0, function* () {
         const octokit = (0, github_1.getOctokit)(inputs_1.GITHUB_TOKEN);
@@ -298,7 +304,7 @@ function run() {
         }
         else if (runnerTemp === undefined) {
             (0, core_1.setFailed)('$RUNNER_TEMP is not defined and output-path-override was not set. Cannot determine where to store output files.');
-            (0, check_1.skipBlackDuckPolicyCheck)(policyCheckId);
+            (0, check_1.cancelBlackDuckPolicyCheck)(policyCheckId);
             return;
         }
         else {
@@ -309,7 +315,7 @@ function run() {
             (0, core_1.setFailed)(`Could not verify if policies existed: ${reason}`);
         });
         if (policiesExist === undefined) {
-            (0, check_1.skipBlackDuckPolicyCheck)(policyCheckId);
+            (0, check_1.cancelBlackDuckPolicyCheck)(policyCheckId);
             return;
         }
         if (!policiesExist && inputs_1.SCAN_MODE === 'RAPID') {
@@ -321,14 +327,14 @@ function run() {
             (0, core_1.setFailed)(`Could not download ${detect_manager_1.TOOL_NAME} ${inputs_1.DETECT_VERSION}: ${reason}`);
         });
         if (!detectPath) {
-            (0, check_1.skipBlackDuckPolicyCheck)(policyCheckId);
+            (0, check_1.cancelBlackDuckPolicyCheck)(policyCheckId);
             return;
         }
         const detectExitCode = yield (0, detect_manager_1.runDetect)(detectPath, detectArgs).catch(reason => {
             (0, core_1.setFailed)(`Could not execute ${detect_manager_1.TOOL_NAME} ${inputs_1.DETECT_VERSION}: ${reason}`);
         });
         if (!detectExitCode) {
-            (0, check_1.skipBlackDuckPolicyCheck)(policyCheckId);
+            (0, check_1.cancelBlackDuckPolicyCheck)(policyCheckId);
             return;
         }
         if (inputs_1.SCAN_MODE === 'RAPID') {

@@ -36,7 +36,11 @@ export async function failBlackDuckPolicyCheck(checkRunId: number, text: string)
 }
 
 export async function skipBlackDuckPolicyCheck(checkRunId: number) {
-  return finishBlackDuckPolicyCheck(checkRunId, 'skipped', 'Policy check was skipped', '')
+  return finishBlackDuckPolicyCheck(checkRunId, 'skipped', 'Black Duck Policy Check was skipped', '')
+}
+
+export async function cancelBlackDuckPolicyCheck(checkRunId: number) {
+  return finishBlackDuckPolicyCheck(checkRunId, 'cancelled', 'Black Duck Policy Check could not be completed', 'Something went wrong and the Black Duck Policy Check could not be completed. Check your action logs for more details.')
 }
 
 export async function finishBlackDuckPolicyCheck(checkRunId: number, conclusion: string, summary: string, text: string) {
