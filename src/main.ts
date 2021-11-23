@@ -1,67 +1,88 @@
-import { getInput, info, setFailed } from '@actions/core'
-import { create } from '@actions/glob'
+import {info, setFailed} from '@actions/core'
+import {create} from '@actions/glob'
 import path from 'path'
 import fs from 'fs'
-import { uploadRapidScanJson, uploadDiagnosticZip } from './upload-artifacts'
-import { TOOL_NAME, findOrDownloadDetect, runDetect } from './detect-manager'
-import { commentOnPR } from './comment'
-import { BlackduckPolicyChecker } from './policy-checker'
+import {uploadRapidScanJson, uploadDiagnosticZip} from './upload-artifacts'
+import {TOOL_NAME, findOrDownloadDetect, runDetect} from './detect-manager'
+import {commentOnPR} from './comment'
+import {createReport, PolicyViolation} from './rapid-scan'
+import {isPullRequest} from './github-context'
+import {createBlackDuckPolicyCheck, failBlackDuckPolicyCheck, passBlackDuckPolicyCheck, skipBlackDuckPolicyCheck, cancelBlackDuckPolicyCheck} from './check'
+import {BLACKDUCK_API_TOKEN, BLACKDUCK_URL, DETECT_VERSION, OUTPUT_PATH_OVERRIDE, SCAN_MODE} from './inputs'
+import {BlackduckPolicyChecker} from './policy-checker'
 
 export async function run(): Promise<void> {
-  const githubToken = getInput('github-token')
-  const blackduckUrl = getInput('blackduck-url')
-  const blackduckApiToken = getInput('blackduck-api-token')
-  const detectVersion = getInput('detect-version')
-  const scanMode = getInput('scan-mode').toUpperCase()
-  const outputPathOverride = getInput('output-path-override')
+  const policyCheckId = await createBlackDuckPolicyCheck()
 
   const runnerTemp = process.env.RUNNER_TEMP
   let outputPath = ''
-  if (outputPathOverride !== '') {
-    outputPath = outputPathOverride
+  if (OUTPUT_PATH_OVERRIDE !== '') {
+    outputPath = OUTPUT_PATH_OVERRIDE
   } else if (runnerTemp === undefined) {
     setFailed('$RUNNER_TEMP is not defined and output-path-override was not set. Cannot determine where to store output files.')
+    cancelBlackDuckPolicyCheck(policyCheckId)
     return
   } else {
     outputPath = path.resolve(runnerTemp, 'blackduck')
   }
 
-  const blackduckPolicyChecker = new BlackduckPolicyChecker(blackduckUrl, blackduckApiToken)
-  const policiesExist: boolean = await blackduckPolicyChecker.checkIfEnabledBlackduckPoliciesExist()
-  if (!policiesExist && scanMode === 'RAPID') {
-    setFailed(`Could not run ${TOOL_NAME} using ${scanMode} scan mode. No enabled policies found on the specified Black Duck server.`)
+  const blackduckPolicyChecker = new BlackduckPolicyChecker(BLACKDUCK_URL, BLACKDUCK_API_TOKEN)
+  let policiesExist: boolean | void = await blackduckPolicyChecker.checkIfEnabledBlackduckPoliciesExist().catch(reason => {
+    setFailed(`Could not verify if policies existed: ${reason}`)
+  })
+
+  if (policiesExist === undefined) {
+    cancelBlackDuckPolicyCheck(policyCheckId)
     return
   }
 
-  const detectArgs = ['--blackduck.trust.cert=TRUE', `--blackduck.url=${blackduckUrl}`, `--blackduck.api.token=${blackduckApiToken}`, `--detect.blackduck.scan.mode=${scanMode}`, `--detect.output.path=${outputPath}`, `--detect.scan.output.path=${outputPath}`]
+  if (!policiesExist && SCAN_MODE === 'RAPID') {
+    setFailed(`Could not run ${TOOL_NAME} using ${SCAN_MODE} scan mode. No enabled policies found on the specified Black Duck server.`)
+    return
+  }
 
-  const detectPath = await findOrDownloadDetect(detectVersion).catch(reason => {
-    setFailed(`Could not download ${TOOL_NAME} ${detectVersion}: ${reason}`)
+  const detectArgs = ['--blackduck.trust.cert=TRUE', `--blackduck.url=${BLACKDUCK_URL}`, `--blackduck.api.token=${BLACKDUCK_API_TOKEN}`, `--detect.blackduck.scan.mode=${SCAN_MODE}`, `--detect.output.path=${outputPath}`, `--detect.scan.output.path=${outputPath}`]
+
+  const detectPath = await findOrDownloadDetect().catch(reason => {
+    setFailed(`Could not download ${TOOL_NAME} ${DETECT_VERSION}: ${reason}`)
   })
 
   if (!detectPath) {
+    cancelBlackDuckPolicyCheck(policyCheckId)
     return
   }
 
   const detectExitCode = await runDetect(detectPath, detectArgs).catch(reason => {
-    setFailed(`Could not execute ${TOOL_NAME} ${detectVersion}: ${reason}`)
+    setFailed(`Could not execute ${TOOL_NAME} ${DETECT_VERSION}: ${reason}`)
   })
 
   if (!detectExitCode) {
+    cancelBlackDuckPolicyCheck(policyCheckId)
     return
   }
 
-  if (scanMode === 'RAPID') {
+  if (SCAN_MODE === 'RAPID') {
     const jsonGlobber = await create(`${outputPath}/*.json`)
     const scanJsonPaths = await jsonGlobber.glob()
     uploadRapidScanJson(outputPath, scanJsonPaths)
 
-    scanJsonPaths.forEach(jsonPath => {
-      const rawdata = fs.readFileSync(jsonPath)
-      const scanJson = JSON.parse(rawdata.toString())
+    const scanJsonPath = scanJsonPaths[0]
+    const rawdata = fs.readFileSync(scanJsonPath)
+    const scanJson = JSON.parse(rawdata.toString()) as PolicyViolation[]
+    const rapidScanReport = await createReport(scanJson)
 
-      commentOnPR(githubToken, scanJson)
-    })
+    if (isPullRequest()) {
+      commentOnPR(rapidScanReport)
+    }
+
+    if (scanJson.length === 0) {
+      passBlackDuckPolicyCheck(policyCheckId, rapidScanReport)
+    } else {
+      failBlackDuckPolicyCheck(policyCheckId, rapidScanReport)
+    }
+  } else {
+    // TODO: Implement policy check for non-rapid scan
+    skipBlackDuckPolicyCheck(policyCheckId)
   }
 
   const diagnosticMode = process.env.DETECT_DIAGNOSTIC?.toLowerCase() === 'true'

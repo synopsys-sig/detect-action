@@ -13,6 +13,101 @@ exports.APPLICATION_NAME = 'synopsys-sig/detect-action';
 
 /***/ }),
 
+/***/ 7657:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.finishBlackDuckPolicyCheck = exports.cancelBlackDuckPolicyCheck = exports.skipBlackDuckPolicyCheck = exports.failBlackDuckPolicyCheck = exports.passBlackDuckPolicyCheck = exports.createBlackDuckPolicyCheck = exports.CHECK_NAME = void 0;
+const core_1 = __nccwpck_require__(2186);
+const github_1 = __nccwpck_require__(5438);
+const github_context_1 = __nccwpck_require__(4251);
+const inputs_1 = __nccwpck_require__(6180);
+exports.CHECK_NAME = 'Black Duck Policy Check';
+function createBlackDuckPolicyCheck() {
+    return __awaiter(this, void 0, void 0, function* () {
+        const octokit = (0, github_1.getOctokit)(inputs_1.GITHUB_TOKEN);
+        const head_sha = (0, github_context_1.getSha)();
+        const response = yield octokit.rest.checks.create({
+            owner: github_1.context.repo.owner,
+            repo: github_1.context.repo.repo,
+            name: exports.CHECK_NAME,
+            head_sha
+        });
+        if (response.status !== 201) {
+            (0, core_1.warning)(`Unexpected status code recieved when creating check: ${response.status}`);
+            (0, core_1.debug)(JSON.stringify(response, null, 2));
+        }
+        else {
+            (0, core_1.info)(`Black Duck Policy Check created`);
+        }
+        return response.data.id;
+    });
+}
+exports.createBlackDuckPolicyCheck = createBlackDuckPolicyCheck;
+function passBlackDuckPolicyCheck(checkRunId, text) {
+    return __awaiter(this, void 0, void 0, function* () {
+        return finishBlackDuckPolicyCheck(checkRunId, 'success', 'No components found that violate your Black Duck policies!', text);
+    });
+}
+exports.passBlackDuckPolicyCheck = passBlackDuckPolicyCheck;
+function failBlackDuckPolicyCheck(checkRunId, text) {
+    return __awaiter(this, void 0, void 0, function* () {
+        return finishBlackDuckPolicyCheck(checkRunId, 'failure', 'Components found that violate your Black Duck Policies!', text);
+    });
+}
+exports.failBlackDuckPolicyCheck = failBlackDuckPolicyCheck;
+function skipBlackDuckPolicyCheck(checkRunId) {
+    return __awaiter(this, void 0, void 0, function* () {
+        return finishBlackDuckPolicyCheck(checkRunId, 'skipped', 'Black Duck Policy Check was skipped', '');
+    });
+}
+exports.skipBlackDuckPolicyCheck = skipBlackDuckPolicyCheck;
+function cancelBlackDuckPolicyCheck(checkRunId) {
+    return __awaiter(this, void 0, void 0, function* () {
+        return finishBlackDuckPolicyCheck(checkRunId, 'cancelled', 'Black Duck Policy Check could not be completed', 'Something went wrong and the Black Duck Policy Check could not be completed. Check your action logs for more details.');
+    });
+}
+exports.cancelBlackDuckPolicyCheck = cancelBlackDuckPolicyCheck;
+function finishBlackDuckPolicyCheck(checkRunId, conclusion, summary, text) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const octokit = (0, github_1.getOctokit)(inputs_1.GITHUB_TOKEN);
+        const response = yield octokit.rest.checks.update({
+            owner: github_1.context.repo.owner,
+            repo: github_1.context.repo.repo,
+            check_run_id: checkRunId,
+            status: 'completed',
+            conclusion,
+            output: {
+                title: exports.CHECK_NAME,
+                summary,
+                text
+            }
+        });
+        if (response.status !== 200) {
+            (0, core_1.warning)(`Unexpected status code recieved when creating check: ${response.status}`);
+            (0, core_1.debug)(JSON.stringify(response, null, 2));
+        }
+        else {
+            (0, core_1.info)(`Black Duck Policy Check created`);
+        }
+    });
+}
+exports.finishBlackDuckPolicyCheck = finishBlackDuckPolicyCheck;
+
+
+/***/ }),
+
 /***/ 1667:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
@@ -30,25 +125,13 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.commentOnPR = void 0;
 const github_1 = __nccwpck_require__(5438);
-function commentOnPR(githubToken, scanJson) {
+const inputs_1 = __nccwpck_require__(6180);
+const COMMENT_PREFACE = '<!-- Comment automatically managed by Detect Action, do not remove this line -->';
+function commentOnPR(report) {
     var _a;
     return __awaiter(this, void 0, void 0, function* () {
-        const octokit = (0, github_1.getOctokit)(githubToken);
-        const messagePreface = '<!-- Comment automatically managed by Detect Action, do not remove this line -->';
-        let message = messagePreface;
-        if (scanJson.length == 0) {
-            message = message.concat('\r\n# :white_check_mark: None of your dependencies violate policy!');
-        }
-        else {
-            message = message.concat('\r\n# :warning: Found dependencies violating policy!\r\n');
-            const policyViolations = scanJson
-                .map(violation => {
-                return `- [ ] **${violation.componentName} ${violation.versionName}** violates ${violation.violatingPolicyNames.map(policyName => `**${policyName}**`).join(', ')}\r\n_${violation.componentIdentifier}_\r\n`;
-            })
-                .join('');
-            message = message.concat(policyViolations);
-        }
-        message = message.concat();
+        const octokit = (0, github_1.getOctokit)(inputs_1.GITHUB_TOKEN);
+        const message = COMMENT_PREFACE.concat('\r\n', report);
         const contextIssue = github_1.context.issue.number;
         const contextOwner = github_1.context.repo.owner;
         const contextRepo = github_1.context.repo.repo;
@@ -59,7 +142,7 @@ function commentOnPR(githubToken, scanJson) {
         });
         for (const comment of existingComments) {
             const firstLine = (_a = comment.body) === null || _a === void 0 ? void 0 : _a.split('\r\n')[0];
-            if (firstLine === messagePreface) {
+            if (firstLine === COMMENT_PREFACE) {
                 octokit.rest.issues.deleteComment({
                     comment_id: comment.id,
                     owner: contextOwner,
@@ -102,18 +185,19 @@ exports.runDetect = exports.findOrDownloadDetect = exports.TOOL_NAME = void 0;
 const tool_cache_1 = __nccwpck_require__(7784);
 const exec_1 = __nccwpck_require__(1514);
 const path_1 = __importDefault(__nccwpck_require__(5622));
+const inputs_1 = __nccwpck_require__(6180);
 const DETECT_BINARY_REPO_URL = 'https://sig-repo.synopsys.com';
 exports.TOOL_NAME = 'detect';
-function findOrDownloadDetect(detectVersion) {
+function findOrDownloadDetect() {
     return __awaiter(this, void 0, void 0, function* () {
-        const jarName = `synopsys-detect-${detectVersion}.jar`;
-        const cachedDetect = (0, tool_cache_1.find)(exports.TOOL_NAME, detectVersion);
+        const jarName = `synopsys-detect-${inputs_1.DETECT_VERSION}.jar`;
+        const cachedDetect = (0, tool_cache_1.find)(exports.TOOL_NAME, inputs_1.DETECT_VERSION);
         if (cachedDetect) {
             return path_1.default.resolve(cachedDetect, jarName);
         }
-        const detectDownloadUrl = createDetectDownloadUrl(detectVersion);
+        const detectDownloadUrl = createDetectDownloadUrl();
         return ((0, tool_cache_1.downloadTool)(detectDownloadUrl)
-            .then(detectDownloadPath => (0, tool_cache_1.cacheFile)(detectDownloadPath, jarName, exports.TOOL_NAME, detectVersion))
+            .then(detectDownloadPath => (0, tool_cache_1.cacheFile)(detectDownloadPath, jarName, exports.TOOL_NAME, inputs_1.DETECT_VERSION))
             //TODO: Jarsigner?
             .then(cachedFolder => path_1.default.resolve(cachedFolder, jarName)));
     });
@@ -125,9 +209,55 @@ function runDetect(detectPath, detectArguments) {
     });
 }
 exports.runDetect = runDetect;
-function createDetectDownloadUrl(version, repoUrl = DETECT_BINARY_REPO_URL) {
-    return `${repoUrl}/bds-integrations-release/com/synopsys/integration/synopsys-detect/${version}/synopsys-detect-${version}.jar`;
+function createDetectDownloadUrl(repoUrl = DETECT_BINARY_REPO_URL) {
+    return `${repoUrl}/bds-integrations-release/com/synopsys/integration/synopsys-detect/${inputs_1.DETECT_VERSION}/synopsys-detect-${inputs_1.DETECT_VERSION}.jar`;
 }
+
+
+/***/ }),
+
+/***/ 4251:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.getSha = exports.isPullRequest = void 0;
+const github_1 = __nccwpck_require__(5438);
+const prEvents = ['pull_request', 'pull_request_review', 'pull_request_review_comment'];
+function isPullRequest() {
+    return prEvents.includes(github_1.context.eventName);
+}
+exports.isPullRequest = isPullRequest;
+function getSha() {
+    let sha = github_1.context.sha;
+    if (isPullRequest()) {
+        const pull = github_1.context.payload.pull_request;
+        if (pull === null || pull === void 0 ? void 0 : pull.head.sha) {
+            sha = pull === null || pull === void 0 ? void 0 : pull.head.sha;
+        }
+    }
+    return sha;
+}
+exports.getSha = getSha;
+
+
+/***/ }),
+
+/***/ 6180:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.OUTPUT_PATH_OVERRIDE = exports.SCAN_MODE = exports.DETECT_VERSION = exports.BLACKDUCK_API_TOKEN = exports.BLACKDUCK_URL = exports.GITHUB_TOKEN = void 0;
+const core_1 = __nccwpck_require__(2186);
+exports.GITHUB_TOKEN = (0, core_1.getInput)('github-token');
+exports.BLACKDUCK_URL = (0, core_1.getInput)('blackduck-url');
+exports.BLACKDUCK_API_TOKEN = (0, core_1.getInput)('blackduck-api-token');
+exports.DETECT_VERSION = (0, core_1.getInput)('detect-version');
+exports.SCAN_MODE = (0, core_1.getInput)('scan-mode').toUpperCase();
+exports.OUTPUT_PATH_OVERRIDE = (0, core_1.getInput)('output-path-override');
 
 
 /***/ }),
@@ -158,56 +288,76 @@ const fs_1 = __importDefault(__nccwpck_require__(5747));
 const upload_artifacts_1 = __nccwpck_require__(2854);
 const detect_manager_1 = __nccwpck_require__(3762);
 const comment_1 = __nccwpck_require__(1667);
+const rapid_scan_1 = __nccwpck_require__(8631);
+const github_context_1 = __nccwpck_require__(4251);
+const check_1 = __nccwpck_require__(7657);
+const inputs_1 = __nccwpck_require__(6180);
 const policy_checker_1 = __nccwpck_require__(205);
 function run() {
     var _a, _b;
     return __awaiter(this, void 0, void 0, function* () {
-        const githubToken = (0, core_1.getInput)('github-token');
-        const blackduckUrl = (0, core_1.getInput)('blackduck-url');
-        const blackduckApiToken = (0, core_1.getInput)('blackduck-api-token');
-        const detectVersion = (0, core_1.getInput)('detect-version');
-        const scanMode = (0, core_1.getInput)('scan-mode').toUpperCase();
-        const outputPathOverride = (0, core_1.getInput)('output-path-override');
+        const policyCheckId = yield (0, check_1.createBlackDuckPolicyCheck)();
         const runnerTemp = process.env.RUNNER_TEMP;
         let outputPath = '';
-        if (outputPathOverride !== '') {
-            outputPath = outputPathOverride;
+        if (inputs_1.OUTPUT_PATH_OVERRIDE !== '') {
+            outputPath = inputs_1.OUTPUT_PATH_OVERRIDE;
         }
         else if (runnerTemp === undefined) {
             (0, core_1.setFailed)('$RUNNER_TEMP is not defined and output-path-override was not set. Cannot determine where to store output files.');
+            (0, check_1.cancelBlackDuckPolicyCheck)(policyCheckId);
             return;
         }
         else {
             outputPath = path_1.default.resolve(runnerTemp, 'blackduck');
         }
-        const blackduckPolicyChecker = new policy_checker_1.BlackduckPolicyChecker(blackduckUrl, blackduckApiToken);
-        const policiesExist = yield blackduckPolicyChecker.checkIfEnabledBlackduckPoliciesExist();
-        if (!policiesExist && scanMode === 'RAPID') {
-            (0, core_1.setFailed)(`Could not run ${detect_manager_1.TOOL_NAME} using ${scanMode} scan mode. No enabled policies found on the specified Black Duck server.`);
+        const blackduckPolicyChecker = new policy_checker_1.BlackduckPolicyChecker(inputs_1.BLACKDUCK_URL, inputs_1.BLACKDUCK_API_TOKEN);
+        let policiesExist = yield blackduckPolicyChecker.checkIfEnabledBlackduckPoliciesExist().catch(reason => {
+            (0, core_1.setFailed)(`Could not verify if policies existed: ${reason}`);
+        });
+        if (policiesExist === undefined) {
+            (0, check_1.cancelBlackDuckPolicyCheck)(policyCheckId);
             return;
         }
-        const detectArgs = ['--blackduck.trust.cert=TRUE', `--blackduck.url=${blackduckUrl}`, `--blackduck.api.token=${blackduckApiToken}`, `--detect.blackduck.scan.mode=${scanMode}`, `--detect.output.path=${outputPath}`, `--detect.scan.output.path=${outputPath}`];
-        const detectPath = yield (0, detect_manager_1.findOrDownloadDetect)(detectVersion).catch(reason => {
-            (0, core_1.setFailed)(`Could not download ${detect_manager_1.TOOL_NAME} ${detectVersion}: ${reason}`);
+        if (!policiesExist && inputs_1.SCAN_MODE === 'RAPID') {
+            (0, core_1.setFailed)(`Could not run ${detect_manager_1.TOOL_NAME} using ${inputs_1.SCAN_MODE} scan mode. No enabled policies found on the specified Black Duck server.`);
+            return;
+        }
+        const detectArgs = ['--blackduck.trust.cert=TRUE', `--blackduck.url=${inputs_1.BLACKDUCK_URL}`, `--blackduck.api.token=${inputs_1.BLACKDUCK_API_TOKEN}`, `--detect.blackduck.scan.mode=${inputs_1.SCAN_MODE}`, `--detect.output.path=${outputPath}`, `--detect.scan.output.path=${outputPath}`];
+        const detectPath = yield (0, detect_manager_1.findOrDownloadDetect)().catch(reason => {
+            (0, core_1.setFailed)(`Could not download ${detect_manager_1.TOOL_NAME} ${inputs_1.DETECT_VERSION}: ${reason}`);
         });
         if (!detectPath) {
+            (0, check_1.cancelBlackDuckPolicyCheck)(policyCheckId);
             return;
         }
         const detectExitCode = yield (0, detect_manager_1.runDetect)(detectPath, detectArgs).catch(reason => {
-            (0, core_1.setFailed)(`Could not execute ${detect_manager_1.TOOL_NAME} ${detectVersion}: ${reason}`);
+            (0, core_1.setFailed)(`Could not execute ${detect_manager_1.TOOL_NAME} ${inputs_1.DETECT_VERSION}: ${reason}`);
         });
         if (!detectExitCode) {
+            (0, check_1.cancelBlackDuckPolicyCheck)(policyCheckId);
             return;
         }
-        if (scanMode === 'RAPID') {
+        if (inputs_1.SCAN_MODE === 'RAPID') {
             const jsonGlobber = yield (0, glob_1.create)(`${outputPath}/*.json`);
             const scanJsonPaths = yield jsonGlobber.glob();
             (0, upload_artifacts_1.uploadRapidScanJson)(outputPath, scanJsonPaths);
-            scanJsonPaths.forEach(jsonPath => {
-                const rawdata = fs_1.default.readFileSync(jsonPath);
-                const scanJson = JSON.parse(rawdata.toString());
-                (0, comment_1.commentOnPR)(githubToken, scanJson);
-            });
+            const scanJsonPath = scanJsonPaths[0];
+            const rawdata = fs_1.default.readFileSync(scanJsonPath);
+            const scanJson = JSON.parse(rawdata.toString());
+            const rapidScanReport = yield (0, rapid_scan_1.createReport)(scanJson);
+            if ((0, github_context_1.isPullRequest)()) {
+                (0, comment_1.commentOnPR)(rapidScanReport);
+            }
+            if (scanJson.length === 0) {
+                (0, check_1.passBlackDuckPolicyCheck)(policyCheckId, rapidScanReport);
+            }
+            else {
+                (0, check_1.failBlackDuckPolicyCheck)(policyCheckId, rapidScanReport);
+            }
+        }
+        else {
+            // TODO: Implement policy check for non-rapid scan
+            (0, check_1.skipBlackDuckPolicyCheck)(policyCheckId);
         }
         const diagnosticMode = ((_a = process.env.DETECT_DIAGNOSTIC) === null || _a === void 0 ? void 0 : _a.toLowerCase()) === 'true';
         const extendedDiagnosticMode = ((_b = process.env.DETECT_DIAGNOSTIC_EXTENDED) === null || _b === void 0 ? void 0 : _b.toLowerCase()) === 'true';
@@ -306,7 +456,7 @@ class BlackduckPolicyChecker {
         return __awaiter(this, void 0, void 0, function* () {
             const bearerTokenHandler = new handlers_1.BearerCredentialHandler(bearerToken, true);
             const blackduckRestClient = new RestClient_1.RestClient(application_constants_1.APPLICATION_NAME, this.blackduckUrl, [bearerTokenHandler]);
-            const enabledFilter = (enabled === undefined || enabled === null) ? '' : `&filter=policyRuleEnabled%3A${enabled}`;
+            const enabledFilter = enabled === undefined || enabled === null ? '' : `&filter=policyRuleEnabled%3A${enabled}`;
             const requestUrl = `${this.blackduckUrl}/api/policy-rules?offset=0&limit=${limit}${enabledFilter}`;
             return blackduckRestClient.get(requestUrl);
         });
@@ -315,8 +465,9 @@ class BlackduckPolicyChecker {
         return __awaiter(this, void 0, void 0, function* () {
             core.info('Initiating authentication request to Black Duck...');
             const authenticationClient = new HttpClient_1.HttpClient(application_constants_1.APPLICATION_NAME);
-            const authorizationHeader = { "Authorization": `token ${this.blackduckApiToken}` };
-            return authenticationClient.post(`${this.blackduckUrl}/api/tokens/authenticate`, '', authorizationHeader)
+            const authorizationHeader = { Authorization: `token ${this.blackduckApiToken}` };
+            return authenticationClient
+                .post(`${this.blackduckUrl}/api/tokens/authenticate`, '', authorizationHeader)
                 .then(authenticationResponse => authenticationResponse.readBody())
                 .then(responseBody => JSON.parse(responseBody))
                 .then(responseBodyJson => {
@@ -327,6 +478,42 @@ class BlackduckPolicyChecker {
     }
 }
 exports.BlackduckPolicyChecker = BlackduckPolicyChecker;
+
+
+/***/ }),
+
+/***/ 8631:
+/***/ (function(__unused_webpack_module, exports) {
+
+"use strict";
+
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.createReport = void 0;
+function createReport(scanJson) {
+    return __awaiter(this, void 0, void 0, function* () {
+        let message = '';
+        if (scanJson.length == 0) {
+            message = message.concat('# :white_check_mark: None of your dependencies violate policy!');
+        }
+        else {
+            message = message.concat('# :warning: Found dependencies violating policy!\r\n');
+            const policyViolations = scanJson.map(violation => `- [ ] **${violation.componentName} ${violation.versionName}** violates ${violation.violatingPolicyNames.map(policyName => `**${policyName}**`).join(', ')}\r\n_${violation.componentIdentifier}_\r\n`).join('');
+            message = message.concat(policyViolations);
+        }
+        message = message.concat();
+        return message;
+    });
+}
+exports.createReport = createReport;
 
 
 /***/ }),
