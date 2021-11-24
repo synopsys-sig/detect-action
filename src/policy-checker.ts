@@ -16,7 +16,7 @@ export class BlackduckPolicyChecker {
     blackduckApiToken: string
 
     constructor(blackduckUrl: string, blackduckApiToken: string) {
-        this.blackduckUrl = blackduckUrl
+        this.blackduckUrl = cleanUrl(blackduckUrl)
         this.blackduckApiToken = blackduckApiToken
     }
 
@@ -62,4 +62,11 @@ export class BlackduckPolicyChecker {
             })
     }
 
+}
+
+function cleanUrl(blackduckUrl: string) {
+    if (blackduckUrl && blackduckUrl.endsWith('/')) {
+        return blackduckUrl.substr(0, blackduckUrl.length - 1)
+    }
+    return blackduckUrl
 }
