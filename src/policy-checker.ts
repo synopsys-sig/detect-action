@@ -1,9 +1,9 @@
 import * as core from '@actions/core'
-import {IHeaders} from 'typed-rest-client/Interfaces'
-import {HttpClient} from 'typed-rest-client/HttpClient'
-import {APPLICATION_NAME} from './application-constants'
-import {BearerCredentialHandler} from 'typed-rest-client/handlers'
-import {IRestResponse, RestClient} from 'typed-rest-client/RestClient'
+import { IHeaders } from 'typed-rest-client/Interfaces'
+import { HttpClient } from 'typed-rest-client/HttpClient'
+import { APPLICATION_NAME } from './application-constants'
+import { BearerCredentialHandler } from 'typed-rest-client/handlers'
+import { IRestResponse, RestClient } from 'typed-rest-client/RestClient'
 
 export interface IBlackduckPage {
   totalCount: number
@@ -16,7 +16,7 @@ export class BlackduckPolicyChecker {
   blackduckApiToken: string
 
   constructor(blackduckUrl: string, blackduckApiToken: string) {
-    this.blackduckUrl = blackduckUrl
+    this.blackduckUrl = cleanUrl(blackduckUrl)
     this.blackduckApiToken = blackduckApiToken
   }
 
@@ -51,7 +51,7 @@ export class BlackduckPolicyChecker {
   private async retrieveBearerTokenFromBlackduck() {
     core.info('Initiating authentication request to Black Duck...')
     const authenticationClient = new HttpClient(APPLICATION_NAME)
-    const authorizationHeader: IHeaders = {Authorization: `token ${this.blackduckApiToken}`}
+    const authorizationHeader: IHeaders = { Authorization: `token ${this.blackduckApiToken}` }
 
     return authenticationClient
       .post(`${this.blackduckUrl}/api/tokens/authenticate`, '', authorizationHeader)
@@ -62,4 +62,12 @@ export class BlackduckPolicyChecker {
         return responseBodyJson.bearerToken
       })
   }
+
+}
+
+function cleanUrl(blackduckUrl: string) {
+  if (blackduckUrl && blackduckUrl.endsWith('/')) {
+    return blackduckUrl.substr(0, blackduckUrl.length - 1)
+  }
+  return blackduckUrl
 }

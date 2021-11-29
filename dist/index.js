@@ -427,7 +427,7 @@ const handlers_1 = __nccwpck_require__(2188);
 const RestClient_1 = __nccwpck_require__(7405);
 class BlackduckPolicyChecker {
     constructor(blackduckUrl, blackduckApiToken) {
-        this.blackduckUrl = blackduckUrl;
+        this.blackduckUrl = cleanUrl(blackduckUrl);
         this.blackduckApiToken = blackduckApiToken;
     }
     checkIfEnabledBlackduckPoliciesExist() {
@@ -478,6 +478,12 @@ class BlackduckPolicyChecker {
     }
 }
 exports.BlackduckPolicyChecker = BlackduckPolicyChecker;
+function cleanUrl(blackduckUrl) {
+    if (blackduckUrl && blackduckUrl.endsWith('/')) {
+        return blackduckUrl.substr(0, blackduckUrl.length - 1);
+    }
+    return blackduckUrl;
+}
 
 
 /***/ }),
