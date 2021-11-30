@@ -47,7 +47,7 @@ jobs:
       with:
         java-version: '11'
         distribution: 'adopt'
-    # Because this example is building a Gradle project, it needs to happen after setting up java
+    # Because this example is building a Gradle project, it needs to happen after setting up Java
     - name: Grant execute permission for gradlew to build my project
       run: chmod +x gradlew
     - name: Build my project with Gradle
@@ -92,7 +92,7 @@ Detect is meant to be run post-build. You should add steps necessary to build yo
     - name: Build with Gradle
       run: ./gradlew build
 ```
-In the example job above, 
+In the example job above, this needed to be done _after_ setting up Java because Gradle requires Java. If your project does not use Java, this step can be done before setting up Java.
 
 ## Setup Java
 Detect runs using Java 11 and the prefered distribution is from [AdoptOpenJDK](https://github.com/AdoptOpenJDK). Configure the _step_ it as follows: 
