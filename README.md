@@ -20,6 +20,7 @@ Comments on Pull Requests if any of your dependencies violate policies.
   - [Create Black Duck Policy (Optional)](#create-black-duck-policy-optional)
   - [Setup Detect Action](#setup-detect-action)
   - [Include Custom Certificates (Optional)](#include-custom-certificates-optional)
+- [Policy Checks](#policy-checks)
 
 # Setup Workflow
 To start using this action, you'll need to create a _job_ within a GitHub Workflow. You can either [create a new GitHub Workflow](https://docs.github.com/en/actions/learn-github-actions/workflow-syntax-for-github-actions) or use an existing one if appropriate for your use-case. 
@@ -182,3 +183,6 @@ Notes:
   - Solution: Ensure whitespace and other special characers are properly escaped based on your runner's OS.
 - Problem: An error about missing certificates in the certificate-chain or missing root certificates.
   - Solution: You may only be including the server's certificate and not the _root CA certificate_. Ensure you are using the _root CA certificate_.
+
+# Policy Checks
+When the _Detect Action_ runs in RAPID mode, it creates a 'Black Duck Policy Check'. This check can be used within [_Branch Protection Rules_](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/defining-the-mergeability-of-pull-requests/about-protected-branches#require-status-checks-before-merging) to prevent merging Pull Requests that would introduce Black Duck Policy Violations.
