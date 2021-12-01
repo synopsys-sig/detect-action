@@ -167,6 +167,7 @@ To include one or more certificates, set `NODE_EXTRA_CA_CERTS` to the certificat
 Notes: 
 - The certificate(s) must be in _pem_ format. 
 - This environment variable can also be used with the _Create Policy Action_.  
+
 **Example**:   
 ```yaml
 - name: Synopsys Detect
