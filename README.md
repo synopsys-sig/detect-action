@@ -10,6 +10,9 @@ Comments on Pull Requests if any of your dependencies violate policies.
 - [Setup Workflow](#setup-workflow)
 - [Setup Job](#setup-job)
   - [Runners: Self Hosted](#runners-self-hosted)
+    - [Java](#java)
+    - [Certificates](#certificates)
+    - [More Info](#more-info)
   - [Runners: GitHub Hosted](#runners-github-hosted)
   - [Checkout](#checkout)
   - [Build Your Project](#build-your-project)
@@ -22,7 +25,7 @@ Comments on Pull Requests if any of your dependencies violate policies.
 To start using this action, you'll need to create a _job_ within a GitHub Workflow. You can either [create a new GitHub Workflow](https://docs.github.com/en/actions/learn-github-actions/workflow-syntax-for-github-actions) or use an existing one if appropriate for your use-case. 
 
 Once you have a GitHub Workflow selected, configure which [events will trigger the workflow](https://docs.github.com/en/actions/learn-github-actions/events-that-trigger-workflows) such as _pull requests_ or _schedules_.  
-**Example**
+**Example**:
 ```yaml
 name: Example Workflow
 on:
@@ -42,7 +45,7 @@ jobs:
     runs-on: my-github-runner
     steps:
     - uses: actions/checkout@v2
-    - name: Set up JDK 11
+    - name: Set up Java 11
       uses: actions/setup-java@v2
       with:
         java-version: '11'
@@ -72,10 +75,33 @@ jobs:
           blackduck-api-token: ${{ secrets.BLACKDUCK_API_TOKEN }}
 ```
 
-## Runners: Self Hosted
-TODO
+## Runners: Self-Hosted
+Using a self-hosted runner provides more flexibility in managing your build environment.
 
-## Runners: GitHub Hosted
+### Java
+It is possible to skip the [Setup Java](#setup-java) step below if you already have Java 11 on your self-hosted runner. Ensure that the _Detect Action_ has access to the correct version of Java on its `$PATH` or within the [_GitHub Tool Cache_](https://docs.github.com/en/enterprise-server@3.0/admin/github-actions/managing-access-to-actions-from-githubcom/setting-up-the-tool-cache-on-self-hosted-runners-without-internet-access)
+
+### Certificates
+If your Black Duck server is on a private network, the self-hosted runner has access to that network, and the Black Duck server uses custom certificates, then you will likely need to provide a custom certificate to the _Detect Action_. 
+To do this: 
+1. Store the root certificate on the self-hosted runner. Example location: `/certificates/my_custom_cert.pem`
+2. Set `NODE_EXTRA_CA_CERTS` in the _Detect Action's_ environment:
+```yaml
+    - name: Run Synopsys Detect
+      uses: synopsys-sig/detect-action@v0.0.1
+      env:
+        NODE_EXTRA_CA_CERTS: /certificates/my_custom_cert.pem
+      with:
+        . . .
+```
+Note: The path to the certificate can be stored in a [_GitHub Secrect_](https://docs.github.com/en/actions/security-guides/encrypted-secrets).
+
+Please reference the section [_Include Custom Certificates (Optional)_](#include-custom-certificates-optional) for more information.
+
+### More Info
+For more information on self-hosted runners, please visit [GitHub's documentation](https://docs.github.com/en/actions/hosting-your-own-runners/about-self-hosted-runners).
+
+## Runners: GitHub-Hosted
 TODO
 
 ## Checkout
@@ -137,7 +163,10 @@ Once your project is checked-out, built, and Java is configured, the _Detect Act
 ```
 
 ## Include Custom Certificates (Optional)
-To include one or more certificates, set `NODE_EXTRA_CA_CERTS` to the certificate file-path(s) in the environment. The certificate(s) must be in _pem_ format. Be sure to escape whitespace properly based on your runner's OS. Note: This environment variable can also be used with the _Create Policy Action_.  
+To include one or more certificates, set `NODE_EXTRA_CA_CERTS` to the certificate file-path(s) in the environment. 
+Notes: 
+- The certificate(s) must be in _pem_ format. 
+- This environment variable can also be used with the _Create Policy Action_.  
 **Example**:   
 ```yaml
 - name: Synopsys Detect
@@ -147,3 +176,8 @@ To include one or more certificates, set `NODE_EXTRA_CA_CERTS` to the certificat
         with:
             . . .
 ```
+### Troubleshooting Certificates
+- Problem: An error saying the file-path to the certificate cannot be read.
+  - Solution: Ensure whitespace and other special characers are properly escaped based on your runner's OS.
+- Problem: An error about missing certificates in the certificate-chain or missing root certificates.
+  - Solution: You may only be including the server's certificate and not the _root CA certificate_. Ensure you are using the _root CA certificate_.
