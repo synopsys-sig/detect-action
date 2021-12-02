@@ -20,6 +20,13 @@ inputs:
   output-path-override:
     description: 'Override for where to output Detect files, default is $RUNNER_TEMP/blackduck/'
     required: false
+  detect-trust-cert:
+    description: 'Acceptable Values: TRUE, FALSE. If TRUE, Detect will trust the Black Duck certificate even if the certificate is not in the keystore.'
+    default: 'TRUE'
+  fail-on-severities:
+    description: 'Acceptable Values: ALL, NONE, BLOCKER, CRITICAL, MAJOR, MINOR, OK, TRIVIAL, UNSPECIFIED. Fail on Policy Violation Severities: A comma-separated list of policy violation severities that will fail Detect. If this is set to NONE, Detect will not fail due to policy violations. A value of ALL is equivalent to all of the other possible values except NONE.'
+    required: false
+    default: 'CRITICAL,MAJOR'
 runs:
   using: 'node12'
   main: 'dist/index.js'

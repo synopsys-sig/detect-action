@@ -250,7 +250,7 @@ exports.getSha = getSha;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.OUTPUT_PATH_OVERRIDE = exports.SCAN_MODE = exports.DETECT_VERSION = exports.BLACKDUCK_API_TOKEN = exports.BLACKDUCK_URL = exports.GITHUB_TOKEN = void 0;
+exports.FAIL_ON_SEVERITIES = exports.DETECT_TRUST_CERT = exports.OUTPUT_PATH_OVERRIDE = exports.SCAN_MODE = exports.DETECT_VERSION = exports.BLACKDUCK_API_TOKEN = exports.BLACKDUCK_URL = exports.GITHUB_TOKEN = void 0;
 const core_1 = __nccwpck_require__(2186);
 exports.GITHUB_TOKEN = (0, core_1.getInput)('github-token');
 exports.BLACKDUCK_URL = (0, core_1.getInput)('blackduck-url');
@@ -258,6 +258,8 @@ exports.BLACKDUCK_API_TOKEN = (0, core_1.getInput)('blackduck-api-token');
 exports.DETECT_VERSION = (0, core_1.getInput)('detect-version');
 exports.SCAN_MODE = (0, core_1.getInput)('scan-mode').toUpperCase();
 exports.OUTPUT_PATH_OVERRIDE = (0, core_1.getInput)('output-path-override');
+exports.DETECT_TRUST_CERT = (0, core_1.getInput)('detect-trust-cert');
+exports.FAIL_ON_SEVERITIES = (0, core_1.getInput)('fail-on-severities');
 
 
 /***/ }),
@@ -267,6 +269,25 @@ exports.OUTPUT_PATH_OVERRIDE = (0, core_1.getInput)('output-path-override');
 
 "use strict";
 
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -291,7 +312,7 @@ const comment_1 = __nccwpck_require__(1667);
 const rapid_scan_1 = __nccwpck_require__(8631);
 const github_context_1 = __nccwpck_require__(4251);
 const check_1 = __nccwpck_require__(7657);
-const inputs_1 = __nccwpck_require__(6180);
+const inputs = __importStar(__nccwpck_require__(6180));
 const policy_checker_1 = __nccwpck_require__(205);
 function run() {
     var _a, _b;
@@ -299,8 +320,8 @@ function run() {
         const policyCheckId = yield (0, check_1.createBlackDuckPolicyCheck)();
         const runnerTemp = process.env.RUNNER_TEMP;
         let outputPath = '';
-        if (inputs_1.OUTPUT_PATH_OVERRIDE !== '') {
-            outputPath = inputs_1.OUTPUT_PATH_OVERRIDE;
+        if (inputs.OUTPUT_PATH_OVERRIDE !== '') {
+            outputPath = inputs.OUTPUT_PATH_OVERRIDE;
         }
         else if (runnerTemp === undefined) {
             (0, core_1.setFailed)('$RUNNER_TEMP is not defined and output-path-override was not set. Cannot determine where to store output files.');
@@ -310,7 +331,7 @@ function run() {
         else {
             outputPath = path_1.default.resolve(runnerTemp, 'blackduck');
         }
-        const blackduckPolicyChecker = new policy_checker_1.BlackduckPolicyChecker(inputs_1.BLACKDUCK_URL, inputs_1.BLACKDUCK_API_TOKEN);
+        const blackduckPolicyChecker = new policy_checker_1.BlackduckPolicyChecker(inputs.BLACKDUCK_URL, inputs.BLACKDUCK_API_TOKEN);
         let policiesExist = yield blackduckPolicyChecker.checkIfEnabledBlackduckPoliciesExist().catch(reason => {
             (0, core_1.setFailed)(`Could not verify if policies existed: ${reason}`);
         });
@@ -318,26 +339,34 @@ function run() {
             (0, check_1.cancelBlackDuckPolicyCheck)(policyCheckId);
             return;
         }
-        if (!policiesExist && inputs_1.SCAN_MODE === 'RAPID') {
-            (0, core_1.setFailed)(`Could not run ${detect_manager_1.TOOL_NAME} using ${inputs_1.SCAN_MODE} scan mode. No enabled policies found on the specified Black Duck server.`);
+        if (!policiesExist && inputs.SCAN_MODE === 'RAPID') {
+            (0, core_1.setFailed)(`Could not run ${detect_manager_1.TOOL_NAME} using ${inputs.SCAN_MODE} scan mode. No enabled policies found on the specified Black Duck server.`);
             return;
         }
-        const detectArgs = ['--blackduck.trust.cert=TRUE', `--blackduck.url=${inputs_1.BLACKDUCK_URL}`, `--blackduck.api.token=${inputs_1.BLACKDUCK_API_TOKEN}`, `--detect.blackduck.scan.mode=${inputs_1.SCAN_MODE}`, `--detect.output.path=${outputPath}`, `--detect.scan.output.path=${outputPath}`];
+        const detectArgs = [
+            `--blackduck.trust.cert=${inputs.DETECT_TRUST_CERT}`,
+            `--blackduck.url=${inputs.BLACKDUCK_URL}`,
+            `--blackduck.api.token=${inputs.BLACKDUCK_API_TOKEN}`,
+            `--detect.blackduck.scan.mode=${inputs.SCAN_MODE}`,
+            `--detect.output.path=${outputPath}`,
+            `--detect.scan.output.path=${outputPath}`,
+            `--detect.policy.check.fail.on.severities=${inputs.FAIL_ON_SEVERITIES}`
+        ];
         const detectPath = yield (0, detect_manager_1.findOrDownloadDetect)().catch(reason => {
-            (0, core_1.setFailed)(`Could not download ${detect_manager_1.TOOL_NAME} ${inputs_1.DETECT_VERSION}: ${reason}`);
+            (0, core_1.setFailed)(`Could not download ${detect_manager_1.TOOL_NAME} ${inputs.DETECT_VERSION}: ${reason}`);
         });
         if (!detectPath) {
             (0, check_1.cancelBlackDuckPolicyCheck)(policyCheckId);
             return;
         }
         const detectExitCode = yield (0, detect_manager_1.runDetect)(detectPath, detectArgs).catch(reason => {
-            (0, core_1.setFailed)(`Could not execute ${detect_manager_1.TOOL_NAME} ${inputs_1.DETECT_VERSION}: ${reason}`);
+            (0, core_1.setFailed)(`Could not execute ${detect_manager_1.TOOL_NAME} ${inputs.DETECT_VERSION}: ${reason}`);
         });
         if (!detectExitCode) {
             (0, check_1.cancelBlackDuckPolicyCheck)(policyCheckId);
             return;
         }
-        if (inputs_1.SCAN_MODE === 'RAPID') {
+        if (inputs.SCAN_MODE === 'RAPID') {
             const jsonGlobber = yield (0, glob_1.create)(`${outputPath}/*.json`);
             const scanJsonPaths = yield jsonGlobber.glob();
             (0, upload_artifacts_1.uploadRapidScanJson)(outputPath, scanJsonPaths);
