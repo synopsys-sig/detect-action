@@ -26,7 +26,7 @@ inputs:
   fail-on-severities:
     description: 'Acceptable Values: ALL, NONE, BLOCKER, CRITICAL, MAJOR, MINOR, OK, TRIVIAL, UNSPECIFIED. Fail on Policy Violation Severities: A comma-separated list of policy violation severities that will fail Detect. If this is set to NONE, Detect will not fail due to policy violations. A value of ALL is equivalent to all of the other possible values except NONE.'
     required: false
-    default: 'CRITICAL,MAJOR'
+    default: 'BLOCKER,CRITICAL,MAJOR'
 runs:
   using: 'node12'
   main: 'dist/index.js'
