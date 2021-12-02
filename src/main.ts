@@ -86,6 +86,7 @@ export async function run(): Promise<void> {
     if (scanJson.length === 0) {
       passBlackDuckPolicyCheck(policyCheckId, rapidScanReport)
     } else {
+      // TODO use ${inputs.FAIL_ON_SEVERITIES} to determine whether the policy check passes
       failBlackDuckPolicyCheck(policyCheckId, rapidScanReport)
     }
   } else {
@@ -102,6 +103,7 @@ export async function run(): Promise<void> {
   }
 
   if (detectExitCode > 0) {
+    // TODO use ${inputs.FAIL_ON_SEVERITIES} to determine whether the policy check passes
     if (detectExitCode === 3) {
       setFailed('Found dependencies violating policy!')
     } else {

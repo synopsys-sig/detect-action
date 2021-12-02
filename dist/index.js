@@ -381,6 +381,7 @@ function run() {
                 (0, check_1.passBlackDuckPolicyCheck)(policyCheckId, rapidScanReport);
             }
             else {
+                // TODO use ${inputs.FAIL_ON_SEVERITIES} to determine whether the policy check passes
                 (0, check_1.failBlackDuckPolicyCheck)(policyCheckId, rapidScanReport);
             }
         }
@@ -396,6 +397,7 @@ function run() {
             (0, upload_artifacts_1.uploadDiagnosticZip)(outputPath, diagnosticZip);
         }
         if (detectExitCode > 0) {
+            // TODO use ${inputs.FAIL_ON_SEVERITIES} to determine whether the policy check passes
             if (detectExitCode === 3) {
                 (0, core_1.setFailed)('Found dependencies violating policy!');
             }
