@@ -62,7 +62,6 @@ export class BlackduckPolicyChecker {
         return responseBodyJson.bearerToken
       })
   }
-
 }
 
 function cleanUrl(blackduckUrl: string) {

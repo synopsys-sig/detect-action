@@ -1,5 +1,5 @@
-import {warning, info} from '@actions/core'
-import {create, UploadOptions} from '@actions/artifact'
+import { warning, info } from '@actions/core'
+import { create, UploadOptions } from '@actions/artifact'
 
 export async function uploadRapidScanJson(outputPath: string, jsonFiles: string[]): Promise<void> {
   uploadArtifact('Rapid Scan JSON', outputPath, jsonFiles)

@@ -163,6 +163,19 @@ exports.commentOnPR = commentOnPR;
 
 /***/ }),
 
+/***/ 5137:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.POLICY_SEVERITY = exports.SUCCESS = void 0;
+exports.SUCCESS = 0;
+exports.POLICY_SEVERITY = 3;
+
+
+/***/ }),
+
 /***/ 3762:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
@@ -302,7 +315,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.run = void 0;
-const core_1 = __nccwpck_require__(2186);
+const core = __importStar(__nccwpck_require__(2186));
 const glob_1 = __nccwpck_require__(8090);
 const path_1 = __importDefault(__nccwpck_require__(5622));
 const fs_1 = __importDefault(__nccwpck_require__(5747));
@@ -314,6 +327,7 @@ const github_context_1 = __nccwpck_require__(4251);
 const check_1 = __nccwpck_require__(7657);
 const inputs = __importStar(__nccwpck_require__(6180));
 const policy_checker_1 = __nccwpck_require__(205);
+const detectExitCodes = __importStar(__nccwpck_require__(5137));
 function run() {
     var _a, _b;
     return __awaiter(this, void 0, void 0, function* () {
@@ -324,7 +338,7 @@ function run() {
             outputPath = inputs.OUTPUT_PATH_OVERRIDE;
         }
         else if (runnerTemp === undefined) {
-            (0, core_1.setFailed)('$RUNNER_TEMP is not defined and output-path-override was not set. Cannot determine where to store output files.');
+            core.setFailed('$RUNNER_TEMP is not defined and output-path-override was not set. Cannot determine where to store output files.');
             (0, check_1.cancelBlackDuckPolicyCheck)(policyCheckId);
             return;
         }
@@ -333,34 +347,26 @@ function run() {
         }
         const blackduckPolicyChecker = new policy_checker_1.BlackduckPolicyChecker(inputs.BLACKDUCK_URL, inputs.BLACKDUCK_API_TOKEN);
         let policiesExist = yield blackduckPolicyChecker.checkIfEnabledBlackduckPoliciesExist().catch(reason => {
-            (0, core_1.setFailed)(`Could not verify if policies existed: ${reason}`);
+            core.setFailed(`Could not verify if policies existed: ${reason}`);
         });
         if (policiesExist === undefined) {
             (0, check_1.cancelBlackDuckPolicyCheck)(policyCheckId);
             return;
         }
         if (!policiesExist && inputs.SCAN_MODE === 'RAPID') {
-            (0, core_1.setFailed)(`Could not run ${detect_manager_1.TOOL_NAME} using ${inputs.SCAN_MODE} scan mode. No enabled policies found on the specified Black Duck server.`);
+            core.setFailed(`Could not run ${detect_manager_1.TOOL_NAME} using ${inputs.SCAN_MODE} scan mode. No enabled policies found on the specified Black Duck server.`);
             return;
         }
-        const detectArgs = [
-            `--blackduck.trust.cert=${inputs.DETECT_TRUST_CERT}`,
-            `--blackduck.url=${inputs.BLACKDUCK_URL}`,
-            `--blackduck.api.token=${inputs.BLACKDUCK_API_TOKEN}`,
-            `--detect.blackduck.scan.mode=${inputs.SCAN_MODE}`,
-            `--detect.output.path=${outputPath}`,
-            `--detect.scan.output.path=${outputPath}`,
-            `--detect.policy.check.fail.on.severities=${inputs.FAIL_ON_SEVERITIES}`
-        ];
+        const detectArgs = [`--blackduck.trust.cert=${inputs.DETECT_TRUST_CERT}`, `--blackduck.url=${inputs.BLACKDUCK_URL}`, `--blackduck.api.token=${inputs.BLACKDUCK_API_TOKEN}`, `--detect.blackduck.scan.mode=${inputs.SCAN_MODE}`, `--detect.output.path=${outputPath}`, `--detect.scan.output.path=${outputPath}`, `--detect.policy.check.fail.on.severities=${inputs.FAIL_ON_SEVERITIES}`];
         const detectPath = yield (0, detect_manager_1.findOrDownloadDetect)().catch(reason => {
-            (0, core_1.setFailed)(`Could not download ${detect_manager_1.TOOL_NAME} ${inputs.DETECT_VERSION}: ${reason}`);
+            core.setFailed(`Could not download ${detect_manager_1.TOOL_NAME} ${inputs.DETECT_VERSION}: ${reason}`);
         });
         if (!detectPath) {
             (0, check_1.cancelBlackDuckPolicyCheck)(policyCheckId);
             return;
         }
         const detectExitCode = yield (0, detect_manager_1.runDetect)(detectPath, detectArgs).catch(reason => {
-            (0, core_1.setFailed)(`Could not execute ${detect_manager_1.TOOL_NAME} ${inputs.DETECT_VERSION}: ${reason}`);
+            core.setFailed(`Could not execute ${detect_manager_1.TOOL_NAME} ${inputs.DETECT_VERSION}: ${reason}`);
         });
         if (!detectExitCode) {
             (0, check_1.cancelBlackDuckPolicyCheck)(policyCheckId);
@@ -377,12 +383,11 @@ function run() {
             if ((0, github_context_1.isPullRequest)()) {
                 (0, comment_1.commentOnPR)(rapidScanReport);
             }
-            if (scanJson.length === 0) {
-                (0, check_1.passBlackDuckPolicyCheck)(policyCheckId, rapidScanReport);
+            if (detectExitCode === detectExitCodes.POLICY_SEVERITY) {
+                (0, check_1.failBlackDuckPolicyCheck)(policyCheckId, rapidScanReport);
             }
             else {
-                // TODO use ${inputs.FAIL_ON_SEVERITIES} to determine whether the policy check passes
-                (0, check_1.failBlackDuckPolicyCheck)(policyCheckId, rapidScanReport);
+                (0, check_1.passBlackDuckPolicyCheck)(policyCheckId, rapidScanReport);
             }
         }
         else {
@@ -397,16 +402,15 @@ function run() {
             (0, upload_artifacts_1.uploadDiagnosticZip)(outputPath, diagnosticZip);
         }
         if (detectExitCode > 0) {
-            // TODO use ${inputs.FAIL_ON_SEVERITIES} to determine whether the policy check passes
-            if (detectExitCode === 3) {
-                (0, core_1.setFailed)('Found dependencies violating policy!');
+            if (detectExitCode === detectExitCodes.POLICY_SEVERITY) {
+                core.warning('Found dependencies violating policy!');
             }
             else {
-                (0, core_1.setFailed)('Dependency check failed! See Detect output for more information.');
+                core.warning('Dependency check failed! See Detect output for more information.');
             }
         }
-        else if (detectExitCode === 0) {
-            (0, core_1.info)('None of your dependencies violate your Black Duck policies!');
+        else if (detectExitCode === detectExitCodes.SUCCESS) {
+            core.info('None of your dependencies violate your Black Duck policies!');
         }
     });
 }

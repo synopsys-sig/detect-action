@@ -1,5 +1,5 @@
-import {context, getOctokit} from '@actions/github'
-import {GITHUB_TOKEN} from './inputs'
+import { context, getOctokit } from '@actions/github'
+import { GITHUB_TOKEN } from './inputs'
 
 const COMMENT_PREFACE = '<!-- Comment automatically managed by Detect Action, do not remove this line -->'
 
@@ -12,7 +12,7 @@ export async function commentOnPR(report: string): Promise<void> {
   const contextOwner = context.repo.owner
   const contextRepo = context.repo.repo
 
-  const {data: existingComments} = await octokit.rest.issues.listComments({
+  const { data: existingComments } = await octokit.rest.issues.listComments({
     issue_number: contextIssue,
     owner: contextOwner,
     repo: contextRepo
