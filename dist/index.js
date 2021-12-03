@@ -514,7 +514,7 @@ run();
 /***/ }),
 
 /***/ 8631:
-/***/ (function(__unused_webpack_module, exports) {
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
 "use strict";
 
@@ -529,6 +529,8 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.createReport = void 0;
+const blackduck_api_1 = __nccwpck_require__(7495);
+const inputs_1 = __nccwpck_require__(6180);
 function createReport(scanJson) {
     return __awaiter(this, void 0, void 0, function* () {
         let message = '';
@@ -537,7 +539,10 @@ function createReport(scanJson) {
         }
         else {
             message = message.concat('# :warning: Found dependencies violating policy!\r\n');
-            const policyViolations = scanJson.map(violation => `- [ ] **${violation.componentName} ${violation.versionName}** violates ${violation.violatingPolicyNames.map(policyName => `**${policyName}**`).join(', ')}\r\n_${violation.componentIdentifier}_\r\n`).join('');
+            let blackduckApiService = new blackduck_api_1.BlackduckApiService(inputs_1.BLACKDUCK_URL, inputs_1.BLACKDUCK_API_TOKEN);
+            const policyViolations = '| Component | Version | Short Term | Long Term | Violates |\r\n' +
+                '|-----------+---------+------------+-----------+----------|\r\n' +
+                scanJson.map(violation => createViolationString(blackduckApiService, violation)).join('\r\n');
             message = message.concat(policyViolations);
         }
         message = message.concat();
@@ -545,6 +550,12 @@ function createReport(scanJson) {
     });
 }
 exports.createReport = createReport;
+function createViolationString(blackduckApiService, violation) {
+    return __awaiter(this, void 0, void 0, function* () {
+        let upgradeGuidance = yield blackduckApiService.getUpgradeGuidanceFor(violation.componentIdentifier);
+        return `| ${violation.componentName} | ${violation.versionName} | ${upgradeGuidance.shortTerm.versionName} | ${upgradeGuidance.longTerm.versionName} | ${violation.violatingPolicyNames.map(policyName => `${policyName}`).join(', ')} |`;
+    });
+}
 
 
 /***/ }),

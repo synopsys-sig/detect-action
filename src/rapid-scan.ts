@@ -1,3 +1,6 @@
+import {BlackduckApiService} from './blackduck-api'
+import {BLACKDUCK_API_TOKEN, BLACKDUCK_URL} from './inputs'
+
 export interface PolicyViolation {
   componentName: string
   versionName: string
@@ -18,11 +21,18 @@ export async function createReport(scanJson: PolicyViolation[]): Promise<string>
   } else {
     message = message.concat('# :warning: Found dependencies violating policy!\r\n')
 
-    const policyViolations = scanJson.map(violation => `- [ ] **${violation.componentName} ${violation.versionName}** violates ${violation.violatingPolicyNames.map(policyName => `**${policyName}**`).join(', ')}\r\n_${violation.componentIdentifier}_\r\n`).join('')
+    let blackduckApiService = new BlackduckApiService(BLACKDUCK_URL, BLACKDUCK_API_TOKEN)
+
+    const policyViolations = '| Component | Version | Short Term | Long Term | Violates |\r\n' + '|-----------+---------+------------+-----------+----------|\r\n' + scanJson.map(violation => createViolationString(blackduckApiService, violation)).join('\r\n')
 
     message = message.concat(policyViolations)
   }
   message = message.concat()
 
   return message
+}
+
+async function createViolationString(blackduckApiService: BlackduckApiService, violation: PolicyViolation): Promise<string> {
+  let upgradeGuidance = await blackduckApiService.getUpgradeGuidanceFor(violation.componentIdentifier)
+  return `| ${violation.componentName} | ${violation.versionName} | ${upgradeGuidance.shortTerm.versionName} | ${upgradeGuidance.longTerm.versionName} | ${violation.violatingPolicyNames.map(policyName => `${policyName}`).join(', ')} |`
 }
