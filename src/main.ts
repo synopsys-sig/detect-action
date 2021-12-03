@@ -9,7 +9,7 @@ import {createReport, PolicyViolation} from './rapid-scan'
 import {isPullRequest} from './github-context'
 import {createBlackDuckPolicyCheck, failBlackDuckPolicyCheck, passBlackDuckPolicyCheck, skipBlackDuckPolicyCheck, cancelBlackDuckPolicyCheck} from './check'
 import {BLACKDUCK_API_TOKEN, BLACKDUCK_URL, DETECT_VERSION, OUTPUT_PATH_OVERRIDE, SCAN_MODE} from './inputs'
-import {BlackduckPolicyChecker} from './policy-checker'
+import {BlackduckApiService} from './blackduck-api'
 
 export async function run(): Promise<void> {
   const policyCheckId = await createBlackDuckPolicyCheck()
@@ -26,7 +26,7 @@ export async function run(): Promise<void> {
     outputPath = path.resolve(runnerTemp, 'blackduck')
   }
 
-  const blackduckPolicyChecker = new BlackduckPolicyChecker(BLACKDUCK_URL, BLACKDUCK_API_TOKEN)
+  const blackduckPolicyChecker = new BlackduckApiService(BLACKDUCK_URL, BLACKDUCK_API_TOKEN)
   let policiesExist: boolean | void = await blackduckPolicyChecker.checkIfEnabledBlackduckPoliciesExist().catch(reason => {
     setFailed(`Could not verify if policies existed: ${reason}`)
   })

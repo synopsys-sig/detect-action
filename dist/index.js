@@ -13,6 +13,134 @@ exports.APPLICATION_NAME = 'synopsys-sig/detect-action';
 
 /***/ }),
 
+/***/ 7495:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.BlackduckApiService = void 0;
+const core = __importStar(__nccwpck_require__(2186));
+const HttpClient_1 = __nccwpck_require__(5538);
+const application_constants_1 = __nccwpck_require__(9717);
+const handlers_1 = __nccwpck_require__(2188);
+const RestClient_1 = __nccwpck_require__(7405);
+class BlackduckApiService {
+    constructor(blackduckUrl, blackduckApiToken) {
+        this.blackduckUrl = cleanUrl(blackduckUrl);
+        this.blackduckApiToken = blackduckApiToken;
+    }
+    checkIfEnabledBlackduckPoliciesExist() {
+        return __awaiter(this, void 0, void 0, function* () {
+            return this.getBearerToken()
+                .then(bearerToken => this.getPolicies(bearerToken, 1, true))
+                .then(blackduckPolicyPage => {
+                var _a;
+                const policyCount = (_a = blackduckPolicyPage === null || blackduckPolicyPage === void 0 ? void 0 : blackduckPolicyPage.result) === null || _a === void 0 ? void 0 : _a.totalCount;
+                if (policyCount === undefined || policyCount === null) {
+                    core.warning('Failed to check Black Duck for policies');
+                    return false;
+                }
+                else if (policyCount > 0) {
+                    core.debug(`${policyCount} Black Duck policies existed`);
+                    return true;
+                }
+                else {
+                    core.info('No Black Duck policies exist');
+                    return false;
+                }
+            });
+        });
+    }
+    getUpgradeGuidanceFor(componentIdentifier) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const bearerToken = yield this.getBearerToken();
+            return this.getComponentsMatching(bearerToken, componentIdentifier, 1)
+                .then(componentPage => { var _a, _b; return (_b = (_a = componentPage === null || componentPage === void 0 ? void 0 : componentPage.result) === null || _a === void 0 ? void 0 : _a.items[0]) === null || _b === void 0 ? void 0 : _b.version; })
+                .then(componentVersionUrl => `${componentVersionUrl}/upgrade-guidance`)
+                .then(upgradeGuidanceUrl => this.get(bearerToken, upgradeGuidanceUrl));
+        });
+    }
+    getPolicies(bearerToken, limit = 10, enabled) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const enabledFilter = enabled === undefined || enabled === null ? '' : `filter=policyRuleEnabled%3A${enabled}`;
+            const requestPath = `/api/policy-rules?${enabledFilter}`;
+            return this.requestPage(bearerToken, requestPath, 0, limit);
+        });
+    }
+    getComponentsMatching(bearerToken, componentIdentifier, limit = 10) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const requestPath = `/api/components?q=${componentIdentifier}`;
+            return this.requestPage(bearerToken, requestPath, 0, limit);
+        });
+    }
+    requestPage(bearerToken, requestPath, offset, limit) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return this.get(bearerToken, `${this.blackduckUrl}${requestPath}&offset=${offset}&limit=${limit}`);
+        });
+    }
+    get(bearerToken, requestUrl) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const bearerTokenHandler = new handlers_1.BearerCredentialHandler(bearerToken, true);
+            const blackduckRestClient = new RestClient_1.RestClient(application_constants_1.APPLICATION_NAME, this.blackduckUrl, [bearerTokenHandler]);
+            return blackduckRestClient.get(requestUrl);
+        });
+    }
+    getBearerToken() {
+        return __awaiter(this, void 0, void 0, function* () {
+            core.info('Initiating authentication request to Black Duck...');
+            const authenticationClient = new HttpClient_1.HttpClient(application_constants_1.APPLICATION_NAME);
+            const authorizationHeader = { Authorization: `token ${this.blackduckApiToken}` };
+            return authenticationClient
+                .post(`${this.blackduckUrl}/api/tokens/authenticate`, '', authorizationHeader)
+                .then(authenticationResponse => authenticationResponse.readBody())
+                .then(responseBody => JSON.parse(responseBody))
+                .then(responseBodyJson => {
+                core.info('Successfully authenticated with Black Duck');
+                return responseBodyJson.bearerToken;
+            });
+        });
+    }
+}
+exports.BlackduckApiService = BlackduckApiService;
+function cleanUrl(blackduckUrl) {
+    if (blackduckUrl && blackduckUrl.endsWith('/')) {
+        return blackduckUrl.substr(0, blackduckUrl.length - 1);
+    }
+    return blackduckUrl;
+}
+
+
+/***/ }),
+
 /***/ 7657:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
@@ -292,7 +420,7 @@ const rapid_scan_1 = __nccwpck_require__(8631);
 const github_context_1 = __nccwpck_require__(4251);
 const check_1 = __nccwpck_require__(7657);
 const inputs_1 = __nccwpck_require__(6180);
-const policy_checker_1 = __nccwpck_require__(205);
+const blackduck_api_1 = __nccwpck_require__(7495);
 function run() {
     var _a, _b;
     return __awaiter(this, void 0, void 0, function* () {
@@ -310,7 +438,7 @@ function run() {
         else {
             outputPath = path_1.default.resolve(runnerTemp, 'blackduck');
         }
-        const blackduckPolicyChecker = new policy_checker_1.BlackduckPolicyChecker(inputs_1.BLACKDUCK_URL, inputs_1.BLACKDUCK_API_TOKEN);
+        const blackduckPolicyChecker = new blackduck_api_1.BlackduckApiService(inputs_1.BLACKDUCK_URL, inputs_1.BLACKDUCK_API_TOKEN);
         let policiesExist = yield blackduckPolicyChecker.checkIfEnabledBlackduckPoliciesExist().catch(reason => {
             (0, core_1.setFailed)(`Could not verify if policies existed: ${reason}`);
         });
@@ -381,109 +509,6 @@ function run() {
 }
 exports.run = run;
 run();
-
-
-/***/ }),
-
-/***/ 205:
-/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
-
-"use strict";
-
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || function (mod) {
-    if (mod && mod.__esModule) return mod;
-    var result = {};
-    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
-    __setModuleDefault(result, mod);
-    return result;
-};
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.BlackduckPolicyChecker = void 0;
-const core = __importStar(__nccwpck_require__(2186));
-const HttpClient_1 = __nccwpck_require__(5538);
-const application_constants_1 = __nccwpck_require__(9717);
-const handlers_1 = __nccwpck_require__(2188);
-const RestClient_1 = __nccwpck_require__(7405);
-class BlackduckPolicyChecker {
-    constructor(blackduckUrl, blackduckApiToken) {
-        this.blackduckUrl = cleanUrl(blackduckUrl);
-        this.blackduckApiToken = blackduckApiToken;
-    }
-    checkIfEnabledBlackduckPoliciesExist() {
-        return __awaiter(this, void 0, void 0, function* () {
-            return this.retrieveBearerTokenFromBlackduck()
-                .then(bearerToken => this.retrieveBlackduckPolicies(bearerToken, 1, true))
-                .then(blackduckPolicyPage => {
-                var _a;
-                const policyCount = (_a = blackduckPolicyPage === null || blackduckPolicyPage === void 0 ? void 0 : blackduckPolicyPage.result) === null || _a === void 0 ? void 0 : _a.totalCount;
-                if (policyCount === undefined || policyCount === null) {
-                    core.warning('Failed to check Black Duck for policies');
-                    return false;
-                }
-                else if (policyCount > 0) {
-                    core.debug(`${policyCount} Black Duck policies existed`);
-                    return true;
-                }
-                else {
-                    core.info('No Black Duck policies exist');
-                    return false;
-                }
-            });
-        });
-    }
-    retrieveBlackduckPolicies(bearerToken, limit = 10, enabled) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const bearerTokenHandler = new handlers_1.BearerCredentialHandler(bearerToken, true);
-            const blackduckRestClient = new RestClient_1.RestClient(application_constants_1.APPLICATION_NAME, this.blackduckUrl, [bearerTokenHandler]);
-            const enabledFilter = enabled === undefined || enabled === null ? '' : `&filter=policyRuleEnabled%3A${enabled}`;
-            const requestUrl = `${this.blackduckUrl}/api/policy-rules?offset=0&limit=${limit}${enabledFilter}`;
-            return blackduckRestClient.get(requestUrl);
-        });
-    }
-    retrieveBearerTokenFromBlackduck() {
-        return __awaiter(this, void 0, void 0, function* () {
-            core.info('Initiating authentication request to Black Duck...');
-            const authenticationClient = new HttpClient_1.HttpClient(application_constants_1.APPLICATION_NAME);
-            const authorizationHeader = { Authorization: `token ${this.blackduckApiToken}` };
-            return authenticationClient
-                .post(`${this.blackduckUrl}/api/tokens/authenticate`, '', authorizationHeader)
-                .then(authenticationResponse => authenticationResponse.readBody())
-                .then(responseBody => JSON.parse(responseBody))
-                .then(responseBodyJson => {
-                core.info('Successfully authenticated with Black Duck');
-                return responseBodyJson.bearerToken;
-            });
-        });
-    }
-}
-exports.BlackduckPolicyChecker = BlackduckPolicyChecker;
-function cleanUrl(blackduckUrl) {
-    if (blackduckUrl && blackduckUrl.endsWith('/')) {
-        return blackduckUrl.substr(0, blackduckUrl.length - 1);
-    }
-    return blackduckUrl;
-}
 
 
 /***/ }),
