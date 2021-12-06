@@ -1,3 +1,4 @@
+import {error, warning} from '@actions/core'
 import {BlackduckApiService} from './blackduck-api'
 import {BLACKDUCK_API_TOKEN, BLACKDUCK_URL} from './inputs'
 
@@ -35,10 +36,11 @@ export async function createReport(scanJson: PolicyViolation[]): Promise<string>
 }
 
 async function createViolationString(blackduckApiService: BlackduckApiService, bearerToken: string, violation: PolicyViolation): Promise<string> {
-  let upgradeGuidance = (await blackduckApiService.getUpgradeGuidanceFor(bearerToken, violation.componentIdentifier)).result
-  if (upgradeGuidance === null) {
+  let upgradeGuidanceResponse = await blackduckApiService.getUpgradeGuidanceFor(bearerToken, violation.componentIdentifier).catch(reason => warning(`Could not get upgrade guidance for ${violation.componentIdentifier}: ${reason}`))
+  if (upgradeGuidanceResponse === undefined) {
     return `| ${violation.componentName} | ${violation.versionName} |  |  | ${violation.violatingPolicyNames.map(policyName => `${policyName}`).join(', ')} |`
   }
+  const upgradeGuidance = upgradeGuidanceResponse.result
 
-  return `| ${violation.componentName} | ${violation.versionName} | ${upgradeGuidance.shortTerm.versionName}) | ${upgradeGuidance.longTerm.versionName} | ${violation.violatingPolicyNames.map(policyName => `${policyName}`).join(', ')} |`
+  return `| ${violation.componentName} | ${violation.versionName} | ${upgradeGuidance?.shortTerm.versionName}) | ${upgradeGuidance?.longTerm.versionName} | ${violation.violatingPolicyNames.map(policyName => `${policyName}`).join(', ')} |`
 }

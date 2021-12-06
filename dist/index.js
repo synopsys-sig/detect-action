@@ -528,6 +528,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.createReport = void 0;
+const core_1 = __nccwpck_require__(2186);
 const blackduck_api_1 = __nccwpck_require__(7495);
 const inputs_1 = __nccwpck_require__(6180);
 function createReport(scanJson) {
@@ -552,11 +553,12 @@ function createReport(scanJson) {
 exports.createReport = createReport;
 function createViolationString(blackduckApiService, bearerToken, violation) {
     return __awaiter(this, void 0, void 0, function* () {
-        let upgradeGuidance = (yield blackduckApiService.getUpgradeGuidanceFor(bearerToken, violation.componentIdentifier)).result;
-        if (upgradeGuidance === null) {
+        let upgradeGuidanceResponse = yield blackduckApiService.getUpgradeGuidanceFor(bearerToken, violation.componentIdentifier).catch(reason => (0, core_1.warning)(`Could not get upgrade guidance for ${violation.componentIdentifier}: ${reason}`));
+        if (upgradeGuidanceResponse === undefined) {
             return `| ${violation.componentName} | ${violation.versionName} |  |  | ${violation.violatingPolicyNames.map(policyName => `${policyName}`).join(', ')} |`;
         }
-        return `| ${violation.componentName} | ${violation.versionName} | ${upgradeGuidance.shortTerm.versionName}) | ${upgradeGuidance.longTerm.versionName} | ${violation.violatingPolicyNames.map(policyName => `${policyName}`).join(', ')} |`;
+        const upgradeGuidance = upgradeGuidanceResponse.result;
+        return `| ${violation.componentName} | ${violation.versionName} | ${upgradeGuidance === null || upgradeGuidance === void 0 ? void 0 : upgradeGuidance.shortTerm.versionName}) | ${upgradeGuidance === null || upgradeGuidance === void 0 ? void 0 : upgradeGuidance.longTerm.versionName} | ${violation.violatingPolicyNames.map(policyName => `${policyName}`).join(', ')} |`;
     });
 }
 
