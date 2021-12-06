@@ -538,10 +538,11 @@ function createReport(scanJson) {
         }
         else {
             message = message.concat('# :warning: Found dependencies violating policy!\r\n');
-            let blackduckApiService = new blackduck_api_1.BlackduckApiService(inputs_1.BLACKDUCK_URL, inputs_1.BLACKDUCK_API_TOKEN);
+            const blackduckApiService = new blackduck_api_1.BlackduckApiService(inputs_1.BLACKDUCK_URL, inputs_1.BLACKDUCK_API_TOKEN);
+            const bearerToken = yield blackduckApiService.getBearerToken();
             message.concat('| Component | Version | Short Term | Long Term | Violates |\r\n|-----------+---------+------------+-----------+----------|\r\n');
             for (const violation of scanJson) {
-                message.concat(yield createViolationString(blackduckApiService, violation));
+                message.concat(yield createViolationString(blackduckApiService, bearerToken, violation));
             }
         }
         message = message.concat();
@@ -549,9 +550,8 @@ function createReport(scanJson) {
     });
 }
 exports.createReport = createReport;
-function createViolationString(blackduckApiService, violation) {
+function createViolationString(blackduckApiService, bearerToken, violation) {
     return __awaiter(this, void 0, void 0, function* () {
-        let bearerToken = yield blackduckApiService.getBearerToken();
         let upgradeGuidance = (yield blackduckApiService.getUpgradeGuidanceFor(bearerToken, violation.componentIdentifier)).result;
         if (upgradeGuidance === null) {
             return `| ${violation.componentName} | ${violation.versionName} |  |  | ${violation.violatingPolicyNames.map(policyName => `${policyName}`).join(', ')} |`;
