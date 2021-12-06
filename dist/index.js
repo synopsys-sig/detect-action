@@ -541,13 +541,12 @@ function createReport(scanJson) {
             message = message.concat('# :x: Found dependencies violating policy!\r\n');
             const blackduckApiService = new blackduck_api_1.BlackduckApiService(inputs_1.BLACKDUCK_URL, inputs_1.BLACKDUCK_API_TOKEN);
             const bearerToken = yield blackduckApiService.getBearerToken();
-            message.concat('| Component | Version | Short Term | Long Term | Violates |\r\n|-----------+---------+------------+-----------+----------|\r\n');
+            message = message.concat('| Component | Version | Short Term | Long Term | Violates |\r\n|-----------+---------+------------+-----------+----------|\r\n');
             for (const violation of scanJson) {
                 const componentRow = yield createViolationString(blackduckApiService, bearerToken, violation);
-                message.concat(`${componentRow}\r\n`);
+                message = message.concat(`${componentRow}\r\n`);
             }
         }
-        message = message.concat();
         return message;
     });
 }

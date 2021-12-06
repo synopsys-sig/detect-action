@@ -25,13 +25,12 @@ export async function createReport(scanJson: PolicyViolation[]): Promise<string>
     const blackduckApiService = new BlackduckApiService(BLACKDUCK_URL, BLACKDUCK_API_TOKEN)
     const bearerToken = await blackduckApiService.getBearerToken()
 
-    message.concat('| Component | Version | Short Term | Long Term | Violates |\r\n|-----------+---------+------------+-----------+----------|\r\n')
+    message = message.concat('| Component | Version | Short Term | Long Term | Violates |\r\n|-----------+---------+------------+-----------+----------|\r\n')
     for (const violation of scanJson) {
       const componentRow = await createViolationString(blackduckApiService, bearerToken, violation)
-      message.concat(`${componentRow}\r\n`)
+      message = message.concat(`${componentRow}\r\n`)
     }
   }
-  message = message.concat()
 
   return message
 }
