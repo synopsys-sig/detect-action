@@ -21,11 +21,12 @@ export async function createReport(scanJson: PolicyViolation[]): Promise<string>
   } else {
     message = message.concat('# :warning: Found dependencies violating policy!\r\n')
 
-    let blackduckApiService = new BlackduckApiService(BLACKDUCK_URL, BLACKDUCK_API_TOKEN)
+    const blackduckApiService = new BlackduckApiService(BLACKDUCK_URL, BLACKDUCK_API_TOKEN)
+    const bearerToken = await blackduckApiService.getBearerToken()
 
     message.concat('| Component | Version | Short Term | Long Term | Violates |\r\n|-----------+---------+------------+-----------+----------|\r\n')
     for (const violation of scanJson) {
-      message.concat(await createViolationString(blackduckApiService, violation))
+      message.concat(await createViolationString(blackduckApiService, bearerToken, violation))
     }
   }
   message = message.concat()
@@ -33,7 +34,11 @@ export async function createReport(scanJson: PolicyViolation[]): Promise<string>
   return message
 }
 
-async function createViolationString(blackduckApiService: BlackduckApiService, violation: PolicyViolation): Promise<string> {
-  let upgradeGuidance = await blackduckApiService.getUpgradeGuidanceFor(violation.componentIdentifier)
-  return `| ${violation.componentName} | ${violation.versionName} | ${upgradeGuidance.shortTerm.versionName} | ${upgradeGuidance.longTerm.versionName} | ${violation.violatingPolicyNames.map(policyName => `${policyName}`).join(', ')} |`
+async function createViolationString(blackduckApiService: BlackduckApiService, bearerToken: string, violation: PolicyViolation): Promise<string> {
+  let upgradeGuidance = (await blackduckApiService.getUpgradeGuidanceFor(bearerToken, violation.componentIdentifier)).result
+  if (upgradeGuidance === null) {
+    return `| ${violation.componentName} | ${violation.versionName} |  |  | ${violation.violatingPolicyNames.map(policyName => `${policyName}`).join(', ')} |`
+  }
+
+  return `| ${violation.componentName} | ${violation.versionName} | ${upgradeGuidance.shortTerm.versionName}) | ${upgradeGuidance.longTerm.versionName} | ${violation.violatingPolicyNames.map(policyName => `${policyName}`).join(', ')} |`
 }

@@ -58,6 +58,21 @@ class BlackduckApiService {
         this.blackduckUrl = cleanUrl(blackduckUrl);
         this.blackduckApiToken = blackduckApiToken;
     }
+    getBearerToken() {
+        return __awaiter(this, void 0, void 0, function* () {
+            core.info('Initiating authentication request to Black Duck...');
+            const authenticationClient = new HttpClient_1.HttpClient(application_constants_1.APPLICATION_NAME);
+            const authorizationHeader = { Authorization: `token ${this.blackduckApiToken}` };
+            return authenticationClient
+                .post(`${this.blackduckUrl}/api/tokens/authenticate`, '', authorizationHeader)
+                .then(authenticationResponse => authenticationResponse.readBody())
+                .then(responseBody => JSON.parse(responseBody))
+                .then(responseBodyJson => {
+                core.info('Successfully authenticated with Black Duck');
+                return responseBodyJson.bearerToken;
+            });
+        });
+    }
     checkIfEnabledBlackduckPoliciesExist() {
         return __awaiter(this, void 0, void 0, function* () {
             return this.getBearerToken()
@@ -80,23 +95,12 @@ class BlackduckApiService {
             });
         });
     }
-    getUpgradeGuidanceFor(componentIdentifier) {
+    getUpgradeGuidanceFor(bearerToken, componentIdentifier) {
         return __awaiter(this, void 0, void 0, function* () {
-            const bearerToken = yield this.getBearerToken();
             return this.getComponentsMatching(bearerToken, componentIdentifier, 1)
-                .then(componentPage => {
-                var _a, _b;
-                core.info(JSON.stringify(componentPage, undefined, 2));
-                return (_b = (_a = componentPage === null || componentPage === void 0 ? void 0 : componentPage.result) === null || _a === void 0 ? void 0 : _a.items[0]) === null || _b === void 0 ? void 0 : _b.version;
-            })
-                .then(componentVersionUrl => {
-                core.info(componentVersionUrl);
-                return `${componentVersionUrl}/upgrade-guidance`;
-            })
-                .then(upgradeGuidanceUrl => {
-                core.info(upgradeGuidanceUrl);
-                return this.get(bearerToken, upgradeGuidanceUrl);
-            });
+                .then(componentPage => { var _a, _b; return (_b = (_a = componentPage === null || componentPage === void 0 ? void 0 : componentPage.result) === null || _a === void 0 ? void 0 : _a.items[0]) === null || _b === void 0 ? void 0 : _b.version; })
+                .then(componentVersionUrl => `${componentVersionUrl}/upgrade-guidance`)
+                .then(upgradeGuidanceUrl => this.get(bearerToken, upgradeGuidanceUrl));
         });
     }
     getPolicies(bearerToken, limit = 10, enabled) {
@@ -122,21 +126,6 @@ class BlackduckApiService {
             const bearerTokenHandler = new handlers_1.BearerCredentialHandler(bearerToken, true);
             const blackduckRestClient = new RestClient_1.RestClient(application_constants_1.APPLICATION_NAME, this.blackduckUrl, [bearerTokenHandler]);
             return blackduckRestClient.get(requestUrl);
-        });
-    }
-    getBearerToken() {
-        return __awaiter(this, void 0, void 0, function* () {
-            core.info('Initiating authentication request to Black Duck...');
-            const authenticationClient = new HttpClient_1.HttpClient(application_constants_1.APPLICATION_NAME);
-            const authorizationHeader = { Authorization: `token ${this.blackduckApiToken}` };
-            return authenticationClient
-                .post(`${this.blackduckUrl}/api/tokens/authenticate`, '', authorizationHeader)
-                .then(authenticationResponse => authenticationResponse.readBody())
-                .then(responseBody => JSON.parse(responseBody))
-                .then(responseBodyJson => {
-                core.info('Successfully authenticated with Black Duck');
-                return responseBodyJson.bearerToken;
-            });
         });
     }
 }
@@ -562,8 +551,12 @@ function createReport(scanJson) {
 exports.createReport = createReport;
 function createViolationString(blackduckApiService, violation) {
     return __awaiter(this, void 0, void 0, function* () {
-        let upgradeGuidance = yield blackduckApiService.getUpgradeGuidanceFor(violation.componentIdentifier);
-        return `| ${violation.componentName} | ${violation.versionName} | ${upgradeGuidance.shortTerm.versionName} | ${upgradeGuidance.longTerm.versionName} | ${violation.violatingPolicyNames.map(policyName => `${policyName}`).join(', ')} |`;
+        let bearerToken = yield blackduckApiService.getBearerToken();
+        let upgradeGuidance = (yield blackduckApiService.getUpgradeGuidanceFor(bearerToken, violation.componentIdentifier)).result;
+        if (upgradeGuidance === null) {
+            return `| ${violation.componentName} | ${violation.versionName} |  |  | ${violation.violatingPolicyNames.map(policyName => `${policyName}`).join(', ')} |`;
+        }
+        return `| ${violation.componentName} | ${violation.versionName} | ${upgradeGuidance.shortTerm.versionName}) | ${upgradeGuidance.longTerm.versionName} | ${violation.violatingPolicyNames.map(policyName => `${policyName}`).join(', ')} |`;
     });
 }
 

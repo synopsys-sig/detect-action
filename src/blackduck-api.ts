@@ -11,6 +11,15 @@ export interface IBlackduckPage {
   _meta: Object
 }
 
+export interface IUpgradeGuidance {
+  shortTerm: {
+    versionName: string
+  }
+  longTerm: {
+    versionName: string
+  }
+}
+
 export class BlackduckApiService {
   blackduckUrl: string
   blackduckApiToken: string
@@ -18,6 +27,21 @@ export class BlackduckApiService {
   constructor(blackduckUrl: string, blackduckApiToken: string) {
     this.blackduckUrl = cleanUrl(blackduckUrl)
     this.blackduckApiToken = blackduckApiToken
+  }
+
+  async getBearerToken(): Promise<string> {
+    core.info('Initiating authentication request to Black Duck...')
+    const authenticationClient = new HttpClient(APPLICATION_NAME)
+    const authorizationHeader: IHeaders = {Authorization: `token ${this.blackduckApiToken}`}
+
+    return authenticationClient
+      .post(`${this.blackduckUrl}/api/tokens/authenticate`, '', authorizationHeader)
+      .then(authenticationResponse => authenticationResponse.readBody())
+      .then(responseBody => JSON.parse(responseBody))
+      .then(responseBodyJson => {
+        core.info('Successfully authenticated with Black Duck')
+        return responseBodyJson.bearerToken
+      })
   }
 
   async checkIfEnabledBlackduckPoliciesExist(): Promise<boolean> {
@@ -38,21 +62,11 @@ export class BlackduckApiService {
       })
   }
 
-  async getUpgradeGuidanceFor(componentIdentifier: string): Promise<any> {
-    const bearerToken = await this.getBearerToken()
+  async getUpgradeGuidanceFor(bearerToken: string, componentIdentifier: string): Promise<IRestResponse<IUpgradeGuidance>> {
     return this.getComponentsMatching(bearerToken, componentIdentifier, 1)
-      .then(componentPage => {
-        core.info(JSON.stringify(componentPage, undefined, 2))
-        return componentPage?.result?.items[0]?.version
-      })
-      .then(componentVersionUrl => {
-        core.info(componentVersionUrl)
-        return `${componentVersionUrl}/upgrade-guidance`
-      })
-      .then(upgradeGuidanceUrl => {
-        core.info(upgradeGuidanceUrl)
-        return this.get(bearerToken, upgradeGuidanceUrl)
-      })
+      .then(componentPage => componentPage?.result?.items[0]?.version)
+      .then(componentVersionUrl => `${componentVersionUrl}/upgrade-guidance`)
+      .then(upgradeGuidanceUrl => this.get(bearerToken, upgradeGuidanceUrl))
   }
 
   private async getPolicies(bearerToken: string, limit: number = 10, enabled?: boolean) {
@@ -77,21 +91,6 @@ export class BlackduckApiService {
     const blackduckRestClient = new RestClient(APPLICATION_NAME, this.blackduckUrl, [bearerTokenHandler])
 
     return blackduckRestClient.get(requestUrl)
-  }
-
-  private async getBearerToken(): Promise<string> {
-    core.info('Initiating authentication request to Black Duck...')
-    const authenticationClient = new HttpClient(APPLICATION_NAME)
-    const authorizationHeader: IHeaders = {Authorization: `token ${this.blackduckApiToken}`}
-
-    return authenticationClient
-      .post(`${this.blackduckUrl}/api/tokens/authenticate`, '', authorizationHeader)
-      .then(authenticationResponse => authenticationResponse.readBody())
-      .then(responseBody => JSON.parse(responseBody))
-      .then(responseBodyJson => {
-        core.info('Successfully authenticated with Black Duck')
-        return responseBodyJson.bearerToken
-      })
   }
 }
 
