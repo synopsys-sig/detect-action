@@ -540,10 +540,10 @@ function createReport(scanJson) {
         else {
             message = message.concat('# :warning: Found dependencies violating policy!\r\n');
             let blackduckApiService = new blackduck_api_1.BlackduckApiService(inputs_1.BLACKDUCK_URL, inputs_1.BLACKDUCK_API_TOKEN);
-            const policyViolations = '| Component | Version | Short Term | Long Term | Violates |\r\n' +
-                '|-----------+---------+------------+-----------+----------|\r\n' +
-                scanJson.map(violation => createViolationString(blackduckApiService, violation)).join('\r\n');
-            message = message.concat(policyViolations);
+            message.concat('| Component | Version | Short Term | Long Term | Violates |\r\n|-----------+---------+------------+-----------+----------|\r\n');
+            for (const violation of scanJson) {
+                message.concat(yield createViolationString(blackduckApiService, violation));
+            }
         }
         message = message.concat();
         return message;

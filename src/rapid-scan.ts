@@ -23,9 +23,10 @@ export async function createReport(scanJson: PolicyViolation[]): Promise<string>
 
     let blackduckApiService = new BlackduckApiService(BLACKDUCK_URL, BLACKDUCK_API_TOKEN)
 
-    const policyViolations = '| Component | Version | Short Term | Long Term | Violates |\r\n' + '|-----------+---------+------------+-----------+----------|\r\n' + scanJson.map(violation => createViolationString(blackduckApiService, violation)).join('\r\n')
-
-    message = message.concat(policyViolations)
+    message.concat('| Component | Version | Short Term | Long Term | Violates |\r\n|-----------+---------+------------+-----------+----------|\r\n')
+    for (const violation of scanJson) {
+      message.concat(await createViolationString(blackduckApiService, violation))
+    }
   }
   message = message.concat()
 
