@@ -1,4 +1,4 @@
-import {info, warning} from '@actions/core'
+import {warning} from '@actions/core'
 import {BlackduckApiService} from './blackduck-api'
 import {BLACKDUCK_API_TOKEN, BLACKDUCK_URL} from './inputs'
 
@@ -27,7 +27,8 @@ export async function createReport(scanJson: PolicyViolation[]): Promise<string>
 
     message.concat('| Component | Version | Short Term | Long Term | Violates |\r\n|-----------+---------+------------+-----------+----------|\r\n')
     for (const violation of scanJson) {
-      message.concat(await createViolationString(blackduckApiService, bearerToken, violation))
+      const componentRow = await createViolationString(blackduckApiService, bearerToken, violation)
+      message.concat(`${componentRow}\r\n`)
     }
   }
   message = message.concat()
@@ -41,7 +42,5 @@ async function createViolationString(blackduckApiService: BlackduckApiService, b
     return `| ${violation.componentName} | ${violation.versionName} |  |  | ${violation.violatingPolicyNames.map(policyName => `${policyName}`).join(', ')} |`
   }
   const upgradeGuidance = upgradeGuidanceResponse.result
-  info(JSON.stringify(upgradeGuidance, undefined, 2))
-
   return `| ${violation.componentName} | ${violation.versionName} | ${upgradeGuidance?.shortTerm?.versionName}) | ${upgradeGuidance?.longTerm?.versionName} | ${violation.violatingPolicyNames.map(policyName => `${policyName}`).join(', ')} |`
 }

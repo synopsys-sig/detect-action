@@ -543,7 +543,8 @@ function createReport(scanJson) {
             const bearerToken = yield blackduckApiService.getBearerToken();
             message.concat('| Component | Version | Short Term | Long Term | Violates |\r\n|-----------+---------+------------+-----------+----------|\r\n');
             for (const violation of scanJson) {
-                message.concat(yield createViolationString(blackduckApiService, bearerToken, violation));
+                const componentRow = yield createViolationString(blackduckApiService, bearerToken, violation);
+                message.concat(`${componentRow}\r\n`);
             }
         }
         message = message.concat();
@@ -559,7 +560,6 @@ function createViolationString(blackduckApiService, bearerToken, violation) {
             return `| ${violation.componentName} | ${violation.versionName} |  |  | ${violation.violatingPolicyNames.map(policyName => `${policyName}`).join(', ')} |`;
         }
         const upgradeGuidance = upgradeGuidanceResponse.result;
-        (0, core_1.info)(JSON.stringify(upgradeGuidance, undefined, 2));
         return `| ${violation.componentName} | ${violation.versionName} | ${(_a = upgradeGuidance === null || upgradeGuidance === void 0 ? void 0 : upgradeGuidance.shortTerm) === null || _a === void 0 ? void 0 : _a.versionName}) | ${(_b = upgradeGuidance === null || upgradeGuidance === void 0 ? void 0 : upgradeGuidance.longTerm) === null || _b === void 0 ? void 0 : _b.versionName} | ${violation.violatingPolicyNames.map(policyName => `${policyName}`).join(', ')} |`;
     });
 }
