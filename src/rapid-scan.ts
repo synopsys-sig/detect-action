@@ -1,4 +1,4 @@
-import {error, warning} from '@actions/core'
+import {info, warning} from '@actions/core'
 import {BlackduckApiService} from './blackduck-api'
 import {BLACKDUCK_API_TOKEN, BLACKDUCK_URL} from './inputs'
 
@@ -41,6 +41,7 @@ async function createViolationString(blackduckApiService: BlackduckApiService, b
     return `| ${violation.componentName} | ${violation.versionName} |  |  | ${violation.violatingPolicyNames.map(policyName => `${policyName}`).join(', ')} |`
   }
   const upgradeGuidance = upgradeGuidanceResponse.result
+  info(JSON.stringify(upgradeGuidance, undefined, 2))
 
-  return `| ${violation.componentName} | ${violation.versionName} | ${upgradeGuidance?.shortTerm.versionName}) | ${upgradeGuidance?.longTerm.versionName} | ${violation.violatingPolicyNames.map(policyName => `${policyName}`).join(', ')} |`
+  return `| ${violation.componentName} | ${violation.versionName} | ${upgradeGuidance?.shortTerm?.versionName}) | ${upgradeGuidance?.longTerm?.versionName} | ${violation.violatingPolicyNames.map(policyName => `${policyName}`).join(', ')} |`
 }

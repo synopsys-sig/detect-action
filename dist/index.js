@@ -552,13 +552,15 @@ function createReport(scanJson) {
 }
 exports.createReport = createReport;
 function createViolationString(blackduckApiService, bearerToken, violation) {
+    var _a, _b;
     return __awaiter(this, void 0, void 0, function* () {
         let upgradeGuidanceResponse = yield blackduckApiService.getUpgradeGuidanceFor(bearerToken, violation.componentIdentifier).catch(reason => (0, core_1.warning)(`Could not get upgrade guidance for ${violation.componentIdentifier}: ${reason}`));
         if (upgradeGuidanceResponse === undefined) {
             return `| ${violation.componentName} | ${violation.versionName} |  |  | ${violation.violatingPolicyNames.map(policyName => `${policyName}`).join(', ')} |`;
         }
         const upgradeGuidance = upgradeGuidanceResponse.result;
-        return `| ${violation.componentName} | ${violation.versionName} | ${upgradeGuidance === null || upgradeGuidance === void 0 ? void 0 : upgradeGuidance.shortTerm.versionName}) | ${upgradeGuidance === null || upgradeGuidance === void 0 ? void 0 : upgradeGuidance.longTerm.versionName} | ${violation.violatingPolicyNames.map(policyName => `${policyName}`).join(', ')} |`;
+        (0, core_1.info)(JSON.stringify(upgradeGuidance, undefined, 2));
+        return `| ${violation.componentName} | ${violation.versionName} | ${(_a = upgradeGuidance === null || upgradeGuidance === void 0 ? void 0 : upgradeGuidance.shortTerm) === null || _a === void 0 ? void 0 : _a.versionName}) | ${(_b = upgradeGuidance === null || upgradeGuidance === void 0 ? void 0 : upgradeGuidance.longTerm) === null || _b === void 0 ? void 0 : _b.versionName} | ${violation.violatingPolicyNames.map(policyName => `${policyName}`).join(', ')} |`;
     });
 }
 
