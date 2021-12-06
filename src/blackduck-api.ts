@@ -41,9 +41,18 @@ export class BlackduckApiService {
   async getUpgradeGuidanceFor(componentIdentifier: string): Promise<any> {
     const bearerToken = await this.getBearerToken()
     return this.getComponentsMatching(bearerToken, componentIdentifier, 1)
-      .then(componentPage => componentPage?.result?.items[0]?.version)
-      .then(componentVersionUrl => `${componentVersionUrl}/upgrade-guidance`)
-      .then(upgradeGuidanceUrl => this.get(bearerToken, upgradeGuidanceUrl))
+      .then(componentPage => {
+        core.info(JSON.stringify(componentPage, undefined, 2))
+        return componentPage?.result?.items[0]?.version
+      })
+      .then(componentVersionUrl => {
+        core.info(componentVersionUrl)
+        return `${componentVersionUrl}/upgrade-guidance`
+      })
+      .then(upgradeGuidanceUrl => {
+        core.info(upgradeGuidanceUrl)
+        return this.get(bearerToken, upgradeGuidanceUrl)
+      })
   }
 
   private async getPolicies(bearerToken: string, limit: number = 10, enabled?: boolean) {

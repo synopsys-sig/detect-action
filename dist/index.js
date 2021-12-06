@@ -84,9 +84,19 @@ class BlackduckApiService {
         return __awaiter(this, void 0, void 0, function* () {
             const bearerToken = yield this.getBearerToken();
             return this.getComponentsMatching(bearerToken, componentIdentifier, 1)
-                .then(componentPage => { var _a, _b; return (_b = (_a = componentPage === null || componentPage === void 0 ? void 0 : componentPage.result) === null || _a === void 0 ? void 0 : _a.items[0]) === null || _b === void 0 ? void 0 : _b.version; })
-                .then(componentVersionUrl => `${componentVersionUrl}/upgrade-guidance`)
-                .then(upgradeGuidanceUrl => this.get(bearerToken, upgradeGuidanceUrl));
+                .then(componentPage => {
+                var _a, _b;
+                core.info(JSON.stringify(componentPage, undefined, 2));
+                return (_b = (_a = componentPage === null || componentPage === void 0 ? void 0 : componentPage.result) === null || _a === void 0 ? void 0 : _a.items[0]) === null || _b === void 0 ? void 0 : _b.version;
+            })
+                .then(componentVersionUrl => {
+                core.info(componentVersionUrl);
+                return `${componentVersionUrl}/upgrade-guidance`;
+            })
+                .then(upgradeGuidanceUrl => {
+                core.info(upgradeGuidanceUrl);
+                return this.get(bearerToken, upgradeGuidanceUrl);
+            });
         });
     }
     getPolicies(bearerToken, limit = 10, enabled) {
