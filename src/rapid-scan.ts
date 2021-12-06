@@ -20,7 +20,7 @@ export async function createReport(scanJson: PolicyViolation[]): Promise<string>
   if (scanJson.length == 0) {
     message = message.concat('# :white_check_mark: None of your dependencies violate policy!')
   } else {
-    message = message.concat('# :warning: Found dependencies violating policy!\r\n')
+    message = message.concat('# :x: Found dependencies violating policy!\r\n')
 
     const blackduckApiService = new BlackduckApiService(BLACKDUCK_URL, BLACKDUCK_API_TOKEN)
     const bearerToken = await blackduckApiService.getBearerToken()
