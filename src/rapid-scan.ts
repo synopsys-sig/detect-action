@@ -25,7 +25,7 @@ export async function createReport(scanJson: PolicyViolation[]): Promise<string>
     const blackduckApiService = new BlackduckApiService(BLACKDUCK_URL, BLACKDUCK_API_TOKEN)
     const bearerToken = await blackduckApiService.getBearerToken()
 
-    message = message.concat('| Component | Version | Short Term | Long Term | Violates |\r\n|-----------+---------+------------+-----------+----------|\r\n')
+    message = message.concat('\r\n| Component | Version | Short Term Fix | Long Term Fix | Violates |\r\n|-----------|---------|------------|-----------|----------|\r\n')
     for (const violation of scanJson) {
       const componentRow = await createViolationString(blackduckApiService, bearerToken, violation)
       message = message.concat(`${componentRow}\r\n`)
@@ -41,5 +41,5 @@ async function createViolationString(blackduckApiService: BlackduckApiService, b
     return `| ${violation.componentName} | ${violation.versionName} |  |  | ${violation.violatingPolicyNames.map(policyName => `${policyName}`).join(', ')} |`
   }
   const upgradeGuidance = upgradeGuidanceResponse.result
-  return `| ${violation.componentName} | ${violation.versionName} | ${upgradeGuidance?.shortTerm?.versionName}) | ${upgradeGuidance?.longTerm?.versionName} | ${violation.violatingPolicyNames.map(policyName => `${policyName}`).join(', ')} |`
+  return `| ${violation.componentName} | ${violation.versionName} | ${upgradeGuidance?.shortTerm?.versionName ?? ''} | ${upgradeGuidance?.longTerm?.versionName ?? ''} | ${violation.violatingPolicyNames.map(policyName => `${policyName}`).join(', ')} |`
 }
