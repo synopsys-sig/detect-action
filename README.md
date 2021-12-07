@@ -19,6 +19,8 @@ Comments on Pull Requests if any of your dependencies violate policies.
   - [Setup Java](#setup-java)
   - [Create Black Duck Policy (Optional)](#create-black-duck-policy-optional)
   - [Setup Detect Action](#setup-detect-action)
+    - [Additional Action Parameters](#additional-action-parameters)
+    - [Additional Detect Properties](#additional-detect-properties)
   - [Include Custom Certificates (Optional)](#include-custom-certificates-optional)
 - [Policy Checks](#policy-checks)
 
@@ -147,7 +149,7 @@ Please refer to [that action's documentation](https://github.com/blackducksoftwa
 ## Setup Detect Action
 Once your project is checked-out, built, and Java is configured, the _Detect Action_ can finally be run. At minimum for Detect to run, the Black Duck URL (`blackduck-url`), API Token (`blackduck-api-token`), and Detect Version (`detect-version`) must be provided as parameters. Additionally, a _GITHUB\_TOKEN_ (`github-token`) is required in order to comment on Pull Requests or hook into GitHub Checks.
 
-### Optional Parameters
+### Additional Action Parameters
  - `scan-mode`: Either RAPID or INTELLIGENT, configures how Detect is invoked. RAPID will not persist the results and disables select Detect functionality for faster results. INTELLIGENT persists the results and permits all features of Detect.
    - Default: RAPID
  - `output-path-override`: Override for where to output Detect files
@@ -155,13 +157,43 @@ Once your project is checked-out, built, and Java is configured, the _Detect Act
 
 ```yaml
     - name: Synopsys Detect
-      uses: synopsys-sig/detect-action@main
+      uses: synopsys-sig/detect-action@v0.0.1
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         detect-version: 7.7.0
         blackduck-url: ${{ secrets.BLACKDUCK_URL }}
         blackduck-api-token: ${{ secrets.BLACKDUCK_API_TOKEN }}
 ```
+
+### Additional Detect Properties
+Passing additional [Detect properties](https://community.synopsys.com/s/document-item?bundleId=integrations-detect&topicId=properties%2Fall-properties.html&_LANG=enus) can be done in several ways:
+1. Use individual environment variables 
+
+**Example**:
+```yaml
+    - name: Synopsys Detect
+      uses: synopsys-sig/detect-action@v0.0.1
+      env:
+        DETECT_TOOLS: DOCKER
+        DETECT_DOCKER_IMAGE_ID: abc123
+        DETECT_DOCKER_PATH_REQUIRED: TRUE
+      with:
+        . . .
+```
+2. Use the `SPRING_APPLICATION_JSON` environment variable 
+
+**Example**:
+```yaml
+    - name: Synopsys Detect
+      uses: synopsys-sig/detect-action@v0.0.1
+      env:
+        SPRING_APPLICATION_JSON: '{"detect.tools":"DOCKER","detect.docker.image.id":"abc123","detect.docker.path.required":"TRUE"}'
+      with:
+        . . .
+```
+3. Expose an _application.properties_ or _application.yml_ file in your repository's root directory, or in a _config_ subdirectory
+
+Please refer to the [Detect documentation on this topic](https://community.synopsys.com/s/document-item?bundleId=integrations-detect&topicId=configuring%2Fothermethods.html&_LANG=enus) for more information.
 
 ## Include Custom Certificates (Optional)
 To include one or more certificates, set `NODE_EXTRA_CA_CERTS` to the certificate file-path(s) in the environment. 
