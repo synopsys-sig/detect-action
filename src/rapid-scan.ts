@@ -29,7 +29,7 @@ export async function createReport(scanJson: PolicyViolation[]): Promise<string>
     const blackduckApiService = new BlackduckApiService(BLACKDUCK_URL, BLACKDUCK_API_TOKEN)
     const bearerToken = await blackduckApiService.getBearerToken()
 
-    message = message.concat('\r\n| Component | Version | Short Term Fix | Long Term Fix | Violates | Vulnerabilities |\r\n|-----------|---------|------------|-----------|----------|-----------------|\r\n')
+    message = message.concat('\r\n| Component | Short Term Fix | Long Term Fix | Violates | Vulnerabilities |\r\n|-----------|------------|-----------|----------|-----------------|\r\n')
     for (const violation of scanJson) {
       const componentRow = await createViolationString(blackduckApiService, bearerToken, violation)
       message = message.concat(`${componentRow}\r\n`)
@@ -42,8 +42,8 @@ export async function createReport(scanJson: PolicyViolation[]): Promise<string>
 async function createViolationString(blackduckApiService: BlackduckApiService, bearerToken: string, violation: PolicyViolation): Promise<string> {
   let upgradeGuidanceResponse = await blackduckApiService.getUpgradeGuidanceFor(bearerToken, violation.componentIdentifier).catch(reason => warning(`Could not get upgrade guidance for ${violation.componentIdentifier}: ${reason}`))
   if (upgradeGuidanceResponse === undefined) {
-    return `| ${violation.componentName} | ${violation.versionName} |  |  | ${violation.violatingPolicyNames.map(policyName => `${policyName}`).join(', ')} |`
+    return `| ${violation.componentName} ${violation.versionName} |  |  | ${violation.violatingPolicyNames.map(policyName => `${policyName}`).join(', ')} |`
   }
   const upgradeGuidance = upgradeGuidanceResponse.result
-  return `| ${violation.componentName} | ${violation.versionName} | ${upgradeGuidance?.shortTerm?.versionName ?? ''} | ${upgradeGuidance?.longTerm?.versionName ?? ''} | ${violation.violatingPolicyNames.map(policyName => `${policyName}`).join(', ')} | ${violation.policyViolationVulnerabilities.map(vulnerability => vulnerability.name).join(', ')} |`
+  return `| ${violation.componentName} ${violation.versionName} | ${upgradeGuidance?.shortTerm?.versionName ?? ''} | ${upgradeGuidance?.longTerm?.versionName ?? ''} | ${violation.violatingPolicyNames.map(policyName => `${policyName}`).join(', ')} | ${violation.policyViolationVulnerabilities.map(vulnerability => vulnerability.name).join(', ')} |`
 }

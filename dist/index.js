@@ -541,7 +541,7 @@ function createReport(scanJson) {
             message = message.concat('# :x: Found dependencies violating policy!\r\n');
             const blackduckApiService = new blackduck_api_1.BlackduckApiService(inputs_1.BLACKDUCK_URL, inputs_1.BLACKDUCK_API_TOKEN);
             const bearerToken = yield blackduckApiService.getBearerToken();
-            message = message.concat('\r\n| Component | Version | Short Term Fix | Long Term Fix | Violates | Vulnerabilities |\r\n|-----------|---------|------------|-----------|----------|-----------------|\r\n');
+            message = message.concat('\r\n| Component | Short Term Fix | Long Term Fix | Violates | Vulnerabilities |\r\n|-----------|------------|-----------|----------|-----------------|\r\n');
             for (const violation of scanJson) {
                 const componentRow = yield createViolationString(blackduckApiService, bearerToken, violation);
                 message = message.concat(`${componentRow}\r\n`);
@@ -556,10 +556,10 @@ function createViolationString(blackduckApiService, bearerToken, violation) {
     return __awaiter(this, void 0, void 0, function* () {
         let upgradeGuidanceResponse = yield blackduckApiService.getUpgradeGuidanceFor(bearerToken, violation.componentIdentifier).catch(reason => (0, core_1.warning)(`Could not get upgrade guidance for ${violation.componentIdentifier}: ${reason}`));
         if (upgradeGuidanceResponse === undefined) {
-            return `| ${violation.componentName} | ${violation.versionName} |  |  | ${violation.violatingPolicyNames.map(policyName => `${policyName}`).join(', ')} |`;
+            return `| ${violation.componentName} ${violation.versionName} |  |  | ${violation.violatingPolicyNames.map(policyName => `${policyName}`).join(', ')} |`;
         }
         const upgradeGuidance = upgradeGuidanceResponse.result;
-        return `| ${violation.componentName} | ${violation.versionName} | ${(_b = (_a = upgradeGuidance === null || upgradeGuidance === void 0 ? void 0 : upgradeGuidance.shortTerm) === null || _a === void 0 ? void 0 : _a.versionName) !== null && _b !== void 0 ? _b : ''} | ${(_d = (_c = upgradeGuidance === null || upgradeGuidance === void 0 ? void 0 : upgradeGuidance.longTerm) === null || _c === void 0 ? void 0 : _c.versionName) !== null && _d !== void 0 ? _d : ''} | ${violation.violatingPolicyNames.map(policyName => `${policyName}`).join(', ')} | ${violation.policyViolationVulnerabilities.map(vulnerability => vulnerability.name).join(', ')} |`;
+        return `| ${violation.componentName} ${violation.versionName} | ${(_b = (_a = upgradeGuidance === null || upgradeGuidance === void 0 ? void 0 : upgradeGuidance.shortTerm) === null || _a === void 0 ? void 0 : _a.versionName) !== null && _b !== void 0 ? _b : ''} | ${(_d = (_c = upgradeGuidance === null || upgradeGuidance === void 0 ? void 0 : upgradeGuidance.longTerm) === null || _c === void 0 ? void 0 : _c.versionName) !== null && _d !== void 0 ? _d : ''} | ${violation.violatingPolicyNames.map(policyName => `${policyName}`).join(', ')} | ${violation.policyViolationVulnerabilities.map(vulnerability => vulnerability.name).join(', ')} |`;
     });
 }
 
