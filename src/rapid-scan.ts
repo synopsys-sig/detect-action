@@ -7,12 +7,16 @@ export interface PolicyViolation {
   versionName: string
   componentIdentifier: string
   violatingPolicyNames: string[]
-  errorMessage: string
-  _meta: Meta
-}
+  policyViolationVulnerabilities: {
+    name: string
+    description: string
+    violatingPolicyNames: string[]
+  }[]
 
-export interface Meta {
-  href: string
+  errorMessage: string
+  _meta: {
+    href: string
+  }
 }
 
 export async function createReport(scanJson: PolicyViolation[]): Promise<string> {
@@ -25,7 +29,7 @@ export async function createReport(scanJson: PolicyViolation[]): Promise<string>
     const blackduckApiService = new BlackduckApiService(BLACKDUCK_URL, BLACKDUCK_API_TOKEN)
     const bearerToken = await blackduckApiService.getBearerToken()
 
-    message = message.concat('\r\n| Component | Version | Short Term Fix | Long Term Fix | Violates |\r\n|-----------|---------|------------|-----------|----------|\r\n')
+    message = message.concat('\r\n| Component | Version | Short Term Fix | Long Term Fix | Violates | Vulnerabilities |\r\n|-----------|---------|------------|-----------|----------|-----------------|\r\n')
     for (const violation of scanJson) {
       const componentRow = await createViolationString(blackduckApiService, bearerToken, violation)
       message = message.concat(`${componentRow}\r\n`)
@@ -41,5 +45,5 @@ async function createViolationString(blackduckApiService: BlackduckApiService, b
     return `| ${violation.componentName} | ${violation.versionName} |  |  | ${violation.violatingPolicyNames.map(policyName => `${policyName}`).join(', ')} |`
   }
   const upgradeGuidance = upgradeGuidanceResponse.result
-  return `| ${violation.componentName} | ${violation.versionName} | ${upgradeGuidance?.shortTerm?.versionName ?? ''} | ${upgradeGuidance?.longTerm?.versionName ?? ''} | ${violation.violatingPolicyNames.map(policyName => `${policyName}`).join(', ')} |`
+  return `| ${violation.componentName} | ${violation.versionName} | ${upgradeGuidance?.shortTerm?.versionName ?? ''} | ${upgradeGuidance?.longTerm?.versionName ?? ''} | ${violation.violatingPolicyNames.map(policyName => `${policyName}`).join(', ')} | ${violation.policyViolationVulnerabilities.map(vulnerability => vulnerability.name).join(', ')} |`
 }
