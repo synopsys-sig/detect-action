@@ -1,19 +1,12 @@
 import {warning} from '@actions/core'
-import {BlackduckApiService} from './blackduck-api'
+import {IRestResponse} from 'typed-rest-client'
+import {BlackduckApiService, IBlackduckPage, IRapidScanViolation, IUpgradeGuidance} from './blackduck-api'
 import {BLACKDUCK_API_TOKEN, BLACKDUCK_URL} from './inputs'
 
 export interface PolicyViolation {
   componentName: string
   versionName: string
   componentIdentifier: string
-  violatingPolicyNames: string[]
-  policyViolationVulnerabilities: {
-    name: string
-    description: string
-    violatingPolicyNames: string[]
-  }[]
-
-  errorMessage: string
   _meta: {
     href: string
   }
@@ -30,8 +23,17 @@ export async function createReport(scanJson: PolicyViolation[]): Promise<string>
     const bearerToken = await blackduckApiService.getBearerToken()
 
     message = message.concat('\r\n| Component | Short Term Fix | Long Term Fix | Violates | Vulnerabilities |\r\n|-----------|------------|-----------|----------|-----------------|\r\n')
-    for (const violation of scanJson) {
-      const componentRow = await createViolationString(blackduckApiService, bearerToken, violation)
+    const fullResultsResponse: IRestResponse<IBlackduckPage<IRapidScanViolation>> = await blackduckApiService.get(bearerToken, scanJson[0]._meta.href + '/full-result')
+    if (fullResultsResponse === undefined) {
+      return ''
+    }
+    const fullResults = fullResultsResponse?.result?.items
+    if (fullResults === undefined) {
+      return ''
+    }
+    for (const violation of fullResults) {
+      let upgradeGuidanceResponse = await blackduckApiService.getUpgradeGuidanceFor(bearerToken, violation.componentIdentifier).catch(reason => warning(`Could not get upgrade guidance for ${violation.componentIdentifier}: ${reason}`))
+      const componentRow = createViolationString(upgradeGuidanceResponse, violation)
       message = message.concat(`${componentRow}\r\n`)
     }
   }
@@ -39,11 +41,14 @@ export async function createReport(scanJson: PolicyViolation[]): Promise<string>
   return message
 }
 
-async function createViolationString(blackduckApiService: BlackduckApiService, bearerToken: string, violation: PolicyViolation): Promise<string> {
-  let upgradeGuidanceResponse = await blackduckApiService.getUpgradeGuidanceFor(bearerToken, violation.componentIdentifier).catch(reason => warning(`Could not get upgrade guidance for ${violation.componentIdentifier}: ${reason}`))
+function createViolationString(upgradeGuidanceResponse: void | IRestResponse<IUpgradeGuidance>, violation: IRapidScanViolation): string {
+  const componentInViolation = `${violation.componentName} ${violation.versionName}`
+  const componentLicenses = violation.allLicenses.map(license => `${license.name}`).join(', ')
+  const violatedPolicies = violation.violatingPolicies.map(policy => `${policy.policyName}`).join(', ')
+  const vulnerabilities = violation.allVulnerabilities.map(vulnerability => vulnerability.name).join(', ')
   if (upgradeGuidanceResponse === undefined) {
-    return `| ${violation.componentName} ${violation.versionName} |  |  | ${violation.violatingPolicyNames.map(policyName => `${policyName}`).join(', ')} |`
+    return `| ${componentInViolation} |  |  | ${violatedPolicies} | ${vulnerabilities} |`
   }
   const upgradeGuidance = upgradeGuidanceResponse.result
-  return `| ${violation.componentName} ${violation.versionName} | ${upgradeGuidance?.shortTerm?.versionName ?? ''} | ${upgradeGuidance?.longTerm?.versionName ?? ''} | ${violation.violatingPolicyNames.map(policyName => `${policyName}`).join(', ')} | ${violation.policyViolationVulnerabilities.map(vulnerability => vulnerability.name).join(', ')} |`
+  return `| ${componentInViolation} | ${upgradeGuidance?.shortTerm?.versionName ?? ''} | ${upgradeGuidance?.longTerm?.versionName ?? ''} | ${violatedPolicies} | ${vulnerabilities} |`
 }

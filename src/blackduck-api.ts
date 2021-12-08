@@ -5,9 +5,9 @@ import {APPLICATION_NAME} from './application-constants'
 import {BearerCredentialHandler} from 'typed-rest-client/handlers'
 import {IRestResponse, RestClient} from 'typed-rest-client/RestClient'
 
-export interface IBlackduckPage {
+export interface IBlackduckPage<Type> {
   totalCount: number
-  items: Array<any>
+  items: Array<Type>
   _meta: Object
 }
 
@@ -18,6 +18,39 @@ export interface IUpgradeGuidance {
   longTerm: {
     versionName: string
   }
+}
+
+export interface IRapidScanViolation {
+  componentName: string
+  versionName: string
+  componentIdentifier: string
+  violatingPolicies: {
+    policyName: string
+    description: string
+    policySeverity: string
+  }[]
+  policyViolationVulnerabilities: {
+    name: string
+  }[]
+  policyViolationLicenses: {
+    name: string
+  }[]
+  allVulnerabilities: {
+    name: string
+    description: string
+    vulnSeverity: string
+    overallScore: number
+    _meta: {
+      href: string
+    }
+  }[]
+  allLicenses: {
+    name: string
+    licenseFamilyName: string
+    _meta: {
+      href: string
+    }
+  }[]
 }
 
 export class BlackduckApiService {
@@ -69,6 +102,13 @@ export class BlackduckApiService {
       .then(upgradeGuidanceUrl => this.get(bearerToken, upgradeGuidanceUrl))
   }
 
+  async get<Type>(bearerToken: string, requestUrl: string): Promise<IRestResponse<Type>> {
+    const bearerTokenHandler = new BearerCredentialHandler(bearerToken, true)
+    const blackduckRestClient = new RestClient(APPLICATION_NAME, this.blackduckUrl, [bearerTokenHandler])
+
+    return blackduckRestClient.get(requestUrl)
+  }
+
   private async getPolicies(bearerToken: string, limit: number = 10, enabled?: boolean) {
     const enabledFilter = enabled === undefined || enabled === null ? '' : `filter=policyRuleEnabled%3A${enabled}`
     const requestPath = `/api/policy-rules?${enabledFilter}`
@@ -82,15 +122,8 @@ export class BlackduckApiService {
     return this.requestPage(bearerToken, requestPath, 0, limit)
   }
 
-  private async requestPage(bearerToken: string, requestPath: string, offset: number, limit: number): Promise<IRestResponse<IBlackduckPage>> {
+  async requestPage(bearerToken: string, requestPath: string, offset: number, limit: number): Promise<IRestResponse<IBlackduckPage<any>>> {
     return this.get(bearerToken, `${this.blackduckUrl}${requestPath}&offset=${offset}&limit=${limit}`)
-  }
-
-  private async get<Type>(bearerToken: string, requestUrl: string): Promise<IRestResponse<Type>> {
-    const bearerTokenHandler = new BearerCredentialHandler(bearerToken, true)
-    const blackduckRestClient = new RestClient(APPLICATION_NAME, this.blackduckUrl, [bearerTokenHandler])
-
-    return blackduckRestClient.get(requestUrl)
   }
 }
 

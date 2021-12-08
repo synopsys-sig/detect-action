@@ -103,6 +103,13 @@ class BlackduckApiService {
                 .then(upgradeGuidanceUrl => this.get(bearerToken, upgradeGuidanceUrl));
         });
     }
+    get(bearerToken, requestUrl) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const bearerTokenHandler = new handlers_1.BearerCredentialHandler(bearerToken, true);
+            const blackduckRestClient = new RestClient_1.RestClient(application_constants_1.APPLICATION_NAME, this.blackduckUrl, [bearerTokenHandler]);
+            return blackduckRestClient.get(requestUrl);
+        });
+    }
     getPolicies(bearerToken, limit = 10, enabled) {
         return __awaiter(this, void 0, void 0, function* () {
             const enabledFilter = enabled === undefined || enabled === null ? '' : `filter=policyRuleEnabled%3A${enabled}`;
@@ -119,13 +126,6 @@ class BlackduckApiService {
     requestPage(bearerToken, requestPath, offset, limit) {
         return __awaiter(this, void 0, void 0, function* () {
             return this.get(bearerToken, `${this.blackduckUrl}${requestPath}&offset=${offset}&limit=${limit}`);
-        });
-    }
-    get(bearerToken, requestUrl) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const bearerTokenHandler = new handlers_1.BearerCredentialHandler(bearerToken, true);
-            const blackduckRestClient = new RestClient_1.RestClient(application_constants_1.APPLICATION_NAME, this.blackduckUrl, [bearerTokenHandler]);
-            return blackduckRestClient.get(requestUrl);
         });
     }
 }
@@ -532,6 +532,7 @@ const core_1 = __nccwpck_require__(2186);
 const blackduck_api_1 = __nccwpck_require__(7495);
 const inputs_1 = __nccwpck_require__(6180);
 function createReport(scanJson) {
+    var _a;
     return __awaiter(this, void 0, void 0, function* () {
         let message = '';
         if (scanJson.length == 0) {
@@ -542,8 +543,17 @@ function createReport(scanJson) {
             const blackduckApiService = new blackduck_api_1.BlackduckApiService(inputs_1.BLACKDUCK_URL, inputs_1.BLACKDUCK_API_TOKEN);
             const bearerToken = yield blackduckApiService.getBearerToken();
             message = message.concat('\r\n| Component | Short Term Fix | Long Term Fix | Violates | Vulnerabilities |\r\n|-----------|------------|-----------|----------|-----------------|\r\n');
-            for (const violation of scanJson) {
-                const componentRow = yield createViolationString(blackduckApiService, bearerToken, violation);
+            const fullResultsResponse = yield blackduckApiService.get(bearerToken, scanJson[0]._meta.href + "/full-result");
+            if (fullResultsResponse === undefined) {
+                return '';
+            }
+            const fullResults = (_a = fullResultsResponse === null || fullResultsResponse === void 0 ? void 0 : fullResultsResponse.result) === null || _a === void 0 ? void 0 : _a.items;
+            if (fullResults === undefined) {
+                return '';
+            }
+            for (const violation of fullResults) {
+                let upgradeGuidanceResponse = yield blackduckApiService.getUpgradeGuidanceFor(bearerToken, violation.componentIdentifier).catch(reason => (0, core_1.warning)(`Could not get upgrade guidance for ${violation.componentIdentifier}: ${reason}`));
+                const componentRow = createViolationString(upgradeGuidanceResponse, violation);
                 message = message.concat(`${componentRow}\r\n`);
             }
         }
@@ -551,16 +561,17 @@ function createReport(scanJson) {
     });
 }
 exports.createReport = createReport;
-function createViolationString(blackduckApiService, bearerToken, violation) {
+function createViolationString(upgradeGuidanceResponse, violation) {
     var _a, _b, _c, _d;
-    return __awaiter(this, void 0, void 0, function* () {
-        let upgradeGuidanceResponse = yield blackduckApiService.getUpgradeGuidanceFor(bearerToken, violation.componentIdentifier).catch(reason => (0, core_1.warning)(`Could not get upgrade guidance for ${violation.componentIdentifier}: ${reason}`));
-        if (upgradeGuidanceResponse === undefined) {
-            return `| ${violation.componentName} ${violation.versionName} |  |  | ${violation.violatingPolicyNames.map(policyName => `${policyName}`).join(', ')} |`;
-        }
-        const upgradeGuidance = upgradeGuidanceResponse.result;
-        return `| ${violation.componentName} ${violation.versionName} | ${(_b = (_a = upgradeGuidance === null || upgradeGuidance === void 0 ? void 0 : upgradeGuidance.shortTerm) === null || _a === void 0 ? void 0 : _a.versionName) !== null && _b !== void 0 ? _b : ''} | ${(_d = (_c = upgradeGuidance === null || upgradeGuidance === void 0 ? void 0 : upgradeGuidance.longTerm) === null || _c === void 0 ? void 0 : _c.versionName) !== null && _d !== void 0 ? _d : ''} | ${violation.violatingPolicyNames.map(policyName => `${policyName}`).join(', ')} | ${violation.policyViolationVulnerabilities.map(vulnerability => vulnerability.name).join(', ')} |`;
-    });
+    const componentInViolation = `${violation.componentName} ${violation.versionName}`;
+    const componentLicenses = violation.allLicenses.map(license => `${license.name}`).join(', ');
+    const violatedPolicies = violation.violatingPolicies.map(policy => `${policy.policyName}`).join(', ');
+    const vulnerabilities = violation.allVulnerabilities.map(vulnerability => vulnerability.name).join(', ');
+    if (upgradeGuidanceResponse === undefined) {
+        return `| ${componentInViolation} |  |  | ${violatedPolicies} | ${vulnerabilities} |`;
+    }
+    const upgradeGuidance = upgradeGuidanceResponse.result;
+    return `| ${componentInViolation} | ${(_b = (_a = upgradeGuidance === null || upgradeGuidance === void 0 ? void 0 : upgradeGuidance.shortTerm) === null || _a === void 0 ? void 0 : _a.versionName) !== null && _b !== void 0 ? _b : ''} | ${(_d = (_c = upgradeGuidance === null || upgradeGuidance === void 0 ? void 0 : upgradeGuidance.longTerm) === null || _c === void 0 ? void 0 : _c.versionName) !== null && _d !== void 0 ? _d : ''} | ${violatedPolicies} | ${vulnerabilities} |`;
 }
 
 
