@@ -23,7 +23,7 @@ export async function createReport(scanJson: PolicyViolation[]): Promise<string>
     const blackduckApiService = new BlackduckApiService(BLACKDUCK_URL, BLACKDUCK_API_TOKEN)
     const bearerToken = await blackduckApiService.getBearerToken()
 
-    message = message.concat('\r\n| Dependency | License(s) | Short Term Fix | Long Term Fix | Violates | Vulnerabilities |\r\n|-----------|------------|-----------|----------|-----------------|\r\n')
+    message = message.concat('\r\n| Dependency | License(s) | Short Term Fix | Long Term Fix | Violates | Vulnerabilities |\r\n|-|-|-|-|-|-|\r\n')
     const fullResultsResponse: IRestResponse<IBlackduckPage<IRapidScanViolation>> = await blackduckApiService.get(bearerToken, scanJson[0]._meta.href + '/full-result')
     info(JSON.stringify(fullResultsResponse, undefined, 2))
     const fullResults = fullResultsResponse?.result?.items
@@ -41,10 +41,16 @@ export async function createReport(scanJson: PolicyViolation[]): Promise<string>
 }
 
 function createViolationString(upgradeGuidanceResponse: void | IRestResponse<IUpgradeGuidance>, violation: IRapidScanViolation): string {
+  const violatingLicenseNames = violation.policyViolationLicenses.map(license => license.name)
+  const violatingVulnerabilityNames = violation.policyViolationVulnerabilities.map(vulnerability => vulnerability.name)
+
   const componentInViolation = `${violation.componentName} ${violation.versionName}`
-  const componentLicenses = violation.allLicenses.map(license => `${license.name}`).join(', ')
-  const violatedPolicies = violation.violatingPolicies.map(policy => `${policy.policyName}`).join(', ')
-  const vulnerabilities = violation.allVulnerabilities.map(vulnerability => vulnerability.name).join(', ')
+  const componentLicenses = violation.allLicenses
+    .map(license => `${license.name}`)
+    .map(licenseName => (violatingLicenseNames.includes(licenseName) ? ':x: ' : '').concat(licenseName))
+    .join(', ')
+  const violatedPolicies = violation.violatingPolicies.map(policy => `${policy.policyName} ${policy.policySeverity === 'UNSPECIFIED' ? '' : `(${policy.policySeverity})`}`).join(', ')
+  const vulnerabilities = violation.allVulnerabilities.map(vulnerability => `${violatingVulnerabilityNames.includes(vulnerability.name) ? ':x: ' : ''}${vulnerability.name} (${vulnerability.vulnSeverity}: CVSS ${vulnerability.overallScore})`).join('<br/>')
   if (upgradeGuidanceResponse === undefined) {
     return `| ${componentInViolation} | ${componentLicenses} |  |  | ${violatedPolicies} | ${vulnerabilities} |`
   }
