@@ -90,6 +90,7 @@ If your Black Duck server is on a private network, the self-hosted runner has ac
 To do this: 
 1. Store the root certificate on the self-hosted runner. Example location: `/certificates/my_custom_cert.pem`
 2. Set `NODE_EXTRA_CA_CERTS` in the _Detect Action's_ environment:
+
 ```yaml
     - name: Run Synopsys Detect
       uses: synopsys-sig/detect-action@v0.0.1
@@ -106,10 +107,30 @@ Please reference the section [_Include Custom Certificates (Optional)_](#include
 For more information on self-hosted runners, please visit [GitHub's documentation](https://docs.github.com/en/actions/hosting-your-own-runners/about-self-hosted-runners).
 
 ## Runners: GitHub-Hosted
-TODO
+GitHub hosted runners are convenient, but can require extra setup when managing sensitive information.
 
 <h3 id="github-hosted-certs">Certificates</h3>
-TODO
+Because a GitHub-hosted runner starts with a clean file-system each run, if custom certificate files are needed, they must be created in your workflow. There are many ways to do this, two possible ways are:
+
+**Option 1**: Download the certificate file.
+
+**Option 2**: Store the base-64 encoded certificate in a GitHub secret, then use a workflow-step to create a _.pem_ file with that certificate's content:
+
+```yaml
+    - name: Create certificate
+      run: cat <<< "${{secrets.BASE_64_CERTIFICATE_CONTENT}}" > my-cert.pem
+```
+
+The file created through one of those options can then be provided as a value for `NODE_EXTRA_CA_CERTS` in the Detect Action step:
+
+```yaml
+    - name: Run Synopsys Detect
+      uses: synopsys-sig/detect-action@v0.0.1
+      env:
+        NODE_EXTRA_CA_CERTS: ./my-cert.pem
+      with:
+        . . .
+```
 
 ## Checkout
 Checkout the source-code onto your GitHub Runner with the following _step_:  
