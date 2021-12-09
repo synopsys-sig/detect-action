@@ -11,9 +11,10 @@ Comments on Pull Requests if any of your dependencies violate policies.
 - [Setup Job](#setup-job)
   - [Runners: Self Hosted](#runners-self-hosted)
     - [Java](#java)
-    - [Certificates](#certificates)
+    - [Certificates](#self-hosted-certs)
     - [More Info](#more-info)
   - [Runners: GitHub Hosted](#runners-github-hosted)
+    - [Certificates](#github-hosted-certs)
   - [Checkout](#checkout)
   - [Build Your Project](#build-your-project)
   - [Setup Java](#setup-java)
@@ -84,7 +85,7 @@ Using a self-hosted runner provides more flexibility in managing your build envi
 ### Java
 It is possible to skip the [Setup Java](#setup-java) step below if you already have Java 11 on your self-hosted runner. Ensure that the _Detect Action_ has access to the correct version of Java on its `$PATH` or within the [_GitHub Tool Cache_](https://docs.github.com/en/enterprise-server@3.0/admin/github-actions/managing-access-to-actions-from-githubcom/setting-up-the-tool-cache-on-self-hosted-runners-without-internet-access)
 
-### Certificates
+<h3 id="self-hosted-certs">Certificates</h3>
 If your Black Duck server is on a private network, the self-hosted runner has access to that network, and the Black Duck server uses custom certificates, then you will likely need to provide a custom certificate to the _Detect Action_. 
 To do this: 
 1. Store the root certificate on the self-hosted runner. Example location: `/certificates/my_custom_cert.pem`
@@ -105,6 +106,9 @@ Please reference the section [_Include Custom Certificates (Optional)_](#include
 For more information on self-hosted runners, please visit [GitHub's documentation](https://docs.github.com/en/actions/hosting-your-own-runners/about-self-hosted-runners).
 
 ## Runners: GitHub-Hosted
+TODO
+
+<h3 id="github-hosted-certs">Certificates</h3>
 TODO
 
 ## Checkout
