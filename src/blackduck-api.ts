@@ -1,9 +1,9 @@
-import * as core from '@actions/core'
 import {IHeaders} from 'typed-rest-client/Interfaces'
 import {HttpClient} from 'typed-rest-client/HttpClient'
 import {APPLICATION_NAME} from './application-constants'
 import {BearerCredentialHandler} from 'typed-rest-client/handlers'
 import {IRestResponse, RestClient} from 'typed-rest-client/RestClient'
+import {debug, info, warning} from '@actions/core'
 
 export interface IBlackduckPage<Type> {
   totalCount: number
@@ -63,7 +63,7 @@ export class BlackduckApiService {
   }
 
   async getBearerToken(): Promise<string> {
-    core.info('Initiating authentication request to Black Duck...')
+    info('Initiating authentication request to Black Duck...')
     const authenticationClient = new HttpClient(APPLICATION_NAME)
     const authorizationHeader: IHeaders = {Authorization: `token ${this.blackduckApiToken}`}
 
@@ -72,7 +72,7 @@ export class BlackduckApiService {
       .then(authenticationResponse => authenticationResponse.readBody())
       .then(responseBody => JSON.parse(responseBody))
       .then(responseBodyJson => {
-        core.info('Successfully authenticated with Black Duck')
+        info('Successfully authenticated with Black Duck')
         return responseBodyJson.bearerToken
       })
   }
@@ -83,13 +83,13 @@ export class BlackduckApiService {
       .then(blackduckPolicyPage => {
         const policyCount = blackduckPolicyPage?.result?.totalCount
         if (policyCount === undefined || policyCount === null) {
-          core.warning('Failed to check Black Duck for policies')
+          warning('Failed to check Black Duck for policies')
           return false
         } else if (policyCount > 0) {
-          core.debug(`${policyCount} Black Duck policies existed`)
+          debug(`${policyCount} Black Duck policies existed`)
           return true
         } else {
-          core.info('No Black Duck policies exist')
+          info('No Black Duck policies exist')
           return false
         }
       })
@@ -103,7 +103,6 @@ export class BlackduckApiService {
   }
 
   async get<Type>(bearerToken: string, requestUrl: string): Promise<IRestResponse<Type>> {
-    core.info(`GET ${requestUrl}`)
     const bearerTokenHandler = new BearerCredentialHandler(bearerToken, true)
     const blackduckRestClient = new RestClient(APPLICATION_NAME, this.blackduckUrl, [bearerTokenHandler])
 

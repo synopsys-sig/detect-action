@@ -1,5 +1,4 @@
 import {warning} from '@actions/core'
-import {info} from 'console'
 import {IRestResponse} from 'typed-rest-client'
 import {BlackduckApiService, IBlackduckPage, IRapidScanViolation, IUpgradeGuidance} from './blackduck-api'
 import {BLACKDUCK_API_TOKEN, BLACKDUCK_URL} from './inputs'
