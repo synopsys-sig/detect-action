@@ -425,6 +425,9 @@ function run() {
     var _a, _b;
     return __awaiter(this, void 0, void 0, function* () {
         const policyCheckId = yield (0, check_1.createBlackDuckPolicyCheck)();
+        (0, core_1.info)(`detect-version: ${inputs_1.DETECT_VERSION}`);
+        (0, core_1.info)(`output-path-override: ${inputs_1.OUTPUT_PATH_OVERRIDE}`);
+        (0, core_1.info)(`scan-mode: ${inputs_1.SCAN_MODE}`);
         const runnerTemp = process.env.RUNNER_TEMP;
         let outputPath = '';
         if (inputs_1.OUTPUT_PATH_OVERRIDE !== '') {
@@ -438,6 +441,7 @@ function run() {
         else {
             outputPath = path_1.default.resolve(runnerTemp, 'blackduck');
         }
+        (0, core_1.info)('Checking that you have at least one enabled policy...');
         const blackduckPolicyChecker = new blackduck_api_1.BlackduckApiService(inputs_1.BLACKDUCK_URL, inputs_1.BLACKDUCK_API_TOKEN);
         let policiesExist = yield blackduckPolicyChecker.checkIfEnabledBlackduckPoliciesExist().catch(reason => {
             (0, core_1.setFailed)(`Could not verify if policies existed: ${reason}`);
@@ -450,6 +454,7 @@ function run() {
             (0, core_1.setFailed)(`Could not run ${detect_manager_1.TOOL_NAME} using ${inputs_1.SCAN_MODE} scan mode. No enabled policies found on the specified Black Duck server.`);
             return;
         }
+        (0, core_1.info)('You have at least one enabled policy, executing Detect...');
         const detectArgs = ['--blackduck.trust.cert=TRUE', `--blackduck.url=${inputs_1.BLACKDUCK_URL}`, `--blackduck.api.token=${inputs_1.BLACKDUCK_API_TOKEN}`, `--detect.blackduck.scan.mode=${inputs_1.SCAN_MODE}`, `--detect.output.path=${outputPath}`, `--detect.scan.output.path=${outputPath}`];
         const detectPath = yield (0, detect_manager_1.findOrDownloadDetect)().catch(reason => {
             (0, core_1.setFailed)(`Could not download ${detect_manager_1.TOOL_NAME} ${inputs_1.DETECT_VERSION}: ${reason}`);
@@ -465,7 +470,9 @@ function run() {
             (0, check_1.cancelBlackDuckPolicyCheck)(policyCheckId);
             return;
         }
+        (0, core_1.info)('Detect executed successfully.');
         if (inputs_1.SCAN_MODE === 'RAPID') {
+            (0, core_1.info)('Detect executed in RAPID mode, beginning reporting...');
             const jsonGlobber = yield (0, glob_1.create)(`${outputPath}/*.json`);
             const scanJsonPaths = yield jsonGlobber.glob();
             (0, upload_artifacts_1.uploadRapidScanJson)(outputPath, scanJsonPaths);
@@ -474,7 +481,9 @@ function run() {
             const scanJson = JSON.parse(rawdata.toString());
             const rapidScanReport = yield (0, rapid_scan_1.createReport)(scanJson);
             if ((0, github_context_1.isPullRequest)()) {
+                (0, core_1.info)('This is a pull request, commenting...');
                 (0, comment_1.commentOnPR)(rapidScanReport);
+                (0, core_1.info)('Successfully commented on PR.');
             }
             if (scanJson.length === 0) {
                 (0, check_1.passBlackDuckPolicyCheck)(policyCheckId, rapidScanReport);
@@ -482,6 +491,7 @@ function run() {
             else {
                 (0, check_1.failBlackDuckPolicyCheck)(policyCheckId, rapidScanReport);
             }
+            (0, core_1.info)('Reporting complete.');
         }
         else {
             // TODO: Implement policy check for non-rapid scan

@@ -14,6 +14,10 @@ import {BlackduckApiService} from './blackduck-api'
 export async function run(): Promise<void> {
   const policyCheckId = await createBlackDuckPolicyCheck()
 
+  info(`detect-version: ${DETECT_VERSION}`)
+  info(`output-path-override: ${OUTPUT_PATH_OVERRIDE}`)
+  info(`scan-mode: ${SCAN_MODE}`)
+
   const runnerTemp = process.env.RUNNER_TEMP
   let outputPath = ''
   if (OUTPUT_PATH_OVERRIDE !== '') {
@@ -25,6 +29,8 @@ export async function run(): Promise<void> {
   } else {
     outputPath = path.resolve(runnerTemp, 'blackduck')
   }
+
+  info('Checking that you have at least one enabled policy...')
 
   const blackduckPolicyChecker = new BlackduckApiService(BLACKDUCK_URL, BLACKDUCK_API_TOKEN)
   let policiesExist: boolean | void = await blackduckPolicyChecker.checkIfEnabledBlackduckPoliciesExist().catch(reason => {
@@ -40,6 +46,8 @@ export async function run(): Promise<void> {
     setFailed(`Could not run ${TOOL_NAME} using ${SCAN_MODE} scan mode. No enabled policies found on the specified Black Duck server.`)
     return
   }
+
+  info('You have at least one enabled policy, executing Detect...')
 
   const detectArgs = ['--blackduck.trust.cert=TRUE', `--blackduck.url=${BLACKDUCK_URL}`, `--blackduck.api.token=${BLACKDUCK_API_TOKEN}`, `--detect.blackduck.scan.mode=${SCAN_MODE}`, `--detect.output.path=${outputPath}`, `--detect.scan.output.path=${outputPath}`]
 
@@ -61,7 +69,11 @@ export async function run(): Promise<void> {
     return
   }
 
+  info('Detect executed successfully.')
+
   if (SCAN_MODE === 'RAPID') {
+    info('Detect executed in RAPID mode, beginning reporting...')
+
     const jsonGlobber = await create(`${outputPath}/*.json`)
     const scanJsonPaths = await jsonGlobber.glob()
     uploadRapidScanJson(outputPath, scanJsonPaths)
@@ -72,7 +84,9 @@ export async function run(): Promise<void> {
     const rapidScanReport = await createReport(scanJson)
 
     if (isPullRequest()) {
+      info('This is a pull request, commenting...')
       commentOnPR(rapidScanReport)
+      info('Successfully commented on PR.')
     }
 
     if (scanJson.length === 0) {
@@ -80,6 +94,7 @@ export async function run(): Promise<void> {
     } else {
       failBlackDuckPolicyCheck(policyCheckId, rapidScanReport)
     }
+    info('Reporting complete.')
   } else {
     // TODO: Implement policy check for non-rapid scan
     skipBlackDuckPolicyCheck(policyCheckId)
