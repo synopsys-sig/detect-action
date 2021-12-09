@@ -103,6 +103,7 @@ export class BlackduckApiService {
   }
 
   async get<Type>(bearerToken: string, requestUrl: string): Promise<IRestResponse<Type>> {
+    core.info(`GET ${requestUrl}`)
     const bearerTokenHandler = new BearerCredentialHandler(bearerToken, true)
     const blackduckRestClient = new RestClient(APPLICATION_NAME, this.blackduckUrl, [bearerTokenHandler])
 

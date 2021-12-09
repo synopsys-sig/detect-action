@@ -105,6 +105,7 @@ class BlackduckApiService {
     }
     get(bearerToken, requestUrl) {
         return __awaiter(this, void 0, void 0, function* () {
+            core.info(`GET ${requestUrl}`);
             const bearerTokenHandler = new handlers_1.BearerCredentialHandler(bearerToken, true);
             const blackduckRestClient = new RestClient_1.RestClient(application_constants_1.APPLICATION_NAME, this.blackduckUrl, [bearerTokenHandler]);
             return blackduckRestClient.get(requestUrl);
@@ -529,6 +530,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.createReport = void 0;
 const core_1 = __nccwpck_require__(2186);
+const console_1 = __nccwpck_require__(7082);
 const blackduck_api_1 = __nccwpck_require__(7495);
 const inputs_1 = __nccwpck_require__(6180);
 function createReport(scanJson) {
@@ -542,11 +544,9 @@ function createReport(scanJson) {
             message = message.concat('# :x: Found dependencies violating policy!\r\n');
             const blackduckApiService = new blackduck_api_1.BlackduckApiService(inputs_1.BLACKDUCK_URL, inputs_1.BLACKDUCK_API_TOKEN);
             const bearerToken = yield blackduckApiService.getBearerToken();
-            message = message.concat('\r\n| Component | Short Term Fix | Long Term Fix | Violates | Vulnerabilities |\r\n|-----------|------------|-----------|----------|-----------------|\r\n');
-            const fullResultsResponse = yield blackduckApiService.get(bearerToken, scanJson[0]._meta.href + "/full-result");
-            if (fullResultsResponse === undefined) {
-                return '';
-            }
+            message = message.concat('\r\n| Dependency | License(s) | Short Term Fix | Long Term Fix | Violates | Vulnerabilities |\r\n|-----------|------------|-----------|----------|-----------------|\r\n');
+            const fullResultsResponse = yield blackduckApiService.get(bearerToken, scanJson[0]._meta.href + '/full-result');
+            (0, console_1.info)(JSON.stringify(fullResultsResponse, undefined, 2));
             const fullResults = (_a = fullResultsResponse === null || fullResultsResponse === void 0 ? void 0 : fullResultsResponse.result) === null || _a === void 0 ? void 0 : _a.items;
             if (fullResults === undefined) {
                 return '';
@@ -568,10 +568,10 @@ function createViolationString(upgradeGuidanceResponse, violation) {
     const violatedPolicies = violation.violatingPolicies.map(policy => `${policy.policyName}`).join(', ');
     const vulnerabilities = violation.allVulnerabilities.map(vulnerability => vulnerability.name).join(', ');
     if (upgradeGuidanceResponse === undefined) {
-        return `| ${componentInViolation} |  |  | ${violatedPolicies} | ${vulnerabilities} |`;
+        return `| ${componentInViolation} | ${componentLicenses} |  |  | ${violatedPolicies} | ${vulnerabilities} |`;
     }
     const upgradeGuidance = upgradeGuidanceResponse.result;
-    return `| ${componentInViolation} | ${(_b = (_a = upgradeGuidance === null || upgradeGuidance === void 0 ? void 0 : upgradeGuidance.shortTerm) === null || _a === void 0 ? void 0 : _a.versionName) !== null && _b !== void 0 ? _b : ''} | ${(_d = (_c = upgradeGuidance === null || upgradeGuidance === void 0 ? void 0 : upgradeGuidance.longTerm) === null || _c === void 0 ? void 0 : _c.versionName) !== null && _d !== void 0 ? _d : ''} | ${violatedPolicies} | ${vulnerabilities} |`;
+    return `| ${componentInViolation} | ${componentLicenses} | ${(_b = (_a = upgradeGuidance === null || upgradeGuidance === void 0 ? void 0 : upgradeGuidance.shortTerm) === null || _a === void 0 ? void 0 : _a.versionName) !== null && _b !== void 0 ? _b : ''} | ${(_d = (_c = upgradeGuidance === null || upgradeGuidance === void 0 ? void 0 : upgradeGuidance.longTerm) === null || _c === void 0 ? void 0 : _c.versionName) !== null && _d !== void 0 ? _d : ''} | ${violatedPolicies} | ${vulnerabilities} |`;
 }
 
 
@@ -25907,6 +25907,14 @@ module.exports = require("assert");
 
 "use strict";
 module.exports = require("child_process");
+
+/***/ }),
+
+/***/ 7082:
+/***/ ((module) => {
+
+"use strict";
+module.exports = require("console");
 
 /***/ }),
 

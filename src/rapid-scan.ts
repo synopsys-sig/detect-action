@@ -1,4 +1,5 @@
 import {warning} from '@actions/core'
+import {info} from 'console'
 import {IRestResponse} from 'typed-rest-client'
 import {BlackduckApiService, IBlackduckPage, IRapidScanViolation, IUpgradeGuidance} from './blackduck-api'
 import {BLACKDUCK_API_TOKEN, BLACKDUCK_URL} from './inputs'
@@ -22,11 +23,9 @@ export async function createReport(scanJson: PolicyViolation[]): Promise<string>
     const blackduckApiService = new BlackduckApiService(BLACKDUCK_URL, BLACKDUCK_API_TOKEN)
     const bearerToken = await blackduckApiService.getBearerToken()
 
-    message = message.concat('\r\n| Component | Short Term Fix | Long Term Fix | Violates | Vulnerabilities |\r\n|-----------|------------|-----------|----------|-----------------|\r\n')
+    message = message.concat('\r\n| Dependency | License(s) | Short Term Fix | Long Term Fix | Violates | Vulnerabilities |\r\n|-----------|------------|-----------|----------|-----------------|\r\n')
     const fullResultsResponse: IRestResponse<IBlackduckPage<IRapidScanViolation>> = await blackduckApiService.get(bearerToken, scanJson[0]._meta.href + '/full-result')
-    if (fullResultsResponse === undefined) {
-      return ''
-    }
+    info(JSON.stringify(fullResultsResponse, undefined, 2))
     const fullResults = fullResultsResponse?.result?.items
     if (fullResults === undefined) {
       return ''
@@ -47,8 +46,8 @@ function createViolationString(upgradeGuidanceResponse: void | IRestResponse<IUp
   const violatedPolicies = violation.violatingPolicies.map(policy => `${policy.policyName}`).join(', ')
   const vulnerabilities = violation.allVulnerabilities.map(vulnerability => vulnerability.name).join(', ')
   if (upgradeGuidanceResponse === undefined) {
-    return `| ${componentInViolation} |  |  | ${violatedPolicies} | ${vulnerabilities} |`
+    return `| ${componentInViolation} | ${componentLicenses} |  |  | ${violatedPolicies} | ${vulnerabilities} |`
   }
   const upgradeGuidance = upgradeGuidanceResponse.result
-  return `| ${componentInViolation} | ${upgradeGuidance?.shortTerm?.versionName ?? ''} | ${upgradeGuidance?.longTerm?.versionName ?? ''} | ${violatedPolicies} | ${vulnerabilities} |`
+  return `| ${componentInViolation} | ${componentLicenses} | ${upgradeGuidance?.shortTerm?.versionName ?? ''} | ${upgradeGuidance?.longTerm?.versionName ?? ''} | ${violatedPolicies} | ${vulnerabilities} |`
 }
