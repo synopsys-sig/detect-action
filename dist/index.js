@@ -579,8 +579,8 @@ function createViolationString(upgradeGuidanceResponse, violation) {
     const componentLicenses = violation.allLicenses
         .map(license => `${license.name}`)
         .map(licenseName => (violatingLicenseNames.includes(licenseName) ? ':x: ' : '').concat(licenseName))
-        .join(', ');
-    const violatedPolicies = violation.violatingPolicies.map(policy => `${policy.policyName} ${policy.policySeverity === 'UNSPECIFIED' ? '' : `(${policy.policySeverity})`}`).join(', ');
+        .join('<br/>');
+    const violatedPolicies = violation.violatingPolicies.map(policy => `${policy.policyName} ${policy.policySeverity === 'UNSPECIFIED' ? '' : `(${policy.policySeverity})`}`).join('<br/>');
     const vulnerabilities = violation.allVulnerabilities.map(vulnerability => `${violatingVulnerabilityNames.includes(vulnerability.name) ? ':x: ' : ''}${vulnerability.name} (${vulnerability.vulnSeverity}: CVSS ${vulnerability.overallScore})`).join('<br/>');
     if (upgradeGuidanceResponse === undefined) {
         return `| ${componentInViolation} | ${componentLicenses} |  |  | ${violatedPolicies} | ${vulnerabilities} |`;
