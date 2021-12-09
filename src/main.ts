@@ -55,7 +55,7 @@ export async function run(): Promise<void> {
     setFailed(`Could not download ${TOOL_NAME} ${DETECT_VERSION}: ${reason}`)
   })
 
-  if (!detectPath) {
+  if (detectPath === undefined) {
     cancelBlackDuckPolicyCheck(policyCheckId)
     return
   }
@@ -64,7 +64,7 @@ export async function run(): Promise<void> {
     setFailed(`Could not execute ${TOOL_NAME} ${DETECT_VERSION}: ${reason}`)
   })
 
-  if (!detectExitCode) {
+  if (detectExitCode === undefined) {
     cancelBlackDuckPolicyCheck(policyCheckId)
     return
   }
