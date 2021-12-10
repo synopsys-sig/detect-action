@@ -14,11 +14,11 @@ export interface IBlackduckPage<Type> {
 export interface IUpgradeGuidance {
   shortTerm: {
     versionName: string
-    vulnerabilityRisk: any
+    vulnerabilityRisk: Object
   }
   longTerm: {
     versionName: string
-    vulnerabilityRisk: any
+    vulnerabilityRisk: Object
   }
 }
 
