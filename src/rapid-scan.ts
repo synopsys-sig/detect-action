@@ -4,9 +4,6 @@ import {BlackduckApiService, IBlackduckPage, IRapidScanViolation, IUpgradeGuidan
 import {BLACKDUCK_API_TOKEN, BLACKDUCK_URL} from './inputs'
 
 export interface PolicyViolation {
-  componentName: string
-  versionName: string
-  componentIdentifier: string
   _meta: {
     href: string
   }
@@ -22,7 +19,7 @@ export async function createReport(scanJson: PolicyViolation[]): Promise<string>
     const blackduckApiService = new BlackduckApiService(BLACKDUCK_URL, BLACKDUCK_API_TOKEN)
     const bearerToken = await blackduckApiService.getBearerToken()
 
-    message = message.concat('\r\n| Dependency | License(s) | Short Term Fix | Long Term Fix | Violates | Vulnerabilities |\r\n|-|-|-|-|-|-|\r\n')
+    message = message.concat('\r\n| Dependency | License(s) | Violates | Vulnerabilities | Short Term Fix | Long Term Fix |\r\n|-|-|-|-|-|-|\r\n')
     const fullResultsResponse: IRestResponse<IBlackduckPage<IRapidScanViolation>> = await blackduckApiService.get(bearerToken, scanJson[0]._meta.href + '/full-result')
     const fullResults = fullResultsResponse?.result?.items
     if (fullResults === undefined) {
@@ -30,7 +27,7 @@ export async function createReport(scanJson: PolicyViolation[]): Promise<string>
     }
     for (const violation of fullResults) {
       let upgradeGuidanceResponse = await blackduckApiService.getUpgradeGuidanceFor(bearerToken, violation.componentIdentifier).catch(reason => warning(`Could not get upgrade guidance for ${violation.componentIdentifier}: ${reason}`))
-      const componentRow = createViolationString(upgradeGuidanceResponse, violation)
+      const componentRow = createComponentRow(upgradeGuidanceResponse, violation)
       message = message.concat(`${componentRow}\r\n`)
     }
   }
@@ -38,7 +35,7 @@ export async function createReport(scanJson: PolicyViolation[]): Promise<string>
   return message
 }
 
-function createViolationString(upgradeGuidanceResponse: void | IRestResponse<IUpgradeGuidance>, violation: IRapidScanViolation): string {
+function createComponentRow(upgradeGuidanceResponse: void | IRestResponse<IUpgradeGuidance>, violation: IRapidScanViolation): string {
   const violatingLicenseNames = violation.policyViolationLicenses.map(license => license.name)
   const violatingVulnerabilityNames = violation.policyViolationVulnerabilities.map(vulnerability => vulnerability.name)
 
@@ -50,8 +47,8 @@ function createViolationString(upgradeGuidanceResponse: void | IRestResponse<IUp
   const violatedPolicies = violation.violatingPolicies.map(policy => `${policy.policyName} ${policy.policySeverity === 'UNSPECIFIED' ? '' : `(${policy.policySeverity})`}`).join('<br/>')
   const vulnerabilities = violation.allVulnerabilities.map(vulnerability => `${violatingVulnerabilityNames.includes(vulnerability.name) ? ':x: &nbsp; ' : ''}${vulnerability.name} (${vulnerability.vulnSeverity}: CVSS ${vulnerability.overallScore})`).join('<br/>')
   if (upgradeGuidanceResponse === undefined) {
-    return `| ${componentInViolation} | ${componentLicenses} |  |  | ${violatedPolicies} | ${vulnerabilities} |`
+    return `| ${componentInViolation} | ${componentLicenses} | ${violatedPolicies} | ${vulnerabilities} |  |  | `
   }
   const upgradeGuidance = upgradeGuidanceResponse.result
-  return `| ${componentInViolation} | ${componentLicenses} | ${upgradeGuidance?.shortTerm?.versionName ?? ''} | ${upgradeGuidance?.longTerm?.versionName ?? ''} | ${violatedPolicies} | ${vulnerabilities} |`
+  return `| ${componentInViolation} | ${componentLicenses} | ${violatedPolicies} | ${vulnerabilities} | ${upgradeGuidance?.shortTerm?.versionName ?? ''} | ${upgradeGuidance?.longTerm?.versionName ?? ''} |`
 }
