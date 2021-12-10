@@ -1,4 +1,4 @@
-import {warning} from '@actions/core'
+import {setFailed, warning} from '@actions/core'
 import {IRestResponse} from 'typed-rest-client'
 import {BlackduckApiService, IBlackduckPage, IRapidScanViolation, IUpgradeGuidance} from './blackduck-api'
 import {BLACKDUCK_API_TOKEN, BLACKDUCK_URL} from './inputs'
@@ -18,21 +18,30 @@ export async function createReport(scanJson: PolicyViolation[]): Promise<string>
 
     const blackduckApiService = new BlackduckApiService(BLACKDUCK_URL, BLACKDUCK_API_TOKEN)
     const bearerToken = await blackduckApiService.getBearerToken()
-
-    message = message.concat('\r\n| Dependency | License(s) | Violates | Vulnerabilities | Short Term Fix | Long Term Fix |\r\n|-|-|-|-|-|-|\r\n')
     const fullResultsResponse: IRestResponse<IBlackduckPage<IRapidScanViolation>> = await blackduckApiService.get(bearerToken, scanJson[0]._meta.href + '/full-result')
     const fullResults = fullResultsResponse?.result?.items
     if (fullResults === undefined) {
-      return ''
+      return Promise.reject(`Could not retrieve Black Duck RAPID scan results from ${scanJson[0]._meta.href + '/full-result'}, response was ${fullResultsResponse.statusCode}`)
     }
-    for (const violation of fullResults) {
-      let upgradeGuidanceResponse = await blackduckApiService.getUpgradeGuidanceFor(bearerToken, violation.componentIdentifier).catch(reason => warning(`Could not get upgrade guidance for ${violation.componentIdentifier}: ${reason}`))
-      const componentRow = createComponentRow(upgradeGuidanceResponse, violation)
-      message = message.concat(`${componentRow}\r\n`)
-    }
+
+    message = message.concat('\r\n')
+
+    const reportTable = await createTable(blackduckApiService, bearerToken, fullResults)
+    message = message.concat(reportTable)
   }
 
   return message
+}
+
+async function createTable(blackduckApiService: BlackduckApiService, bearerToken: string, fullResults: IRapidScanViolation[]) {
+  let table = '| Policies Violated | Dependency | License(s) | Vulnerabilities | Short Term Recommended Upgrade | Long Term Recommended Upgrade |\r\n|-|-|-|-|-|-|\r\n'
+
+  for (const violation of fullResults) {
+    let upgradeGuidanceResponse = await blackduckApiService.getUpgradeGuidanceFor(bearerToken, violation.componentIdentifier).catch(reason => warning(`Could not get upgrade guidance for ${violation.componentIdentifier}: ${reason}`))
+    table = table.concat(`${createComponentRow(upgradeGuidanceResponse, violation)}\r\n`)
+  }
+
+  return table
 }
 
 function createComponentRow(upgradeGuidanceResponse: void | IRestResponse<IUpgradeGuidance>, violation: IRapidScanViolation): string {
@@ -46,9 +55,26 @@ function createComponentRow(upgradeGuidanceResponse: void | IRestResponse<IUpgra
     .join('<br/>')
   const violatedPolicies = violation.violatingPolicies.map(policy => `${policy.policyName} ${policy.policySeverity === 'UNSPECIFIED' ? '' : `(${policy.policySeverity})`}`).join('<br/>')
   const vulnerabilities = violation.allVulnerabilities.map(vulnerability => `${violatingVulnerabilityNames.includes(vulnerability.name) ? ':x: &nbsp; ' : ''}${vulnerability.name} (${vulnerability.vulnSeverity}: CVSS ${vulnerability.overallScore})`).join('<br/>')
+
   if (upgradeGuidanceResponse === undefined) {
     return `| ${componentInViolation} | ${componentLicenses} | ${violatedPolicies} | ${vulnerabilities} |  |  | `
   }
+
+  let shortTermString = ''
+  let longTermString = ''
   const upgradeGuidance = upgradeGuidanceResponse.result
-  return `| ${componentInViolation} | ${componentLicenses} | ${violatedPolicies} | ${vulnerabilities} | ${upgradeGuidance?.shortTerm?.versionName ?? ''} | ${upgradeGuidance?.longTerm?.versionName ?? ''} |`
+  const shortTerm = upgradeGuidance?.shortTerm
+  if (shortTerm !== undefined) {
+    let vulnerabilityCount = 0
+    shortTerm.vulnerabilityRisk.forEach((count, _) => (vulnerabilityCount += count))
+    shortTermString = `${shortTerm.versionName} (${vulnerabilityCount} known vulnerabilities)`
+  }
+  const longTerm = upgradeGuidance?.longTerm
+  if (longTerm !== undefined) {
+    let vulnerabilityCount = 0
+    longTerm.vulnerabilityRisk.forEach((count, _) => (vulnerabilityCount += count))
+    longTermString = `${longTerm.versionName} (${vulnerabilityCount} known vulnerabilities)`
+  }
+
+  return `| ${componentInViolation} | ${componentLicenses} | ${violatedPolicies} | ${vulnerabilities} | ${shortTermString} | ${longTermString} |`
 }

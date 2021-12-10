@@ -533,24 +533,30 @@ function createReport(scanJson) {
             message = message.concat('# :x: Found dependencies violating policy!\r\n');
             const blackduckApiService = new blackduck_api_1.BlackduckApiService(inputs_1.BLACKDUCK_URL, inputs_1.BLACKDUCK_API_TOKEN);
             const bearerToken = yield blackduckApiService.getBearerToken();
-            message = message.concat('\r\n| Dependency | License(s) | Violates | Vulnerabilities | Short Term Fix | Long Term Fix |\r\n|-|-|-|-|-|-|\r\n');
             const fullResultsResponse = yield blackduckApiService.get(bearerToken, scanJson[0]._meta.href + '/full-result');
             const fullResults = (_a = fullResultsResponse === null || fullResultsResponse === void 0 ? void 0 : fullResultsResponse.result) === null || _a === void 0 ? void 0 : _a.items;
             if (fullResults === undefined) {
-                return '';
+                return Promise.reject(`Could not retrieve Black Duck RAPID scan results from ${scanJson[0]._meta.href + '/full-result'}, response was ${fullResultsResponse.statusCode}`);
             }
-            for (const violation of fullResults) {
-                let upgradeGuidanceResponse = yield blackduckApiService.getUpgradeGuidanceFor(bearerToken, violation.componentIdentifier).catch(reason => (0, core_1.warning)(`Could not get upgrade guidance for ${violation.componentIdentifier}: ${reason}`));
-                const componentRow = createComponentRow(upgradeGuidanceResponse, violation);
-                message = message.concat(`${componentRow}\r\n`);
-            }
+            message = message.concat('\r\n');
+            const reportTable = yield createTable(blackduckApiService, bearerToken, fullResults);
+            message = message.concat(reportTable);
         }
         return message;
     });
 }
 exports.createReport = createReport;
+function createTable(blackduckApiService, bearerToken, fullResults) {
+    return __awaiter(this, void 0, void 0, function* () {
+        let table = '| Policies Violated | Dependency | License(s) | Vulnerabilities | Short Term Recommended Upgrade | Long Term Recommended Upgrade |\r\n|-|-|-|-|-|-|\r\n';
+        for (const violation of fullResults) {
+            let upgradeGuidanceResponse = yield blackduckApiService.getUpgradeGuidanceFor(bearerToken, violation.componentIdentifier).catch(reason => (0, core_1.warning)(`Could not get upgrade guidance for ${violation.componentIdentifier}: ${reason}`));
+            table = table.concat(`${createComponentRow(upgradeGuidanceResponse, violation)}\r\n`);
+        }
+        return table;
+    });
+}
 function createComponentRow(upgradeGuidanceResponse, violation) {
-    var _a, _b, _c, _d;
     const violatingLicenseNames = violation.policyViolationLicenses.map(license => license.name);
     const violatingVulnerabilityNames = violation.policyViolationVulnerabilities.map(vulnerability => vulnerability.name);
     const componentInViolation = `${violation.componentName} ${violation.versionName}`;
@@ -563,8 +569,22 @@ function createComponentRow(upgradeGuidanceResponse, violation) {
     if (upgradeGuidanceResponse === undefined) {
         return `| ${componentInViolation} | ${componentLicenses} | ${violatedPolicies} | ${vulnerabilities} |  |  | `;
     }
+    let shortTermString = '';
+    let longTermString = '';
     const upgradeGuidance = upgradeGuidanceResponse.result;
-    return `| ${componentInViolation} | ${componentLicenses} | ${violatedPolicies} | ${vulnerabilities} | ${(_b = (_a = upgradeGuidance === null || upgradeGuidance === void 0 ? void 0 : upgradeGuidance.shortTerm) === null || _a === void 0 ? void 0 : _a.versionName) !== null && _b !== void 0 ? _b : ''} | ${(_d = (_c = upgradeGuidance === null || upgradeGuidance === void 0 ? void 0 : upgradeGuidance.longTerm) === null || _c === void 0 ? void 0 : _c.versionName) !== null && _d !== void 0 ? _d : ''} |`;
+    const shortTerm = upgradeGuidance === null || upgradeGuidance === void 0 ? void 0 : upgradeGuidance.shortTerm;
+    if (shortTerm !== undefined) {
+        let vulnerabilityCount = 0;
+        shortTerm.vulnerabilityRisk.forEach((count, _) => vulnerabilityCount += count);
+        shortTermString = `${shortTerm.versionName} (${vulnerabilityCount} known vulnerabilities)`;
+    }
+    const longTerm = upgradeGuidance === null || upgradeGuidance === void 0 ? void 0 : upgradeGuidance.longTerm;
+    if (longTerm !== undefined) {
+        let vulnerabilityCount = 0;
+        longTerm.vulnerabilityRisk.forEach((count, _) => vulnerabilityCount += count);
+        longTermString = `${longTerm.versionName} (${vulnerabilityCount} known vulnerabilities)`;
+    }
+    return `| ${componentInViolation} | ${componentLicenses} | ${violatedPolicies} | ${vulnerabilities} | ${shortTermString} | ${longTermString} |`;
 }
 
 

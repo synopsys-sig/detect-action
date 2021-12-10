@@ -14,9 +14,11 @@ export interface IBlackduckPage<Type> {
 export interface IUpgradeGuidance {
   shortTerm: {
     versionName: string
+    vulnerabilityRisk: Map<string, number>
   }
   longTerm: {
     versionName: string
+    vulnerabilityRisk: Map<string, number>
   }
 }
 
