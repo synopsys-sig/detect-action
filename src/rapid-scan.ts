@@ -66,14 +66,22 @@ function createComponentRow(upgradeGuidanceResponse: void | IRestResponse<IUpgra
   const shortTerm = upgradeGuidance?.shortTerm
   if (shortTerm !== undefined) {
     let vulnerabilityCount = 0
-    shortTerm.vulnerabilityRisk.forEach((count, _) => (vulnerabilityCount += count))
-    shortTermString = `${shortTerm.versionName} (${vulnerabilityCount} known vulnerabilities)`
+    shortTermString = `${shortTerm.versionName} (${
+      (Object(shortTerm.vulnerabilityRisk)
+        .values()
+        .reduce((x: number, y: number) => x + y),
+      0)
+    } known vulnerabilities)`
   }
   const longTerm = upgradeGuidance?.longTerm
   if (longTerm !== undefined) {
     let vulnerabilityCount = 0
-    longTerm.vulnerabilityRisk.forEach((count, _) => (vulnerabilityCount += count))
-    longTermString = `${longTerm.versionName} (${vulnerabilityCount} known vulnerabilities)`
+    longTermString = `${longTerm.versionName} (${
+      (Object(longTerm.vulnerabilityRisk)
+        .values()
+        .reduce((x: number, y: number) => x + y),
+      0)
+    } known vulnerabilities)`
   }
 
   return `| ${componentInViolation} | ${componentLicenses} | ${violatedPolicies} | ${vulnerabilities} | ${shortTermString} | ${longTermString} |`
