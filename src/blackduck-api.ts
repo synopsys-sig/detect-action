@@ -25,6 +25,10 @@ export interface IUpgradeGuidance {
   }
 }
 
+export interface IComponentVersion {
+  version: string
+}
+
 export interface IRapidScanViolation {
   componentName: string
   versionName: string
@@ -100,11 +104,25 @@ export class BlackduckApiService {
       })
   }
 
-  async getUpgradeGuidanceFor(bearerToken: string, componentIdentifier: string): Promise<IRestResponse<IUpgradeGuidance>> {
-    return this.getComponentsMatching(bearerToken, componentIdentifier, 1)
-      .then(componentPage => componentPage?.result?.items[0]?.version)
-      .then(componentVersionUrl => `${componentVersionUrl}/upgrade-guidance`)
-      .then(upgradeGuidanceUrl => this.get(bearerToken, upgradeGuidanceUrl))
+  async getUpgradeGuidanceFor(bearerToken: string, componentVersion: IComponentVersion): Promise<IRestResponse<IUpgradeGuidance>> {
+    return this.get(bearerToken, `${componentVersion.version}/upgrade-guidance`)
+  }
+
+  async getComponentsMatching(bearerToken: string, componentIdentifier: string, limit: number = 10): Promise<IRestResponse<IBlackduckPage<IComponentVersion>>> {
+    const requestPath = `/api/components?q=${componentIdentifier}`
+
+    return this.requestPage(bearerToken, requestPath, 0, limit)
+  }
+
+  async getPolicies(bearerToken: string, limit: number = 10, enabled?: boolean) {
+    const enabledFilter = enabled === undefined || enabled === null ? '' : `filter=policyRuleEnabled%3A${enabled}`
+    const requestPath = `/api/policy-rules?${enabledFilter}`
+
+    return this.requestPage(bearerToken, requestPath, 0, limit)
+  }
+
+  async requestPage(bearerToken: string, requestPath: string, offset: number, limit: number): Promise<IRestResponse<IBlackduckPage<any>>> {
+    return this.get(bearerToken, `${this.blackduckUrl}${requestPath}&offset=${offset}&limit=${limit}`)
   }
 
   async get<Type>(bearerToken: string, requestUrl: string): Promise<IRestResponse<Type>> {
@@ -112,23 +130,6 @@ export class BlackduckApiService {
     const blackduckRestClient = new RestClient(APPLICATION_NAME, this.blackduckUrl, [bearerTokenHandler])
 
     return blackduckRestClient.get(requestUrl)
-  }
-
-  private async getPolicies(bearerToken: string, limit: number = 10, enabled?: boolean) {
-    const enabledFilter = enabled === undefined || enabled === null ? '' : `filter=policyRuleEnabled%3A${enabled}`
-    const requestPath = `/api/policy-rules?${enabledFilter}`
-
-    return this.requestPage(bearerToken, requestPath, 0, limit)
-  }
-
-  private async getComponentsMatching(bearerToken: string, componentIdentifier: string, limit: number = 10) {
-    const requestPath = `/api/components?q=${componentIdentifier}`
-
-    return this.requestPage(bearerToken, requestPath, 0, limit)
-  }
-
-  async requestPage(bearerToken: string, requestPath: string, offset: number, limit: number): Promise<IRestResponse<IBlackduckPage<any>>> {
-    return this.get(bearerToken, `${this.blackduckUrl}${requestPath}&offset=${offset}&limit=${limit}`)
   }
 }
 

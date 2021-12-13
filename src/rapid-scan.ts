@@ -1,6 +1,6 @@
 import {warning} from '@actions/core'
 import {IRestResponse} from 'typed-rest-client'
-import {BlackduckApiService, cleanUrl, IBlackduckPage, IRapidScanViolation, IUpgradeGuidance} from './blackduck-api'
+import {BlackduckApiService, cleanUrl, IBlackduckPage, IComponentVersion, IRapidScanViolation, IUpgradeGuidance} from './blackduck-api'
 import {BLACKDUCK_API_TOKEN, BLACKDUCK_URL} from './inputs'
 
 export interface PolicyViolation {
@@ -37,29 +37,38 @@ async function createTable(blackduckApiService: BlackduckApiService, bearerToken
   let table = '| Policies Violated | Dependency | License(s) | Vulnerabilities | Short Term Recommended Upgrade | Long Term Recommended Upgrade |\r\n|-|-|-|-|-|-|\r\n'
 
   for (const violation of fullResults) {
-    let upgradeGuidanceResponse = await blackduckApiService.getUpgradeGuidanceFor(bearerToken, violation.componentIdentifier).catch(reason => warning(`Could not get upgrade guidance for ${violation.componentIdentifier}: ${reason}`))
-    table = table.concat(`${createComponentRow(upgradeGuidanceResponse, violation)}\r\n`)
+    const componentVersionResponse = await blackduckApiService.getComponentsMatching(bearerToken, violation.componentIdentifier)
+    const componentVersion = componentVersionResponse?.result?.items[0]
+
+    let upgradeGuidance = undefined
+    if (componentVersion !== undefined) {
+      const upgradeGuidanceResponse = await blackduckApiService.getUpgradeGuidanceFor(bearerToken, componentVersion).catch(reason => warning(`Could not get upgrade guidance for ${violation.componentIdentifier}: ${reason}`))
+      upgradeGuidance = upgradeGuidanceResponse?.result
+    }
+    table = table.concat(`${createComponentRow(componentVersion, upgradeGuidance, violation)}\r\n`)
   }
 
   return table
 }
 
-function createComponentRow(upgradeGuidanceResponse: void | IRestResponse<IUpgradeGuidance>, violation: IRapidScanViolation): string {
+function createComponentRow(componentVersion: IComponentVersion | undefined, upgradeGuidance: IUpgradeGuidance | null | undefined, violation: IRapidScanViolation): string {
   const violatingLicenseNames = violation.policyViolationLicenses.map(license => license.name)
   const violatingVulnerabilityNames = violation.policyViolationVulnerabilities.map(vulnerability => vulnerability.name)
 
-  const componentInViolation = `${violation.componentName} ${violation.versionName}`
-  const componentLicenses = violation.allLicenses.map(license => `${violatingLicenseNames.includes(license.name) ? ':x: &nbsp; ' : ''}[${license.name}](${license._meta.href})`).join('<br/>')
   const violatedPolicies = violation.violatingPolicies.map(policy => `${policy.policyName} ${policy.policySeverity === 'UNSPECIFIED' ? '' : `(${policy.policySeverity})`}`).join('<br/>')
+  let componentInViolation = `${violation.componentName} ${violation.versionName}`
+  if (componentVersion?.version !== undefined) {
+    componentInViolation = `[${violation.componentName} ${violation.versionName}](${componentVersion?.version})`
+  }
+  const componentLicenses = violation.allLicenses.map(license => `${violatingLicenseNames.includes(license.name) ? ':x: &nbsp; ' : ''}[${license.name}](${license._meta.href}/text)`).join('<br/>')
   const vulnerabilities = violation.allVulnerabilities.map(vulnerability => `${violatingVulnerabilityNames.includes(vulnerability.name) ? ':x: &nbsp; ' : ''}[${vulnerability.name}](${cleanUrl(BLACKDUCK_URL)}/api/vulnerabilities/${vulnerability.name}) (${vulnerability.vulnSeverity}: CVSS ${vulnerability.overallScore})`).join('<br/>')
 
-  if (upgradeGuidanceResponse === undefined) {
-    return `| ${componentInViolation} | ${componentLicenses} | ${violatedPolicies} | ${vulnerabilities} |  |  | `
+  if (upgradeGuidance === undefined || upgradeGuidance === null) {
+    return `| ${violatedPolicies} | ${componentInViolation} | ${componentLicenses}  | ${vulnerabilities} |  |  | `
   }
 
   let shortTermString = ''
   let longTermString = ''
-  const upgradeGuidance = upgradeGuidanceResponse.result
   const shortTerm = upgradeGuidance?.shortTerm
   if (shortTerm !== undefined) {
     const vulnerabilitiesAfterUpgrade = Object.values(shortTerm.vulnerabilityRisk).reduce((accumulatedValues, value) => accumulatedValues + value, 0)
@@ -71,5 +80,5 @@ function createComponentRow(upgradeGuidanceResponse: void | IRestResponse<IUpgra
     longTermString = `[${longTerm.versionName}](${longTerm.version}) (${vulnerabilitiesAfterUpgrade} known vulnerabilities)`
   }
 
-  return `| ${componentInViolation} | ${componentLicenses} | ${violatedPolicies} | ${vulnerabilities} | ${shortTermString} | ${longTermString} |`
+  return `| ${violatedPolicies} | ${componentInViolation} | ${componentLicenses} | ${vulnerabilities} | ${shortTermString} | ${longTermString} |`
 }

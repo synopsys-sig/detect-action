@@ -76,19 +76,15 @@ class BlackduckApiService {
             });
         });
     }
-    getUpgradeGuidanceFor(bearerToken, componentIdentifier) {
+    getUpgradeGuidanceFor(bearerToken, componentVersion) {
         return __awaiter(this, void 0, void 0, function* () {
-            return this.getComponentsMatching(bearerToken, componentIdentifier, 1)
-                .then(componentPage => { var _a, _b; return (_b = (_a = componentPage === null || componentPage === void 0 ? void 0 : componentPage.result) === null || _a === void 0 ? void 0 : _a.items[0]) === null || _b === void 0 ? void 0 : _b.version; })
-                .then(componentVersionUrl => `${componentVersionUrl}/upgrade-guidance`)
-                .then(upgradeGuidanceUrl => this.get(bearerToken, upgradeGuidanceUrl));
+            return this.get(bearerToken, `${componentVersion.version}/upgrade-guidance`);
         });
     }
-    get(bearerToken, requestUrl) {
+    getComponentsMatching(bearerToken, componentIdentifier, limit = 10) {
         return __awaiter(this, void 0, void 0, function* () {
-            const bearerTokenHandler = new handlers_1.BearerCredentialHandler(bearerToken, true);
-            const blackduckRestClient = new RestClient_1.RestClient(application_constants_1.APPLICATION_NAME, this.blackduckUrl, [bearerTokenHandler]);
-            return blackduckRestClient.get(requestUrl);
+            const requestPath = `/api/components?q=${componentIdentifier}`;
+            return this.requestPage(bearerToken, requestPath, 0, limit);
         });
     }
     getPolicies(bearerToken, limit = 10, enabled) {
@@ -98,15 +94,16 @@ class BlackduckApiService {
             return this.requestPage(bearerToken, requestPath, 0, limit);
         });
     }
-    getComponentsMatching(bearerToken, componentIdentifier, limit = 10) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const requestPath = `/api/components?q=${componentIdentifier}`;
-            return this.requestPage(bearerToken, requestPath, 0, limit);
-        });
-    }
     requestPage(bearerToken, requestPath, offset, limit) {
         return __awaiter(this, void 0, void 0, function* () {
             return this.get(bearerToken, `${this.blackduckUrl}${requestPath}&offset=${offset}&limit=${limit}`);
+        });
+    }
+    get(bearerToken, requestUrl) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const bearerTokenHandler = new handlers_1.BearerCredentialHandler(bearerToken, true);
+            const blackduckRestClient = new RestClient_1.RestClient(application_constants_1.APPLICATION_NAME, this.blackduckUrl, [bearerTokenHandler]);
+            return blackduckRestClient.get(requestUrl);
         });
     }
 }
@@ -548,30 +545,37 @@ function createReport(scanJson) {
 }
 exports.createReport = createReport;
 function createTable(blackduckApiService, bearerToken, fullResults) {
+    var _a;
     return __awaiter(this, void 0, void 0, function* () {
         let table = '| Policies Violated | Dependency | License(s) | Vulnerabilities | Short Term Recommended Upgrade | Long Term Recommended Upgrade |\r\n|-|-|-|-|-|-|\r\n';
         for (const violation of fullResults) {
-            let upgradeGuidanceResponse = yield blackduckApiService.getUpgradeGuidanceFor(bearerToken, violation.componentIdentifier).catch(reason => (0, core_1.warning)(`Could not get upgrade guidance for ${violation.componentIdentifier}: ${reason}`));
-            table = table.concat(`${createComponentRow(upgradeGuidanceResponse, violation)}\r\n`);
+            const componentVersionResponse = yield blackduckApiService.getComponentsMatching(bearerToken, violation.componentIdentifier);
+            const componentVersion = (_a = componentVersionResponse === null || componentVersionResponse === void 0 ? void 0 : componentVersionResponse.result) === null || _a === void 0 ? void 0 : _a.items[0];
+            let upgradeGuidance = undefined;
+            if (componentVersion !== undefined) {
+                const upgradeGuidanceResponse = yield blackduckApiService.getUpgradeGuidanceFor(bearerToken, componentVersion).catch(reason => (0, core_1.warning)(`Could not get upgrade guidance for ${violation.componentIdentifier}: ${reason}`));
+                upgradeGuidance = upgradeGuidanceResponse === null || upgradeGuidanceResponse === void 0 ? void 0 : upgradeGuidanceResponse.result;
+            }
+            table = table.concat(`${createComponentRow(componentVersion, upgradeGuidance, violation)}\r\n`);
         }
         return table;
     });
 }
-function createComponentRow(upgradeGuidanceResponse, violation) {
+function createComponentRow(componentVersion, upgradeGuidance, violation) {
     const violatingLicenseNames = violation.policyViolationLicenses.map(license => license.name);
     const violatingVulnerabilityNames = violation.policyViolationVulnerabilities.map(vulnerability => vulnerability.name);
-    const componentInViolation = `${violation.componentName} ${violation.versionName}`;
-    const componentLicenses = violation.allLicenses
-        .map(license => `${(violatingLicenseNames.includes(license.name) ? ':x: &nbsp; ' : '')}[${license.name}](${license._meta.href})`)
-        .join('<br/>');
     const violatedPolicies = violation.violatingPolicies.map(policy => `${policy.policyName} ${policy.policySeverity === 'UNSPECIFIED' ? '' : `(${policy.policySeverity})`}`).join('<br/>');
+    let componentInViolation = `${violation.componentName} ${violation.versionName}`;
+    if ((componentVersion === null || componentVersion === void 0 ? void 0 : componentVersion.version) !== undefined) {
+        componentInViolation = `[${violation.componentName} ${violation.versionName}](${componentVersion === null || componentVersion === void 0 ? void 0 : componentVersion.version})`;
+    }
+    const componentLicenses = violation.allLicenses.map(license => `${violatingLicenseNames.includes(license.name) ? ':x: &nbsp; ' : ''}[${license.name}](${license._meta.href}/text)`).join('<br/>');
     const vulnerabilities = violation.allVulnerabilities.map(vulnerability => `${violatingVulnerabilityNames.includes(vulnerability.name) ? ':x: &nbsp; ' : ''}[${vulnerability.name}](${(0, blackduck_api_1.cleanUrl)(inputs_1.BLACKDUCK_URL)}/api/vulnerabilities/${vulnerability.name}) (${vulnerability.vulnSeverity}: CVSS ${vulnerability.overallScore})`).join('<br/>');
-    if (upgradeGuidanceResponse === undefined) {
-        return `| ${componentInViolation} | ${componentLicenses} | ${violatedPolicies} | ${vulnerabilities} |  |  | `;
+    if (upgradeGuidance === undefined || upgradeGuidance === null) {
+        return `| ${violatedPolicies} | ${componentInViolation} | ${componentLicenses}  | ${vulnerabilities} |  |  | `;
     }
     let shortTermString = '';
     let longTermString = '';
-    const upgradeGuidance = upgradeGuidanceResponse.result;
     const shortTerm = upgradeGuidance === null || upgradeGuidance === void 0 ? void 0 : upgradeGuidance.shortTerm;
     if (shortTerm !== undefined) {
         const vulnerabilitiesAfterUpgrade = Object.values(shortTerm.vulnerabilityRisk).reduce((accumulatedValues, value) => accumulatedValues + value, 0);
@@ -582,7 +586,7 @@ function createComponentRow(upgradeGuidanceResponse, violation) {
         const vulnerabilitiesAfterUpgrade = Object.values(longTerm.vulnerabilityRisk).reduce((accumulatedValues, value) => accumulatedValues + value, 0);
         longTermString = `[${longTerm.versionName}](${longTerm.version}) (${vulnerabilitiesAfterUpgrade} known vulnerabilities)`;
     }
-    return `| ${componentInViolation} | ${componentLicenses} | ${violatedPolicies} | ${vulnerabilities} | ${shortTermString} | ${longTermString} |`;
+    return `| ${violatedPolicies} | ${componentInViolation} | ${componentLicenses} | ${vulnerabilities} | ${shortTermString} | ${longTermString} |`;
 }
 
 
