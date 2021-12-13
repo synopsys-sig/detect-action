@@ -1,35 +1,41 @@
-import * as core from '@actions/core'
+import { info, warning, setFailed } from '@actions/core'
 import { create } from '@actions/glob'
 import path from 'path'
 import fs from 'fs'
-import { uploadRapidScanJson, uploadDiagnosticZip } from './upload-artifacts'
-import { TOOL_NAME, findOrDownloadDetect, runDetect } from './detect-manager'
-import { commentOnPR } from './comment'
-import { createReport, PolicyViolation } from './rapid-scan'
-import { isPullRequest } from './github-context'
+import { BlackduckApiService } from './blackduck-api'
 import { createBlackDuckPolicyCheck, failBlackDuckPolicyCheck, passBlackDuckPolicyCheck, skipBlackDuckPolicyCheck, cancelBlackDuckPolicyCheck } from './check'
-import * as inputs from './inputs'
-import { BlackduckPolicyChecker } from './policy-checker'
-import * as detectExitCodes from './detect-exit-codes'
+import { commentOnPR } from './comment'
+import { POLICY_SEVERITY, SUCCESS } from './detect-exit-codes'
+import { TOOL_NAME, findOrDownloadDetect, runDetect } from './detect-manager'
+import { isPullRequest } from './github-context'
+import { BLACKDUCK_API_TOKEN, BLACKDUCK_URL, DETECT_TRUST_CERT, DETECT_VERSION, FAIL_ON_SEVERITIES, OUTPUT_PATH_OVERRIDE, SCAN_MODE } from './inputs'
+import { createReport, PolicyViolation } from './rapid-scan'
+import { uploadRapidScanJson, uploadDiagnosticZip } from './upload-artifacts'
 
 export async function run(): Promise<void> {
   const policyCheckId = await createBlackDuckPolicyCheck()
 
+  info(`detect-version: ${DETECT_VERSION}`)
+  info(`output-path-override: ${OUTPUT_PATH_OVERRIDE}`)
+  info(`scan-mode: ${SCAN_MODE}`)
+
   const runnerTemp = process.env.RUNNER_TEMP
   let outputPath = ''
-  if (inputs.OUTPUT_PATH_OVERRIDE !== '') {
-    outputPath = inputs.OUTPUT_PATH_OVERRIDE
+  if (OUTPUT_PATH_OVERRIDE !== '') {
+    outputPath = OUTPUT_PATH_OVERRIDE
   } else if (runnerTemp === undefined) {
-    core.setFailed('$RUNNER_TEMP is not defined and output-path-override was not set. Cannot determine where to store output files.')
+    setFailed('$RUNNER_TEMP is not defined and output-path-override was not set. Cannot determine where to store output files.')
     cancelBlackDuckPolicyCheck(policyCheckId)
     return
   } else {
     outputPath = path.resolve(runnerTemp, 'blackduck')
   }
 
-  const blackduckPolicyChecker = new BlackduckPolicyChecker(inputs.BLACKDUCK_URL, inputs.BLACKDUCK_API_TOKEN)
+  info('Checking that you have at least one enabled policy...')
+
+  const blackduckPolicyChecker = new BlackduckApiService(BLACKDUCK_URL, BLACKDUCK_API_TOKEN)
   let policiesExist: boolean | void = await blackduckPolicyChecker.checkIfEnabledBlackduckPoliciesExist().catch(reason => {
-    core.setFailed(`Could not verify if policies existed: ${reason}`)
+    setFailed(`Could not verify if policies existed: ${reason}`)
   })
 
   if (policiesExist === undefined) {
@@ -37,32 +43,38 @@ export async function run(): Promise<void> {
     return
   }
 
-  if (!policiesExist && inputs.SCAN_MODE === 'RAPID') {
-    core.setFailed(`Could not run ${TOOL_NAME} using ${inputs.SCAN_MODE} scan mode. No enabled policies found on the specified Black Duck server.`)
+  if (!policiesExist && SCAN_MODE === 'RAPID') {
+    setFailed(`Could not run ${TOOL_NAME} using ${SCAN_MODE} scan mode. No enabled policies found on the specified Black Duck server.`)
     return
   }
 
-  const detectArgs = [`--blackduck.trust.cert=${inputs.DETECT_TRUST_CERT}`, `--blackduck.url=${inputs.BLACKDUCK_URL}`, `--blackduck.api.token=${inputs.BLACKDUCK_API_TOKEN}`, `--detect.blackduck.scan.mode=${inputs.SCAN_MODE}`, `--detect.output.path=${outputPath}`, `--detect.scan.output.path=${outputPath}`, `--detect.policy.check.fail.on.severities=${inputs.FAIL_ON_SEVERITIES}`]
+  info('You have at least one enabled policy, executing Detect...')
+
+  const detectArgs = [`--blackduck.trust.cert=${DETECT_TRUST_CERT}`, `--blackduck.url=${BLACKDUCK_URL}`, `--blackduck.api.token=${BLACKDUCK_API_TOKEN}`, `--detect.blackduck.scan.mode=${SCAN_MODE}`, `--detect.output.path=${outputPath}`, `--detect.scan.output.path=${outputPath}`, `--detect.policy.check.fail.on.severities=${FAIL_ON_SEVERITIES}`]
 
   const detectPath = await findOrDownloadDetect().catch(reason => {
-    core.setFailed(`Could not download ${TOOL_NAME} ${inputs.DETECT_VERSION}: ${reason}`)
+    setFailed(`Could not download ${TOOL_NAME} ${DETECT_VERSION}: ${reason}`)
   })
 
-  if (!detectPath) {
+  if (detectPath === undefined) {
     cancelBlackDuckPolicyCheck(policyCheckId)
     return
   }
 
   const detectExitCode = await runDetect(detectPath, detectArgs).catch(reason => {
-    core.setFailed(`Could not execute ${TOOL_NAME} ${inputs.DETECT_VERSION}: ${reason}`)
+    setFailed(`Could not execute ${TOOL_NAME} ${DETECT_VERSION}: ${reason}`)
   })
 
-  if (!detectExitCode) {
+  if (detectExitCode === undefined) {
     cancelBlackDuckPolicyCheck(policyCheckId)
     return
   }
 
-  if (inputs.SCAN_MODE === 'RAPID') {
+  info('Detect executed successfully.')
+
+  if (SCAN_MODE === 'RAPID') {
+    info('Detect executed in RAPID mode, beginning reporting...')
+
     const jsonGlobber = await create(`${outputPath}/*.json`)
     const scanJsonPaths = await jsonGlobber.glob()
     uploadRapidScanJson(outputPath, scanJsonPaths)
@@ -73,16 +85,18 @@ export async function run(): Promise<void> {
     const rapidScanReport = await createReport(scanJson)
 
     if (isPullRequest()) {
+      info('This is a pull request, commenting...')
       commentOnPR(rapidScanReport)
+      info('Successfully commented on PR.')
     }
 
-    if (detectExitCode === detectExitCodes.POLICY_SEVERITY) {
+    if (detectExitCode === POLICY_SEVERITY) {
       failBlackDuckPolicyCheck(policyCheckId, rapidScanReport)
     } else {
       passBlackDuckPolicyCheck(policyCheckId, rapidScanReport)
     }
+    info('Reporting complete.')
   } else {
-    // TODO: Implement policy check for non-rapid scan
     skipBlackDuckPolicyCheck(policyCheckId)
   }
 
@@ -95,13 +109,13 @@ export async function run(): Promise<void> {
   }
 
   if (detectExitCode > 0) {
-    if (detectExitCode === detectExitCodes.POLICY_SEVERITY) {
-      core.warning('Found dependencies violating policy!')
+    if (detectExitCode === POLICY_SEVERITY) {
+      warning('Found dependencies violating policy!')
     } else {
-      core.warning('Dependency check failed! See Detect output for more information.')
+      warning('Dependency check failed! See Detect output for more information.')
     }
-  } else if (detectExitCode === detectExitCodes.SUCCESS) {
-    core.info('None of your dependencies violate your Black Duck policies!')
+  } else if (detectExitCode === SUCCESS) {
+    info('None of your dependencies violate your Black Duck policies!')
   }
 }
 
