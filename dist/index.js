@@ -7,8 +7,10 @@ require('./sourcemap-register.js');/******/ (() => { // webpackBootstrap
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.APPLICATION_NAME = void 0;
+exports.POLICY_SEVERITY = exports.SUCCESS = exports.APPLICATION_NAME = void 0;
 exports.APPLICATION_NAME = 'synopsys-sig/detect-action';
+exports.SUCCESS = 0;
+exports.POLICY_SEVERITY = 3;
 
 
 /***/ }),
@@ -29,11 +31,11 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.cleanUrl = exports.BlackduckApiService = void 0;
-const HttpClient_1 = __nccwpck_require__(5538);
-const application_constants_1 = __nccwpck_require__(9717);
-const handlers_1 = __nccwpck_require__(2188);
-const RestClient_1 = __nccwpck_require__(7405);
 const core_1 = __nccwpck_require__(2186);
+const handlers_1 = __nccwpck_require__(2188);
+const HttpClient_1 = __nccwpck_require__(5538);
+const RestClient_1 = __nccwpck_require__(7405);
+const application_constants_1 = __nccwpck_require__(9717);
 class BlackduckApiService {
     constructor(blackduckUrl, blackduckApiToken) {
         this.blackduckUrl = cleanUrl(blackduckUrl);
@@ -269,6 +271,19 @@ exports.commentOnPR = commentOnPR;
 
 /***/ }),
 
+/***/ 5137:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.POLICY_SEVERITY = exports.SUCCESS = void 0;
+exports.SUCCESS = 0;
+exports.POLICY_SEVERITY = 3;
+
+
+/***/ }),
+
 /***/ 3762:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
@@ -356,7 +371,7 @@ exports.getSha = getSha;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.OUTPUT_PATH_OVERRIDE = exports.SCAN_MODE = exports.DETECT_VERSION = exports.BLACKDUCK_API_TOKEN = exports.BLACKDUCK_URL = exports.GITHUB_TOKEN = void 0;
+exports.FAIL_ON_SEVERITIES = exports.DETECT_TRUST_CERT = exports.OUTPUT_PATH_OVERRIDE = exports.SCAN_MODE = exports.DETECT_VERSION = exports.BLACKDUCK_API_TOKEN = exports.BLACKDUCK_URL = exports.GITHUB_TOKEN = void 0;
 const core_1 = __nccwpck_require__(2186);
 exports.GITHUB_TOKEN = (0, core_1.getInput)('github-token');
 exports.BLACKDUCK_URL = (0, core_1.getInput)('blackduck-url');
@@ -364,6 +379,8 @@ exports.BLACKDUCK_API_TOKEN = (0, core_1.getInput)('blackduck-api-token');
 exports.DETECT_VERSION = (0, core_1.getInput)('detect-version');
 exports.SCAN_MODE = (0, core_1.getInput)('scan-mode').toUpperCase();
 exports.OUTPUT_PATH_OVERRIDE = (0, core_1.getInput)('output-path-override');
+exports.DETECT_TRUST_CERT = (0, core_1.getInput)('detect-trust-cert');
+exports.FAIL_ON_SEVERITIES = (0, core_1.getInput)('fail-on-severities');
 
 
 /***/ }),
@@ -391,14 +408,15 @@ const core_1 = __nccwpck_require__(2186);
 const glob_1 = __nccwpck_require__(8090);
 const path_1 = __importDefault(__nccwpck_require__(5622));
 const fs_1 = __importDefault(__nccwpck_require__(5747));
-const upload_artifacts_1 = __nccwpck_require__(2854);
-const detect_manager_1 = __nccwpck_require__(3762);
-const comment_1 = __nccwpck_require__(1667);
-const rapid_scan_1 = __nccwpck_require__(8631);
-const github_context_1 = __nccwpck_require__(4251);
-const check_1 = __nccwpck_require__(7657);
-const inputs_1 = __nccwpck_require__(6180);
 const blackduck_api_1 = __nccwpck_require__(7495);
+const check_1 = __nccwpck_require__(7657);
+const comment_1 = __nccwpck_require__(1667);
+const detect_exit_codes_1 = __nccwpck_require__(5137);
+const detect_manager_1 = __nccwpck_require__(3762);
+const github_context_1 = __nccwpck_require__(4251);
+const inputs_1 = __nccwpck_require__(6180);
+const rapid_scan_1 = __nccwpck_require__(8631);
+const upload_artifacts_1 = __nccwpck_require__(2854);
 function run() {
     var _a, _b;
     return __awaiter(this, void 0, void 0, function* () {
@@ -433,7 +451,7 @@ function run() {
             return;
         }
         (0, core_1.info)('You have at least one enabled policy, executing Detect...');
-        const detectArgs = ['--blackduck.trust.cert=TRUE', `--blackduck.url=${inputs_1.BLACKDUCK_URL}`, `--blackduck.api.token=${inputs_1.BLACKDUCK_API_TOKEN}`, `--detect.blackduck.scan.mode=${inputs_1.SCAN_MODE}`, `--detect.output.path=${outputPath}`, `--detect.scan.output.path=${outputPath}`];
+        const detectArgs = [`--blackduck.trust.cert=${inputs_1.DETECT_TRUST_CERT}`, `--blackduck.url=${inputs_1.BLACKDUCK_URL}`, `--blackduck.api.token=${inputs_1.BLACKDUCK_API_TOKEN}`, `--detect.blackduck.scan.mode=${inputs_1.SCAN_MODE}`, `--detect.output.path=${outputPath}`, `--detect.scan.output.path=${outputPath}`, `--detect.policy.check.fail.on.severities=${inputs_1.FAIL_ON_SEVERITIES}`];
         const detectPath = yield (0, detect_manager_1.findOrDownloadDetect)().catch(reason => {
             (0, core_1.setFailed)(`Could not download ${detect_manager_1.TOOL_NAME} ${inputs_1.DETECT_VERSION}: ${reason}`);
         });
@@ -463,16 +481,15 @@ function run() {
                 (0, comment_1.commentOnPR)(rapidScanReport);
                 (0, core_1.info)('Successfully commented on PR.');
             }
-            if (scanJson.length === 0) {
-                (0, check_1.passBlackDuckPolicyCheck)(policyCheckId, rapidScanReport);
+            if (detectExitCode === detect_exit_codes_1.POLICY_SEVERITY) {
+                (0, check_1.failBlackDuckPolicyCheck)(policyCheckId, rapidScanReport);
             }
             else {
-                (0, check_1.failBlackDuckPolicyCheck)(policyCheckId, rapidScanReport);
+                (0, check_1.passBlackDuckPolicyCheck)(policyCheckId, rapidScanReport);
             }
             (0, core_1.info)('Reporting complete.');
         }
         else {
-            // TODO: Implement policy check for non-rapid scan
             (0, check_1.skipBlackDuckPolicyCheck)(policyCheckId);
         }
         const diagnosticMode = ((_a = process.env.DETECT_DIAGNOSTIC) === null || _a === void 0 ? void 0 : _a.toLowerCase()) === 'true';
@@ -483,14 +500,14 @@ function run() {
             (0, upload_artifacts_1.uploadDiagnosticZip)(outputPath, diagnosticZip);
         }
         if (detectExitCode > 0) {
-            if (detectExitCode === 3) {
-                (0, core_1.setFailed)('Found dependencies violating policy!');
+            if (detectExitCode === detect_exit_codes_1.POLICY_SEVERITY) {
+                (0, core_1.warning)('Found dependencies violating policy!');
             }
             else {
-                (0, core_1.setFailed)('Dependency check failed! See Detect output for more information.');
+                (0, core_1.warning)('Dependency check failed! See Detect output for more information.');
             }
         }
-        else if (detectExitCode === 0) {
+        else if (detectExitCode === detect_exit_codes_1.SUCCESS) {
             (0, core_1.info)('None of your dependencies violate your Black Duck policies!');
         }
     });

@@ -11,14 +11,17 @@ Comments on Pull Requests if any of your dependencies violate policies.
 - [Setup Job](#setup-job)
   - [Runners: Self Hosted](#runners-self-hosted)
     - [Java](#java)
-    - [Certificates](#certificates)
+    - [Certificates](#self-hosted-certs)
     - [More Info](#more-info)
   - [Runners: GitHub Hosted](#runners-github-hosted)
+    - [Certificates](#github-hosted-certs)
   - [Checkout](#checkout)
   - [Build Your Project](#build-your-project)
   - [Setup Java](#setup-java)
   - [Create Black Duck Policy (Optional)](#create-black-duck-policy-optional)
   - [Setup Detect Action](#setup-detect-action)
+    - [Additional Action Parameters](#additional-action-parameters)
+    - [Additional Detect Properties](#additional-detect-properties)
   - [Include Custom Certificates (Optional)](#include-custom-certificates-optional)
 - [Policy Checks](#policy-checks)
 
@@ -82,11 +85,12 @@ Using a self-hosted runner provides more flexibility in managing your build envi
 ### Java
 It is possible to skip the [Setup Java](#setup-java) step below if you already have Java 11 on your self-hosted runner. Ensure that the _Detect Action_ has access to the correct version of Java on its `$PATH` or within the [_GitHub Tool Cache_](https://docs.github.com/en/enterprise-server@3.0/admin/github-actions/managing-access-to-actions-from-githubcom/setting-up-the-tool-cache-on-self-hosted-runners-without-internet-access)
 
-### Certificates
+<h3 id="self-hosted-certs">Certificates</h3>
 If your Black Duck server is on a private network, the self-hosted runner has access to that network, and the Black Duck server uses custom certificates, then you will likely need to provide a custom certificate to the _Detect Action_. 
 To do this: 
 1. Store the root certificate on the self-hosted runner. Example location: `/certificates/my_custom_cert.pem`
 2. Set `NODE_EXTRA_CA_CERTS` in the _Detect Action's_ environment:
+
 ```yaml
     - name: Run Synopsys Detect
       uses: synopsys-sig/detect-action@v0.0.1
@@ -103,7 +107,30 @@ Please reference the section [_Include Custom Certificates (Optional)_](#include
 For more information on self-hosted runners, please visit [GitHub's documentation](https://docs.github.com/en/actions/hosting-your-own-runners/about-self-hosted-runners).
 
 ## Runners: GitHub-Hosted
-TODO
+GitHub hosted runners are convenient, but can require extra setup when managing sensitive information.
+
+<h3 id="github-hosted-certs">Certificates</h3>
+Because a GitHub-hosted runner starts with a clean file-system each run, if custom certificate files are needed, they must be created in your workflow. There are many ways to do this, two possible ways are:
+
+**Option 1**: Download the certificate file.
+
+**Option 2**: Store the base-64 encoded certificate in a GitHub secret, then use a workflow-step to create a _.pem_ file with that certificate's content:
+
+```yaml
+    - name: Create certificate
+      run: cat <<< "${{secrets.BASE_64_CERTIFICATE_CONTENT}}" > my-cert.pem
+```
+
+The file created through one of those options can then be provided as a value for `NODE_EXTRA_CA_CERTS` in the Detect Action step:
+
+```yaml
+    - name: Run Synopsys Detect
+      uses: synopsys-sig/detect-action@v0.0.1
+      env:
+        NODE_EXTRA_CA_CERTS: ./my-cert.pem
+      with:
+        . . .
+```
 
 ## Checkout
 Checkout the source-code onto your GitHub Runner with the following _step_:  
@@ -147,7 +174,7 @@ Please refer to [that action's documentation](https://github.com/blackducksoftwa
 ## Setup Detect Action
 Once your project is checked-out, built, and Java is configured, the _Detect Action_ can finally be run. At minimum for Detect to run, the Black Duck URL (`blackduck-url`), API Token (`blackduck-api-token`), and Detect Version (`detect-version`) must be provided as parameters. Additionally, a _GITHUB\_TOKEN_ (`github-token`) is required in order to comment on Pull Requests or hook into GitHub Checks.
 
-### Optional Parameters
+### Additional Action Parameters
  - `scan-mode`: Either RAPID or INTELLIGENT, configures how Detect is invoked. RAPID will not persist the results and disables select Detect functionality for faster results. INTELLIGENT persists the results and permits all features of Detect.
    - Default: RAPID
  - `output-path-override`: Override for where to output Detect files
@@ -155,13 +182,43 @@ Once your project is checked-out, built, and Java is configured, the _Detect Act
 
 ```yaml
     - name: Synopsys Detect
-      uses: synopsys-sig/detect-action@main
+      uses: synopsys-sig/detect-action@v0.0.1
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         detect-version: 7.7.0
         blackduck-url: ${{ secrets.BLACKDUCK_URL }}
         blackduck-api-token: ${{ secrets.BLACKDUCK_API_TOKEN }}
 ```
+
+### Additional Detect Properties
+Passing additional [Detect properties](https://community.synopsys.com/s/document-item?bundleId=integrations-detect&topicId=properties%2Fall-properties.html&_LANG=enus) can be done in several ways:
+1. Use individual environment variables 
+
+**Example**:
+```yaml
+    - name: Synopsys Detect
+      uses: synopsys-sig/detect-action@v0.0.1
+      env:
+        DETECT_TOOLS: DOCKER
+        DETECT_DOCKER_IMAGE_ID: abc123
+        DETECT_DOCKER_PATH_REQUIRED: TRUE
+      with:
+        . . .
+```
+2. Use the `SPRING_APPLICATION_JSON` environment variable 
+
+**Example**:
+```yaml
+    - name: Synopsys Detect
+      uses: synopsys-sig/detect-action@v0.0.1
+      env:
+        SPRING_APPLICATION_JSON: '{"detect.tools":"DOCKER","detect.docker.image.id":"abc123","detect.docker.path.required":"TRUE"}'
+      with:
+        . . .
+```
+3. Expose an _application.properties_ or _application.yml_ file in your repository's root directory, or in a _config_ subdirectory
+
+Please refer to the [Detect documentation on this topic](https://community.synopsys.com/s/document-item?bundleId=integrations-detect&topicId=configuring%2Fothermethods.html&_LANG=enus) for more information.
 
 ## Include Custom Certificates (Optional)
 To include one or more certificates, set `NODE_EXTRA_CA_CERTS` to the certificate file-path(s) in the environment. 

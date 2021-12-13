@@ -1,7 +1,7 @@
-import {debug, info, warning} from '@actions/core'
-import {context, getOctokit} from '@actions/github'
-import {getSha} from './github-context'
-import {GITHUB_TOKEN} from './inputs'
+import { debug, info, warning } from '@actions/core'
+import { context, getOctokit } from '@actions/github'
+import { getSha } from './github-context'
+import { GITHUB_TOKEN } from './inputs'
 
 export const CHECK_NAME = 'Black Duck Policy Check'
 

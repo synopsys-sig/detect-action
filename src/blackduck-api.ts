@@ -1,10 +1,9 @@
-import {IHeaders} from 'typed-rest-client/Interfaces'
-import {HttpClient} from 'typed-rest-client/HttpClient'
-import {APPLICATION_NAME} from './application-constants'
-import {BearerCredentialHandler} from 'typed-rest-client/handlers'
-import {IRestResponse, RestClient} from 'typed-rest-client/RestClient'
-import {debug, info, warning} from '@actions/core'
-
+import { debug, info, warning } from '@actions/core'
+import { IHeaders } from 'typed-rest-client/Interfaces'
+import { BearerCredentialHandler } from 'typed-rest-client/handlers'
+import { HttpClient } from 'typed-rest-client/HttpClient'
+import { IRestResponse, RestClient } from 'typed-rest-client/RestClient'
+import { APPLICATION_NAME } from './application-constants'
 export interface IBlackduckPage<Type> {
   totalCount: number
   items: Array<Type>
@@ -74,7 +73,7 @@ export class BlackduckApiService {
   async getBearerToken(): Promise<string> {
     info('Initiating authentication request to Black Duck...')
     const authenticationClient = new HttpClient(APPLICATION_NAME)
-    const authorizationHeader: IHeaders = {Authorization: `token ${this.blackduckApiToken}`}
+    const authorizationHeader: IHeaders = { Authorization: `token ${this.blackduckApiToken}` }
 
     return authenticationClient
       .post(`${this.blackduckUrl}/api/tokens/authenticate`, '', authorizationHeader)

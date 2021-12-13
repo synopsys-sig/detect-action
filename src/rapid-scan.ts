@@ -1,7 +1,7 @@
-import {warning} from '@actions/core'
-import {IRestResponse} from 'typed-rest-client'
-import {BlackduckApiService, cleanUrl, IBlackduckPage, IComponentVersion, IRapidScanViolation, IUpgradeGuidance} from './blackduck-api'
-import {BLACKDUCK_API_TOKEN, BLACKDUCK_URL} from './inputs'
+import { warning } from '@actions/core'
+import { IRestResponse } from 'typed-rest-client'
+import { BlackduckApiService, cleanUrl, IBlackduckPage, IComponentVersion, IRapidScanViolation, IUpgradeGuidance } from './blackduck-api'
+import { BLACKDUCK_API_TOKEN, BLACKDUCK_URL } from './inputs'
 
 export interface PolicyViolation {
   _meta: {

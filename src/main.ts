@@ -1,15 +1,16 @@
-import {info, setFailed} from '@actions/core'
-import {create} from '@actions/glob'
+import { info, warning, setFailed } from '@actions/core'
+import { create } from '@actions/glob'
 import path from 'path'
 import fs from 'fs'
-import {uploadRapidScanJson, uploadDiagnosticZip} from './upload-artifacts'
-import {TOOL_NAME, findOrDownloadDetect, runDetect} from './detect-manager'
-import {commentOnPR} from './comment'
-import {createReport, PolicyViolation} from './rapid-scan'
-import {isPullRequest} from './github-context'
-import {createBlackDuckPolicyCheck, failBlackDuckPolicyCheck, passBlackDuckPolicyCheck, skipBlackDuckPolicyCheck, cancelBlackDuckPolicyCheck} from './check'
-import {BLACKDUCK_API_TOKEN, BLACKDUCK_URL, DETECT_VERSION, OUTPUT_PATH_OVERRIDE, SCAN_MODE} from './inputs'
-import {BlackduckApiService} from './blackduck-api'
+import { BlackduckApiService } from './blackduck-api'
+import { createBlackDuckPolicyCheck, failBlackDuckPolicyCheck, passBlackDuckPolicyCheck, skipBlackDuckPolicyCheck, cancelBlackDuckPolicyCheck } from './check'
+import { commentOnPR } from './comment'
+import { POLICY_SEVERITY, SUCCESS } from './detect-exit-codes'
+import { TOOL_NAME, findOrDownloadDetect, runDetect } from './detect-manager'
+import { isPullRequest } from './github-context'
+import { BLACKDUCK_API_TOKEN, BLACKDUCK_URL, DETECT_TRUST_CERT, DETECT_VERSION, FAIL_ON_SEVERITIES, OUTPUT_PATH_OVERRIDE, SCAN_MODE } from './inputs'
+import { createReport, PolicyViolation } from './rapid-scan'
+import { uploadRapidScanJson, uploadDiagnosticZip } from './upload-artifacts'
 
 export async function run(): Promise<void> {
   const policyCheckId = await createBlackDuckPolicyCheck()
@@ -49,7 +50,7 @@ export async function run(): Promise<void> {
 
   info('You have at least one enabled policy, executing Detect...')
 
-  const detectArgs = ['--blackduck.trust.cert=TRUE', `--blackduck.url=${BLACKDUCK_URL}`, `--blackduck.api.token=${BLACKDUCK_API_TOKEN}`, `--detect.blackduck.scan.mode=${SCAN_MODE}`, `--detect.output.path=${outputPath}`, `--detect.scan.output.path=${outputPath}`]
+  const detectArgs = [`--blackduck.trust.cert=${DETECT_TRUST_CERT}`, `--blackduck.url=${BLACKDUCK_URL}`, `--blackduck.api.token=${BLACKDUCK_API_TOKEN}`, `--detect.blackduck.scan.mode=${SCAN_MODE}`, `--detect.output.path=${outputPath}`, `--detect.scan.output.path=${outputPath}`, `--detect.policy.check.fail.on.severities=${FAIL_ON_SEVERITIES}`]
 
   const detectPath = await findOrDownloadDetect().catch(reason => {
     setFailed(`Could not download ${TOOL_NAME} ${DETECT_VERSION}: ${reason}`)
@@ -89,14 +90,13 @@ export async function run(): Promise<void> {
       info('Successfully commented on PR.')
     }
 
-    if (scanJson.length === 0) {
-      passBlackDuckPolicyCheck(policyCheckId, rapidScanReport)
-    } else {
+    if (detectExitCode === POLICY_SEVERITY) {
       failBlackDuckPolicyCheck(policyCheckId, rapidScanReport)
+    } else {
+      passBlackDuckPolicyCheck(policyCheckId, rapidScanReport)
     }
     info('Reporting complete.')
   } else {
-    // TODO: Implement policy check for non-rapid scan
     skipBlackDuckPolicyCheck(policyCheckId)
   }
 
@@ -109,12 +109,12 @@ export async function run(): Promise<void> {
   }
 
   if (detectExitCode > 0) {
-    if (detectExitCode === 3) {
-      setFailed('Found dependencies violating policy!')
+    if (detectExitCode === POLICY_SEVERITY) {
+      warning('Found dependencies violating policy!')
     } else {
-      setFailed('Dependency check failed! See Detect output for more information.')
+      warning('Dependency check failed! See Detect output for more information.')
     }
-  } else if (detectExitCode === 0) {
+  } else if (detectExitCode === SUCCESS) {
     info('None of your dependencies violate your Black Duck policies!')
   }
 }
