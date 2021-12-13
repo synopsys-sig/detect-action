@@ -7,10 +7,8 @@ require('./sourcemap-register.js');/******/ (() => { // webpackBootstrap
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.POLICY_SEVERITY = exports.SUCCESS = exports.APPLICATION_NAME = void 0;
+exports.APPLICATION_NAME = void 0;
 exports.APPLICATION_NAME = 'synopsys-sig/detect-action';
-exports.SUCCESS = 0;
-exports.POLICY_SEVERITY = 3;
 
 
 /***/ }),
