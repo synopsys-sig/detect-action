@@ -28,7 +28,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.BlackduckApiService = void 0;
+exports.cleanUrl = exports.BlackduckApiService = void 0;
 const HttpClient_1 = __nccwpck_require__(5538);
 const application_constants_1 = __nccwpck_require__(9717);
 const handlers_1 = __nccwpck_require__(2188);
@@ -117,6 +117,7 @@ function cleanUrl(blackduckUrl) {
     }
     return blackduckUrl;
 }
+exports.cleanUrl = cleanUrl;
 
 
 /***/ }),
@@ -561,11 +562,10 @@ function createComponentRow(upgradeGuidanceResponse, violation) {
     const violatingVulnerabilityNames = violation.policyViolationVulnerabilities.map(vulnerability => vulnerability.name);
     const componentInViolation = `${violation.componentName} ${violation.versionName}`;
     const componentLicenses = violation.allLicenses
-        .map(license => `${license.name}`)
-        .map(licenseName => (violatingLicenseNames.includes(licenseName) ? ':x: &nbsp; ' : '').concat(licenseName))
+        .map(license => `${(violatingLicenseNames.includes(license.name) ? ':x: &nbsp; ' : '')}[${license.name}](${license._meta.href})`)
         .join('<br/>');
     const violatedPolicies = violation.violatingPolicies.map(policy => `${policy.policyName} ${policy.policySeverity === 'UNSPECIFIED' ? '' : `(${policy.policySeverity})`}`).join('<br/>');
-    const vulnerabilities = violation.allVulnerabilities.map(vulnerability => `${violatingVulnerabilityNames.includes(vulnerability.name) ? ':x: &nbsp; ' : ''}${vulnerability.name} (${vulnerability.vulnSeverity}: CVSS ${vulnerability.overallScore})`).join('<br/>');
+    const vulnerabilities = violation.allVulnerabilities.map(vulnerability => `${violatingVulnerabilityNames.includes(vulnerability.name) ? ':x: &nbsp; ' : ''}[${vulnerability.name}](${(0, blackduck_api_1.cleanUrl)(inputs_1.BLACKDUCK_URL)}/api/vulnerabilities/${vulnerability.name}) (${vulnerability.vulnSeverity}: CVSS ${vulnerability.overallScore})`).join('<br/>');
     if (upgradeGuidanceResponse === undefined) {
         return `| ${componentInViolation} | ${componentLicenses} | ${violatedPolicies} | ${vulnerabilities} |  |  | `;
     }
@@ -574,11 +574,13 @@ function createComponentRow(upgradeGuidanceResponse, violation) {
     const upgradeGuidance = upgradeGuidanceResponse.result;
     const shortTerm = upgradeGuidance === null || upgradeGuidance === void 0 ? void 0 : upgradeGuidance.shortTerm;
     if (shortTerm !== undefined) {
-        shortTermString = `${shortTerm.versionName} (${Object.values(shortTerm.vulnerabilityRisk).reduce((accumulatedValues, value) => accumulatedValues + value, 0)} known vulnerabilities)`;
+        const vulnerabilitiesAfterUpgrade = Object.values(shortTerm.vulnerabilityRisk).reduce((accumulatedValues, value) => accumulatedValues + value, 0);
+        shortTermString = `[${shortTerm.versionName}](${shortTerm.version}) (${vulnerabilitiesAfterUpgrade} known vulnerabilities)`;
     }
     const longTerm = upgradeGuidance === null || upgradeGuidance === void 0 ? void 0 : upgradeGuidance.longTerm;
     if (longTerm !== undefined) {
-        longTermString = `${longTerm.versionName} (${Object.values(longTerm.vulnerabilityRisk).reduce((accumulatedValues, value) => accumulatedValues + value, 0)} known vulnerabilities)`;
+        const vulnerabilitiesAfterUpgrade = Object.values(longTerm.vulnerabilityRisk).reduce((accumulatedValues, value) => accumulatedValues + value, 0);
+        longTermString = `[${longTerm.versionName}](${longTerm.version}) (${vulnerabilitiesAfterUpgrade} known vulnerabilities)`;
     }
     return `| ${componentInViolation} | ${componentLicenses} | ${violatedPolicies} | ${vulnerabilities} | ${shortTermString} | ${longTermString} |`;
 }

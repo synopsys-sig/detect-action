@@ -1,6 +1,6 @@
-import {setFailed, warning} from '@actions/core'
+import {warning} from '@actions/core'
 import {IRestResponse} from 'typed-rest-client'
-import {BlackduckApiService, IBlackduckPage, IRapidScanViolation, IUpgradeGuidance} from './blackduck-api'
+import {BlackduckApiService, cleanUrl, IBlackduckPage, IRapidScanViolation, IUpgradeGuidance} from './blackduck-api'
 import {BLACKDUCK_API_TOKEN, BLACKDUCK_URL} from './inputs'
 
 export interface PolicyViolation {
@@ -49,12 +49,9 @@ function createComponentRow(upgradeGuidanceResponse: void | IRestResponse<IUpgra
   const violatingVulnerabilityNames = violation.policyViolationVulnerabilities.map(vulnerability => vulnerability.name)
 
   const componentInViolation = `${violation.componentName} ${violation.versionName}`
-  const componentLicenses = violation.allLicenses
-    .map(license => `${license.name}`)
-    .map(licenseName => (violatingLicenseNames.includes(licenseName) ? ':x: &nbsp; ' : '').concat(licenseName))
-    .join('<br/>')
+  const componentLicenses = violation.allLicenses.map(license => `${violatingLicenseNames.includes(license.name) ? ':x: &nbsp; ' : ''}[${license.name}](${license._meta.href})`).join('<br/>')
   const violatedPolicies = violation.violatingPolicies.map(policy => `${policy.policyName} ${policy.policySeverity === 'UNSPECIFIED' ? '' : `(${policy.policySeverity})`}`).join('<br/>')
-  const vulnerabilities = violation.allVulnerabilities.map(vulnerability => `${violatingVulnerabilityNames.includes(vulnerability.name) ? ':x: &nbsp; ' : ''}${vulnerability.name} (${vulnerability.vulnSeverity}: CVSS ${vulnerability.overallScore})`).join('<br/>')
+  const vulnerabilities = violation.allVulnerabilities.map(vulnerability => `${violatingVulnerabilityNames.includes(vulnerability.name) ? ':x: &nbsp; ' : ''}[${vulnerability.name}](${cleanUrl(BLACKDUCK_URL)}/api/vulnerabilities/${vulnerability.name}) (${vulnerability.vulnSeverity}: CVSS ${vulnerability.overallScore})`).join('<br/>')
 
   if (upgradeGuidanceResponse === undefined) {
     return `| ${componentInViolation} | ${componentLicenses} | ${violatedPolicies} | ${vulnerabilities} |  |  | `
@@ -65,11 +62,13 @@ function createComponentRow(upgradeGuidanceResponse: void | IRestResponse<IUpgra
   const upgradeGuidance = upgradeGuidanceResponse.result
   const shortTerm = upgradeGuidance?.shortTerm
   if (shortTerm !== undefined) {
-    shortTermString = `${shortTerm.versionName} (${Object.values(shortTerm.vulnerabilityRisk).reduce((accumulatedValues, value) => accumulatedValues + value, 0)} known vulnerabilities)`
+    const vulnerabilitiesAfterUpgrade = Object.values(shortTerm.vulnerabilityRisk).reduce((accumulatedValues, value) => accumulatedValues + value, 0)
+    shortTermString = `[${shortTerm.versionName}](${shortTerm.version}) (${vulnerabilitiesAfterUpgrade} known vulnerabilities)`
   }
   const longTerm = upgradeGuidance?.longTerm
   if (longTerm !== undefined) {
-    longTermString = `${longTerm.versionName} (${Object.values(longTerm.vulnerabilityRisk).reduce((accumulatedValues, value) => accumulatedValues + value, 0)} known vulnerabilities)`
+    const vulnerabilitiesAfterUpgrade = Object.values(longTerm.vulnerabilityRisk).reduce((accumulatedValues, value) => accumulatedValues + value, 0)
+    longTermString = `[${longTerm.versionName}](${longTerm.version}) (${vulnerabilitiesAfterUpgrade} known vulnerabilities)`
   }
 
   return `| ${componentInViolation} | ${componentLicenses} | ${violatedPolicies} | ${vulnerabilities} | ${shortTermString} | ${longTermString} |`

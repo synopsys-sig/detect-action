@@ -12,11 +12,14 @@ export interface IBlackduckPage<Type> {
 }
 
 export interface IUpgradeGuidance {
+  version: string
   shortTerm: {
+    version: string
     versionName: string
     vulnerabilityRisk: Object
   }
   longTerm: {
+    version: string
     versionName: string
     vulnerabilityRisk: Object
   }
@@ -129,7 +132,7 @@ export class BlackduckApiService {
   }
 }
 
-function cleanUrl(blackduckUrl: string) {
+export function cleanUrl(blackduckUrl: string) {
   if (blackduckUrl && blackduckUrl.endsWith('/')) {
     return blackduckUrl.substr(0, blackduckUrl.length - 1)
   }
