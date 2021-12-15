@@ -2,11 +2,18 @@
 
 (WIP)
 
-Execute Synopsys Detect against your source to easily import your code into Black Duck for dependency analysis.
+Richly integrate Synopsys Detect into GitHub action workflows.
 
-Comments on Pull Requests if any of your dependencies violate policies.
+Configure the action to run Detect in Rapid scan mode to get detailed Black Duck policy reports (default behavior), or in Intelligent scan mode to upload your data into Black Duck for more detailed analysis.
+
+![Policy Report Screenshot](.github/policyReport.png)
+
+Once your dependencies are clean, configure the action to run Detect in Rapid scan mode to protect your branches with the Black Duck Policy Check and [_Branch Protection Rules_](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/defining-the-mergeability-of-pull-requests/about-protected-branches#require-status-checks-before-merging).
+
+![Black Duck Policy Check screenshot](.github/policyCheck.png)
 
 # Table Of Contents
+
 - [Setup Workflow](#setup-workflow)
 - [Setup Job](#setup-job)
   - [Runners: Self Hosted](#runners-self-hosted)
@@ -26,6 +33,7 @@ Comments on Pull Requests if any of your dependencies violate policies.
 - [Policy Checks](#policy-checks)
 
 # Setup Workflow
+
 To start using this action, you'll need to create a _job_ within a GitHub Workflow. You can either [create a new GitHub Workflow](https://docs.github.com/en/actions/learn-github-actions/workflow-syntax-for-github-actions) or use an existing one if appropriate for your use-case. 
 
 Once you have a GitHub Workflow selected, configure which [events will trigger the workflow](https://docs.github.com/en/actions/learn-github-actions/events-that-trigger-workflows) such as _pull requests_ or _schedules_.  
