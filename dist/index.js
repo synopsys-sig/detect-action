@@ -400,7 +400,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.run = void 0;
+exports.runWithPolicyCheck = exports.run = void 0;
 const core_1 = __nccwpck_require__(2186);
 const glob_1 = __nccwpck_require__(8090);
 const path_1 = __importDefault(__nccwpck_require__(5622));
@@ -415,9 +415,19 @@ const inputs_1 = __nccwpck_require__(6180);
 const rapid_scan_1 = __nccwpck_require__(8631);
 const upload_artifacts_1 = __nccwpck_require__(2854);
 function run() {
-    var _a, _b;
     return __awaiter(this, void 0, void 0, function* () {
         const policyCheckId = yield (0, check_1.createBlackDuckPolicyCheck)();
+        runWithPolicyCheck(policyCheckId).catch(unhandledError => {
+            (0, core_1.debug)('Cancelling policy check because of an unhandled error');
+            (0, check_1.cancelBlackDuckPolicyCheck)(policyCheckId);
+            (0, core_1.setFailed)(`Failed due to an unhandled error: ${unhandledError}`);
+        });
+    });
+}
+exports.run = run;
+function runWithPolicyCheck(policyCheckId) {
+    var _a, _b;
+    return __awaiter(this, void 0, void 0, function* () {
         (0, core_1.info)(`detect-version: ${inputs_1.DETECT_VERSION}`);
         (0, core_1.info)(`output-path-override: ${inputs_1.OUTPUT_PATH_OVERRIDE}`);
         (0, core_1.info)(`scan-mode: ${inputs_1.SCAN_MODE}`);
@@ -510,7 +520,7 @@ function run() {
         }
     });
 }
-exports.run = run;
+exports.runWithPolicyCheck = runWithPolicyCheck;
 run();
 
 

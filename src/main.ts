@@ -1,4 +1,4 @@
-import { info, warning, setFailed } from '@actions/core'
+import { info, warning, setFailed, debug } from '@actions/core'
 import { create } from '@actions/glob'
 import path from 'path'
 import fs from 'fs'
@@ -12,9 +12,16 @@ import { BLACKDUCK_API_TOKEN, BLACKDUCK_URL, DETECT_TRUST_CERT, DETECT_VERSION, 
 import { createReport, PolicyViolation } from './rapid-scan'
 import { uploadRapidScanJson, uploadDiagnosticZip } from './upload-artifacts'
 
-export async function run(): Promise<void> {
+export async function run() {
   const policyCheckId = await createBlackDuckPolicyCheck()
+  runWithPolicyCheck(policyCheckId).catch(unhandledError => {
+    debug('Canceling policy check because of an unhandled error')
+    cancelBlackDuckPolicyCheck(policyCheckId)
+    setFailed(`Failed due to an unhandled error: ${unhandledError}`)
+  })
+}
 
+export async function runWithPolicyCheck(policyCheckId : number): Promise<void> {
   info(`detect-version: ${DETECT_VERSION}`)
   info(`output-path-override: ${OUTPUT_PATH_OVERRIDE}`)
   info(`scan-mode: ${SCAN_MODE}`)
@@ -34,7 +41,7 @@ export async function run(): Promise<void> {
   info('Checking that you have at least one enabled policy...')
 
   const blackduckApiService = new BlackduckApiService(BLACKDUCK_URL, BLACKDUCK_API_TOKEN)
-  const blackDuckBearerToken = await blackduckApiService.getBearerToken();
+  const blackDuckBearerToken = await blackduckApiService.getBearerToken()
   let policiesExist: boolean | void = await blackduckApiService.checkIfEnabledBlackduckPoliciesExist(blackDuckBearerToken).catch(reason => {
     setFailed(`Could not verify if policies existed: ${reason}`)
   })
