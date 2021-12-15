@@ -4,6 +4,7 @@ import { BearerCredentialHandler } from 'typed-rest-client/handlers'
 import { HttpClient } from 'typed-rest-client/HttpClient'
 import { IRestResponse, RestClient } from 'typed-rest-client/RestClient'
 import { APPLICATION_NAME } from './application-constants'
+
 export interface IBlackduckPage<Type> {
   totalCount: number
   items: Array<Type>
@@ -85,9 +86,8 @@ export class BlackduckApiService {
       })
   }
 
-  async checkIfEnabledBlackduckPoliciesExist(): Promise<boolean> {
-    return this.getBearerToken()
-      .then(bearerToken => this.getPolicies(bearerToken, 1, true))
+  async checkIfEnabledBlackduckPoliciesExist(bearerToken : string): Promise<boolean> {
+    return this.getPolicies(bearerToken, 1, true)
       .then(blackduckPolicyPage => {
         const policyCount = blackduckPolicyPage?.result?.totalCount
         if (policyCount === undefined || policyCount === null) {

@@ -33,8 +33,9 @@ export async function run(): Promise<void> {
 
   info('Checking that you have at least one enabled policy...')
 
-  const blackduckPolicyChecker = new BlackduckApiService(BLACKDUCK_URL, BLACKDUCK_API_TOKEN)
-  let policiesExist: boolean | void = await blackduckPolicyChecker.checkIfEnabledBlackduckPoliciesExist().catch(reason => {
+  const blackduckApiService = new BlackduckApiService(BLACKDUCK_URL, BLACKDUCK_API_TOKEN)
+  const blackDuckBearerToken = await blackduckApiService.getBearerToken();
+  let policiesExist: boolean | void = await blackduckApiService.checkIfEnabledBlackduckPoliciesExist(blackDuckBearerToken).catch(reason => {
     setFailed(`Could not verify if policies existed: ${reason}`)
   })
 

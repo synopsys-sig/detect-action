@@ -54,10 +54,9 @@ class BlackduckApiService {
             });
         });
     }
-    checkIfEnabledBlackduckPoliciesExist() {
+    checkIfEnabledBlackduckPoliciesExist(bearerToken) {
         return __awaiter(this, void 0, void 0, function* () {
-            return this.getBearerToken()
-                .then(bearerToken => this.getPolicies(bearerToken, 1, true))
+            return this.getPolicies(bearerToken, 1, true)
                 .then(blackduckPolicyPage => {
                 var _a;
                 const policyCount = (_a = blackduckPolicyPage === null || blackduckPolicyPage === void 0 ? void 0 : blackduckPolicyPage.result) === null || _a === void 0 ? void 0 : _a.totalCount;
@@ -436,8 +435,9 @@ function run() {
             outputPath = path_1.default.resolve(runnerTemp, 'blackduck');
         }
         (0, core_1.info)('Checking that you have at least one enabled policy...');
-        const blackduckPolicyChecker = new blackduck_api_1.BlackduckApiService(inputs_1.BLACKDUCK_URL, inputs_1.BLACKDUCK_API_TOKEN);
-        let policiesExist = yield blackduckPolicyChecker.checkIfEnabledBlackduckPoliciesExist().catch(reason => {
+        const blackduckApiService = new blackduck_api_1.BlackduckApiService(inputs_1.BLACKDUCK_URL, inputs_1.BLACKDUCK_API_TOKEN);
+        const blackDuckBearerToken = yield blackduckApiService.getBearerToken();
+        let policiesExist = yield blackduckApiService.checkIfEnabledBlackduckPoliciesExist(blackDuckBearerToken).catch(reason => {
             (0, core_1.setFailed)(`Could not verify if policies existed: ${reason}`);
         });
         if (policiesExist === undefined) {
