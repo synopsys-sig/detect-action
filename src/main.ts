@@ -15,9 +15,9 @@ import { uploadRapidScanJson, uploadDiagnosticZip } from './upload-artifacts'
 export async function run() {
   const policyCheckId = await createBlackDuckPolicyCheck()
   runWithPolicyCheck(policyCheckId).catch(unhandledError => {
-    debug('Canceling policy check because of an unhandled error')
+    debug('Canceling policy check because of an unhandled error.')
     cancelBlackDuckPolicyCheck(policyCheckId)
-    setFailed(`Failed due to an unhandled error: ${unhandledError}`)
+    setFailed(`Failed due to an unhandled error: '${unhandledError}'`)
   })
 }
 
@@ -47,6 +47,7 @@ export async function runWithPolicyCheck(policyCheckId : number): Promise<void> 
   })
 
   if (policiesExist === undefined) {
+    debug('Could not determine if policies existed. Canceling policy check.')
     cancelBlackDuckPolicyCheck(policyCheckId)
     return
   }
@@ -65,6 +66,7 @@ export async function runWithPolicyCheck(policyCheckId : number): Promise<void> 
   })
 
   if (detectPath === undefined) {
+    debug(`Could not determine ${TOOL_NAME} path. Canceling policy check.`)
     cancelBlackDuckPolicyCheck(policyCheckId)
     return
   }
@@ -74,14 +76,15 @@ export async function runWithPolicyCheck(policyCheckId : number): Promise<void> 
   })
 
   if (detectExitCode === undefined) {
+    debug(`Could not determine ${TOOL_NAME} exit code. Canceling policy check.`)
     cancelBlackDuckPolicyCheck(policyCheckId)
     return
   }
 
-  info('Detect executed successfully.')
+  info(`${TOOL_NAME} executed successfully.`)
 
   if (SCAN_MODE === 'RAPID') {
-    info('Detect executed in RAPID mode, beginning reporting...')
+    info(`${TOOL_NAME} executed in RAPID mode. Beginning reporting...`)
 
     const jsonGlobber = await create(`${outputPath}/*.json`)
     const scanJsonPaths = await jsonGlobber.glob()
@@ -105,6 +108,7 @@ export async function runWithPolicyCheck(policyCheckId : number): Promise<void> 
     }
     info('Reporting complete.')
   } else {
+    info(`${TOOL_NAME} executed in ${SCAN_MODE} mode. Skipping policy check.`)
     skipBlackDuckPolicyCheck(policyCheckId)
   }
 

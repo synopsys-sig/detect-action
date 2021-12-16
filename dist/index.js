@@ -418,9 +418,9 @@ function run() {
     return __awaiter(this, void 0, void 0, function* () {
         const policyCheckId = yield (0, check_1.createBlackDuckPolicyCheck)();
         runWithPolicyCheck(policyCheckId).catch(unhandledError => {
-            (0, core_1.debug)('Cancelling policy check because of an unhandled error');
+            (0, core_1.debug)('Canceling policy check because of an unhandled error.');
             (0, check_1.cancelBlackDuckPolicyCheck)(policyCheckId);
-            (0, core_1.setFailed)(`Failed due to an unhandled error: ${unhandledError}`);
+            (0, core_1.setFailed)(`Failed due to an unhandled error: '${unhandledError}'`);
         });
     });
 }
@@ -451,6 +451,7 @@ function runWithPolicyCheck(policyCheckId) {
             (0, core_1.setFailed)(`Could not verify if policies existed: ${reason}`);
         });
         if (policiesExist === undefined) {
+            (0, core_1.debug)('Could not determine if policies existed. Canceling policy check.');
             (0, check_1.cancelBlackDuckPolicyCheck)(policyCheckId);
             return;
         }
@@ -464,6 +465,7 @@ function runWithPolicyCheck(policyCheckId) {
             (0, core_1.setFailed)(`Could not download ${detect_manager_1.TOOL_NAME} ${inputs_1.DETECT_VERSION}: ${reason}`);
         });
         if (detectPath === undefined) {
+            (0, core_1.debug)(`Could not determine ${detect_manager_1.TOOL_NAME} path. Canceling policy check.`);
             (0, check_1.cancelBlackDuckPolicyCheck)(policyCheckId);
             return;
         }
@@ -471,12 +473,13 @@ function runWithPolicyCheck(policyCheckId) {
             (0, core_1.setFailed)(`Could not execute ${detect_manager_1.TOOL_NAME} ${inputs_1.DETECT_VERSION}: ${reason}`);
         });
         if (detectExitCode === undefined) {
+            (0, core_1.debug)(`Could not determine ${detect_manager_1.TOOL_NAME} exit code. Canceling policy check.`);
             (0, check_1.cancelBlackDuckPolicyCheck)(policyCheckId);
             return;
         }
-        (0, core_1.info)('Detect executed successfully.');
+        (0, core_1.info)(`${detect_manager_1.TOOL_NAME} executed successfully.`);
         if (inputs_1.SCAN_MODE === 'RAPID') {
-            (0, core_1.info)('Detect executed in RAPID mode, beginning reporting...');
+            (0, core_1.info)(`${detect_manager_1.TOOL_NAME} executed in RAPID mode. Beginning reporting...`);
             const jsonGlobber = yield (0, glob_1.create)(`${outputPath}/*.json`);
             const scanJsonPaths = yield jsonGlobber.glob();
             (0, upload_artifacts_1.uploadRapidScanJson)(outputPath, scanJsonPaths);
@@ -498,6 +501,7 @@ function runWithPolicyCheck(policyCheckId) {
             (0, core_1.info)('Reporting complete.');
         }
         else {
+            (0, core_1.info)(`${detect_manager_1.TOOL_NAME} executed in ${inputs_1.SCAN_MODE} mode. Skipping policy check.`);
             (0, check_1.skipBlackDuckPolicyCheck)(policyCheckId);
         }
         const diagnosticMode = ((_a = process.env.DETECT_DIAGNOSTIC) === null || _a === void 0 ? void 0 : _a.toLowerCase()) === 'true';
