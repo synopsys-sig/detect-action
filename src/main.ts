@@ -38,26 +38,26 @@ export async function runWithPolicyCheck(policyCheckId : number): Promise<void> 
     outputPath = path.resolve(runnerTemp, 'blackduck')
   }
 
-  info('Checking that you have at least one enabled policy...')
+  if (SCAN_MODE === 'RAPID') {
+    info('Checking that you have at least one enabled policy...')
 
-  const blackduckApiService = new BlackduckApiService(BLACKDUCK_URL, BLACKDUCK_API_TOKEN)
-  const blackDuckBearerToken = await blackduckApiService.getBearerToken()
-  let policiesExist: boolean | void = await blackduckApiService.checkIfEnabledBlackduckPoliciesExist(blackDuckBearerToken).catch(reason => {
-    setFailed(`Could not verify if policies existed: ${reason}`)
-  })
+    const blackduckApiService = new BlackduckApiService(BLACKDUCK_URL, BLACKDUCK_API_TOKEN)
+    const blackDuckBearerToken = await blackduckApiService.getBearerToken()
+    let policiesExist: boolean | void = await blackduckApiService.checkIfEnabledBlackduckPoliciesExist(blackDuckBearerToken).catch(reason => {
+      setFailed(`Could not verify whether policies existed: ${reason}`)
+    })
 
-  if (policiesExist === undefined) {
-    debug('Could not determine if policies existed. Canceling policy check.')
-    cancelBlackDuckPolicyCheck(policyCheckId)
-    return
+    if (policiesExist === undefined) {
+      debug('Could not determine if policies existed. Canceling policy check.')
+      cancelBlackDuckPolicyCheck(policyCheckId)
+      return
+    } else if (!policiesExist) {
+      setFailed(`Could not run ${TOOL_NAME} using ${SCAN_MODE} scan mode. No enabled policies found on the specified Black Duck server.`)
+      return
+    } else {
+      info(`You have at least one enabled policy, executing ${TOOL_NAME} in ${SCAN_MODE} scan mode...`)
+    }
   }
-
-  if (!policiesExist && SCAN_MODE === 'RAPID') {
-    setFailed(`Could not run ${TOOL_NAME} using ${SCAN_MODE} scan mode. No enabled policies found on the specified Black Duck server.`)
-    return
-  }
-
-  info('You have at least one enabled policy, executing Detect...')
 
   const detectArgs = [`--blackduck.trust.cert=${DETECT_TRUST_CERT}`, `--blackduck.url=${BLACKDUCK_URL}`, `--blackduck.api.token=${BLACKDUCK_API_TOKEN}`, `--detect.blackduck.scan.mode=${SCAN_MODE}`, `--detect.output.path=${outputPath}`, `--detect.scan.output.path=${outputPath}`, `--detect.policy.check.fail.on.severities=${FAIL_ON_SEVERITIES}`]
 

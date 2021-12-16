@@ -87,6 +87,7 @@ export class BlackduckApiService {
   }
 
   async checkIfEnabledBlackduckPoliciesExist(bearerToken : string): Promise<boolean> {
+    debug('Requesting policies from Black Duck...')
     return this.getPolicies(bearerToken, 1, true)
       .then(blackduckPolicyPage => {
         const policyCount = blackduckPolicyPage?.result?.totalCount
