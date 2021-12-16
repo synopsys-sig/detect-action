@@ -1,4 +1,4 @@
-import { warning, info } from '@actions/core'
+import { warning, info, debug } from '@actions/core'
 import { create, UploadOptions } from '@actions/artifact'
 
 export async function uploadRapidScanJson(outputPath: string, jsonFiles: string[]): Promise<void> {
@@ -16,6 +16,7 @@ async function uploadArtifact(name: string, outputPath: string, files: string[])
     retentionDays: 0
   }
 
+  info(`Attempting to upload ${name}...`)
   const uploadResponse = await artifactClient.uploadArtifact(name, files, outputPath, options)
 
   if (files.length === 0) {

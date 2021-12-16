@@ -1,4 +1,4 @@
-import { info, warning, setFailed } from '@actions/core'
+import { info, warning, setFailed, debug } from '@actions/core'
 import { create } from '@actions/glob'
 import path from 'path'
 import fs from 'fs'
@@ -12,9 +12,16 @@ import { BLACKDUCK_API_TOKEN, BLACKDUCK_URL, DETECT_TRUST_CERT, DETECT_VERSION, 
 import { createReport, PolicyViolation } from './rapid-scan'
 import { uploadRapidScanJson, uploadDiagnosticZip } from './upload-artifacts'
 
-export async function run(): Promise<void> {
+export async function run() {
   const policyCheckId = await createBlackDuckPolicyCheck()
+  runWithPolicyCheck(policyCheckId).catch(unhandledError => {
+    debug('Canceling policy check because of an unhandled error.')
+    cancelBlackDuckPolicyCheck(policyCheckId)
+    setFailed(`Failed due to an unhandled error: '${unhandledError}'`)
+  })
+}
 
+export async function runWithPolicyCheck(policyCheckId : number): Promise<void> {
   info(`detect-version: ${DETECT_VERSION}`)
   info(`output-path-override: ${OUTPUT_PATH_OVERRIDE}`)
   info(`scan-mode: ${SCAN_MODE}`)
@@ -31,24 +38,26 @@ export async function run(): Promise<void> {
     outputPath = path.resolve(runnerTemp, 'blackduck')
   }
 
-  info('Checking that you have at least one enabled policy...')
+  if (SCAN_MODE === 'RAPID') {
+    info('Checking that you have at least one enabled policy...')
 
-  const blackduckPolicyChecker = new BlackduckApiService(BLACKDUCK_URL, BLACKDUCK_API_TOKEN)
-  let policiesExist: boolean | void = await blackduckPolicyChecker.checkIfEnabledBlackduckPoliciesExist().catch(reason => {
-    setFailed(`Could not verify if policies existed: ${reason}`)
-  })
+    const blackduckApiService = new BlackduckApiService(BLACKDUCK_URL, BLACKDUCK_API_TOKEN)
+    const blackDuckBearerToken = await blackduckApiService.getBearerToken()
+    let policiesExist: boolean | void = await blackduckApiService.checkIfEnabledBlackduckPoliciesExist(blackDuckBearerToken).catch(reason => {
+      setFailed(`Could not verify whether policies existed: ${reason}`)
+    })
 
-  if (policiesExist === undefined) {
-    cancelBlackDuckPolicyCheck(policyCheckId)
-    return
+    if (policiesExist === undefined) {
+      debug('Could not determine if policies existed. Canceling policy check.')
+      cancelBlackDuckPolicyCheck(policyCheckId)
+      return
+    } else if (!policiesExist) {
+      setFailed(`Could not run ${TOOL_NAME} using ${SCAN_MODE} scan mode. No enabled policies found on the specified Black Duck server.`)
+      return
+    } else {
+      info(`You have at least one enabled policy, executing ${TOOL_NAME} in ${SCAN_MODE} scan mode...`)
+    }
   }
-
-  if (!policiesExist && SCAN_MODE === 'RAPID') {
-    setFailed(`Could not run ${TOOL_NAME} using ${SCAN_MODE} scan mode. No enabled policies found on the specified Black Duck server.`)
-    return
-  }
-
-  info('You have at least one enabled policy, executing Detect...')
 
   const detectArgs = [`--blackduck.trust.cert=${DETECT_TRUST_CERT}`, `--blackduck.url=${BLACKDUCK_URL}`, `--blackduck.api.token=${BLACKDUCK_API_TOKEN}`, `--detect.blackduck.scan.mode=${SCAN_MODE}`, `--detect.output.path=${outputPath}`, `--detect.scan.output.path=${outputPath}`, `--detect.policy.check.fail.on.severities=${FAIL_ON_SEVERITIES}`]
 
@@ -57,6 +66,7 @@ export async function run(): Promise<void> {
   })
 
   if (detectPath === undefined) {
+    debug(`Could not determine ${TOOL_NAME} path. Canceling policy check.`)
     cancelBlackDuckPolicyCheck(policyCheckId)
     return
   }
@@ -66,14 +76,15 @@ export async function run(): Promise<void> {
   })
 
   if (detectExitCode === undefined) {
+    debug(`Could not determine ${TOOL_NAME} exit code. Canceling policy check.`)
     cancelBlackDuckPolicyCheck(policyCheckId)
     return
   }
 
-  info('Detect executed successfully.')
+  info(`${TOOL_NAME} executed successfully.`)
 
   if (SCAN_MODE === 'RAPID') {
-    info('Detect executed in RAPID mode, beginning reporting...')
+    info(`${TOOL_NAME} executed in RAPID mode. Beginning reporting...`)
 
     const jsonGlobber = await create(`${outputPath}/*.json`)
     const scanJsonPaths = await jsonGlobber.glob()
@@ -97,6 +108,7 @@ export async function run(): Promise<void> {
     }
     info('Reporting complete.')
   } else {
+    info(`${TOOL_NAME} executed in ${SCAN_MODE} mode. Skipping policy check.`)
     skipBlackDuckPolicyCheck(policyCheckId)
   }
 

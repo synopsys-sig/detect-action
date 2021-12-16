@@ -54,10 +54,10 @@ class BlackduckApiService {
             });
         });
     }
-    checkIfEnabledBlackduckPoliciesExist() {
+    checkIfEnabledBlackduckPoliciesExist(bearerToken) {
         return __awaiter(this, void 0, void 0, function* () {
-            return this.getBearerToken()
-                .then(bearerToken => this.getPolicies(bearerToken, 1, true))
+            (0, core_1.debug)('Requesting policies from Black Duck...');
+            return this.getPolicies(bearerToken, 1, true)
                 .then(blackduckPolicyPage => {
                 var _a;
                 const policyCount = (_a = blackduckPolicyPage === null || blackduckPolicyPage === void 0 ? void 0 : blackduckPolicyPage.result) === null || _a === void 0 ? void 0 : _a.totalCount;
@@ -144,6 +144,7 @@ function createBlackDuckPolicyCheck() {
     return __awaiter(this, void 0, void 0, function* () {
         const octokit = (0, github_1.getOctokit)(inputs_1.GITHUB_TOKEN);
         const head_sha = (0, github_context_1.getSha)();
+        (0, core_1.info)(`Creating ${exports.CHECK_NAME}...`);
         const response = yield octokit.rest.checks.create({
             owner: github_1.context.repo.owner,
             repo: github_1.context.repo.repo,
@@ -151,11 +152,11 @@ function createBlackDuckPolicyCheck() {
             head_sha
         });
         if (response.status !== 201) {
-            (0, core_1.warning)(`Unexpected status code recieved when creating check: ${response.status}`);
+            (0, core_1.warning)(`Unexpected status code recieved when creating ${exports.CHECK_NAME}: ${response.status}`);
             (0, core_1.debug)(JSON.stringify(response, null, 2));
         }
         else {
-            (0, core_1.info)(`Black Duck Policy Check created`);
+            (0, core_1.info)(`${exports.CHECK_NAME} created`);
         }
         return response.data.id;
     });
@@ -175,13 +176,13 @@ function failBlackDuckPolicyCheck(checkRunId, text) {
 exports.failBlackDuckPolicyCheck = failBlackDuckPolicyCheck;
 function skipBlackDuckPolicyCheck(checkRunId) {
     return __awaiter(this, void 0, void 0, function* () {
-        return finishBlackDuckPolicyCheck(checkRunId, 'skipped', 'Black Duck Policy Check was skipped', '');
+        return finishBlackDuckPolicyCheck(checkRunId, 'skipped', `${exports.CHECK_NAME} was skipped`, '');
     });
 }
 exports.skipBlackDuckPolicyCheck = skipBlackDuckPolicyCheck;
 function cancelBlackDuckPolicyCheck(checkRunId) {
     return __awaiter(this, void 0, void 0, function* () {
-        return finishBlackDuckPolicyCheck(checkRunId, 'cancelled', 'Black Duck Policy Check could not be completed', 'Something went wrong and the Black Duck Policy Check could not be completed. Check your action logs for more details.');
+        return finishBlackDuckPolicyCheck(checkRunId, 'cancelled', `${exports.CHECK_NAME} Check could not be completed`, `Something went wrong and the ${exports.CHECK_NAME} could not be completed. Check your action logs for more details.`);
     });
 }
 exports.cancelBlackDuckPolicyCheck = cancelBlackDuckPolicyCheck;
@@ -205,7 +206,7 @@ function finishBlackDuckPolicyCheck(checkRunId, conclusion, summary, text) {
             (0, core_1.debug)(JSON.stringify(response, null, 2));
         }
         else {
-            (0, core_1.info)(`Black Duck Policy Check created`);
+            (0, core_1.info)(`${exports.CHECK_NAME} updated`);
         }
     });
 }
@@ -230,7 +231,9 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.commentOnPR = void 0;
+const core_1 = __nccwpck_require__(2186);
 const github_1 = __nccwpck_require__(5438);
+const application_constants_1 = __nccwpck_require__(9717);
 const inputs_1 = __nccwpck_require__(6180);
 const COMMENT_PREFACE = '<!-- Comment automatically managed by Detect Action, do not remove this line -->';
 function commentOnPR(report) {
@@ -241,6 +244,7 @@ function commentOnPR(report) {
         const contextIssue = github_1.context.issue.number;
         const contextOwner = github_1.context.repo.owner;
         const contextRepo = github_1.context.repo.repo;
+        (0, core_1.debug)('Gathering existing comments...');
         const { data: existingComments } = yield octokit.rest.issues.listComments({
             issue_number: contextIssue,
             owner: contextOwner,
@@ -249,6 +253,7 @@ function commentOnPR(report) {
         for (const comment of existingComments) {
             const firstLine = (_a = comment.body) === null || _a === void 0 ? void 0 : _a.split('\r\n')[0];
             if (firstLine === COMMENT_PREFACE) {
+                (0, core_1.debug)(`Existing comment from ${application_constants_1.APPLICATION_NAME} found. Attempting to delete it...`);
                 octokit.rest.issues.deleteComment({
                     comment_id: comment.id,
                     owner: contextOwner,
@@ -256,12 +261,14 @@ function commentOnPR(report) {
                 });
             }
         }
+        (0, core_1.debug)('Creating a new comment...');
         octokit.rest.issues.createComment({
             issue_number: contextIssue,
             owner: contextOwner,
             repo: contextRepo,
             body: message
         });
+        (0, core_1.debug)('Successfully created a new comment!');
     });
 }
 exports.commentOnPR = commentOnPR;
@@ -401,7 +408,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.run = void 0;
+exports.runWithPolicyCheck = exports.run = void 0;
 const core_1 = __nccwpck_require__(2186);
 const glob_1 = __nccwpck_require__(8090);
 const path_1 = __importDefault(__nccwpck_require__(5622));
@@ -416,9 +423,19 @@ const inputs_1 = __nccwpck_require__(6180);
 const rapid_scan_1 = __nccwpck_require__(8631);
 const upload_artifacts_1 = __nccwpck_require__(2854);
 function run() {
-    var _a, _b;
     return __awaiter(this, void 0, void 0, function* () {
         const policyCheckId = yield (0, check_1.createBlackDuckPolicyCheck)();
+        runWithPolicyCheck(policyCheckId).catch(unhandledError => {
+            (0, core_1.debug)('Canceling policy check because of an unhandled error.');
+            (0, check_1.cancelBlackDuckPolicyCheck)(policyCheckId);
+            (0, core_1.setFailed)(`Failed due to an unhandled error: '${unhandledError}'`);
+        });
+    });
+}
+exports.run = run;
+function runWithPolicyCheck(policyCheckId) {
+    var _a, _b;
+    return __awaiter(this, void 0, void 0, function* () {
         (0, core_1.info)(`detect-version: ${inputs_1.DETECT_VERSION}`);
         (0, core_1.info)(`output-path-override: ${inputs_1.OUTPUT_PATH_OVERRIDE}`);
         (0, core_1.info)(`scan-mode: ${inputs_1.SCAN_MODE}`);
@@ -435,25 +452,32 @@ function run() {
         else {
             outputPath = path_1.default.resolve(runnerTemp, 'blackduck');
         }
-        (0, core_1.info)('Checking that you have at least one enabled policy...');
-        const blackduckPolicyChecker = new blackduck_api_1.BlackduckApiService(inputs_1.BLACKDUCK_URL, inputs_1.BLACKDUCK_API_TOKEN);
-        let policiesExist = yield blackduckPolicyChecker.checkIfEnabledBlackduckPoliciesExist().catch(reason => {
-            (0, core_1.setFailed)(`Could not verify if policies existed: ${reason}`);
-        });
-        if (policiesExist === undefined) {
-            (0, check_1.cancelBlackDuckPolicyCheck)(policyCheckId);
-            return;
+        if (inputs_1.SCAN_MODE === 'RAPID') {
+            (0, core_1.info)('Checking that you have at least one enabled policy...');
+            const blackduckApiService = new blackduck_api_1.BlackduckApiService(inputs_1.BLACKDUCK_URL, inputs_1.BLACKDUCK_API_TOKEN);
+            const blackDuckBearerToken = yield blackduckApiService.getBearerToken();
+            let policiesExist = yield blackduckApiService.checkIfEnabledBlackduckPoliciesExist(blackDuckBearerToken).catch(reason => {
+                (0, core_1.setFailed)(`Could not verify whether policies existed: ${reason}`);
+            });
+            if (policiesExist === undefined) {
+                (0, core_1.debug)('Could not determine if policies existed. Canceling policy check.');
+                (0, check_1.cancelBlackDuckPolicyCheck)(policyCheckId);
+                return;
+            }
+            else if (!policiesExist) {
+                (0, core_1.setFailed)(`Could not run ${detect_manager_1.TOOL_NAME} using ${inputs_1.SCAN_MODE} scan mode. No enabled policies found on the specified Black Duck server.`);
+                return;
+            }
+            else {
+                (0, core_1.info)(`You have at least one enabled policy, executing ${detect_manager_1.TOOL_NAME} in ${inputs_1.SCAN_MODE} scan mode...`);
+            }
         }
-        if (!policiesExist && inputs_1.SCAN_MODE === 'RAPID') {
-            (0, core_1.setFailed)(`Could not run ${detect_manager_1.TOOL_NAME} using ${inputs_1.SCAN_MODE} scan mode. No enabled policies found on the specified Black Duck server.`);
-            return;
-        }
-        (0, core_1.info)('You have at least one enabled policy, executing Detect...');
         const detectArgs = [`--blackduck.trust.cert=${inputs_1.DETECT_TRUST_CERT}`, `--blackduck.url=${inputs_1.BLACKDUCK_URL}`, `--blackduck.api.token=${inputs_1.BLACKDUCK_API_TOKEN}`, `--detect.blackduck.scan.mode=${inputs_1.SCAN_MODE}`, `--detect.output.path=${outputPath}`, `--detect.scan.output.path=${outputPath}`, `--detect.policy.check.fail.on.severities=${inputs_1.FAIL_ON_SEVERITIES}`];
         const detectPath = yield (0, detect_manager_1.findOrDownloadDetect)().catch(reason => {
             (0, core_1.setFailed)(`Could not download ${detect_manager_1.TOOL_NAME} ${inputs_1.DETECT_VERSION}: ${reason}`);
         });
         if (detectPath === undefined) {
+            (0, core_1.debug)(`Could not determine ${detect_manager_1.TOOL_NAME} path. Canceling policy check.`);
             (0, check_1.cancelBlackDuckPolicyCheck)(policyCheckId);
             return;
         }
@@ -461,12 +485,13 @@ function run() {
             (0, core_1.setFailed)(`Could not execute ${detect_manager_1.TOOL_NAME} ${inputs_1.DETECT_VERSION}: ${reason}`);
         });
         if (detectExitCode === undefined) {
+            (0, core_1.debug)(`Could not determine ${detect_manager_1.TOOL_NAME} exit code. Canceling policy check.`);
             (0, check_1.cancelBlackDuckPolicyCheck)(policyCheckId);
             return;
         }
-        (0, core_1.info)('Detect executed successfully.');
+        (0, core_1.info)(`${detect_manager_1.TOOL_NAME} executed successfully.`);
         if (inputs_1.SCAN_MODE === 'RAPID') {
-            (0, core_1.info)('Detect executed in RAPID mode, beginning reporting...');
+            (0, core_1.info)(`${detect_manager_1.TOOL_NAME} executed in RAPID mode. Beginning reporting...`);
             const jsonGlobber = yield (0, glob_1.create)(`${outputPath}/*.json`);
             const scanJsonPaths = yield jsonGlobber.glob();
             (0, upload_artifacts_1.uploadRapidScanJson)(outputPath, scanJsonPaths);
@@ -488,6 +513,7 @@ function run() {
             (0, core_1.info)('Reporting complete.');
         }
         else {
+            (0, core_1.info)(`${detect_manager_1.TOOL_NAME} executed in ${inputs_1.SCAN_MODE} mode. Skipping policy check.`);
             (0, check_1.skipBlackDuckPolicyCheck)(policyCheckId);
         }
         const diagnosticMode = ((_a = process.env.DETECT_DIAGNOSTIC) === null || _a === void 0 ? void 0 : _a.toLowerCase()) === 'true';
@@ -510,7 +536,7 @@ function run() {
         }
     });
 }
-exports.run = run;
+exports.runWithPolicyCheck = runWithPolicyCheck;
 run();
 
 
@@ -644,6 +670,7 @@ function uploadArtifact(name, outputPath, files) {
             continueOnError: false,
             retentionDays: 0
         };
+        (0, core_1.info)(`Attempting to upload ${name}...`);
         const uploadResponse = yield artifactClient.uploadArtifact(name, files, outputPath, options);
         if (files.length === 0) {
             (0, core_1.warning)(`Expected to upload ${name}, but the action couldn't find any. Was output-path set correctly?`);

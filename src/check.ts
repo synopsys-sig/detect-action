@@ -10,6 +10,7 @@ export async function createBlackDuckPolicyCheck(): Promise<number> {
 
   const head_sha = getSha()
 
+  info(`Creating ${CHECK_NAME}...`)
   const response = await octokit.rest.checks.create({
     owner: context.repo.owner,
     repo: context.repo.repo,
@@ -18,10 +19,10 @@ export async function createBlackDuckPolicyCheck(): Promise<number> {
   })
 
   if (response.status !== 201) {
-    warning(`Unexpected status code recieved when creating check: ${response.status}`)
+    warning(`Unexpected status code recieved when creating ${CHECK_NAME}: ${response.status}`)
     debug(JSON.stringify(response, null, 2))
   } else {
-    info(`Black Duck Policy Check created`)
+    info(`${CHECK_NAME} created`)
   }
 
   return response.data.id
@@ -36,11 +37,11 @@ export async function failBlackDuckPolicyCheck(checkRunId: number, text: string)
 }
 
 export async function skipBlackDuckPolicyCheck(checkRunId: number) {
-  return finishBlackDuckPolicyCheck(checkRunId, 'skipped', 'Black Duck Policy Check was skipped', '')
+  return finishBlackDuckPolicyCheck(checkRunId, 'skipped', `${CHECK_NAME} was skipped`, '')
 }
 
 export async function cancelBlackDuckPolicyCheck(checkRunId: number) {
-  return finishBlackDuckPolicyCheck(checkRunId, 'cancelled', 'Black Duck Policy Check could not be completed', 'Something went wrong and the Black Duck Policy Check could not be completed. Check your action logs for more details.')
+  return finishBlackDuckPolicyCheck(checkRunId, 'cancelled', `${CHECK_NAME} Check could not be completed`, `Something went wrong and the ${CHECK_NAME} could not be completed. Check your action logs for more details.`)
 }
 
 export async function finishBlackDuckPolicyCheck(checkRunId: number, conclusion: string, summary: string, text: string) {
@@ -63,6 +64,6 @@ export async function finishBlackDuckPolicyCheck(checkRunId: number, conclusion:
     warning(`Unexpected status code recieved when creating check: ${response.status}`)
     debug(JSON.stringify(response, null, 2))
   } else {
-    info(`Black Duck Policy Check created`)
+    info(`${CHECK_NAME} updated`)
   }
 }
