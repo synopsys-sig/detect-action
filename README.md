@@ -195,7 +195,7 @@ Set the scan mode to:
         env:
           NODE_EXTRA_CA_CERTS: ${{ secrets.LOCAL_CA_CERT_PATH }}
         with:
-        		scan-mode: RAPID # Can be omitted, since this is the default value
+            scan-mode: RAPID # Can be omitted, since this is the default value
             github-token: ${{ secrets.GITHUB_TOKEN }}
             detect-version: 7.9.0
             blackduck-url: ${{ secrets.BLACKDUCK_URL }}
@@ -215,7 +215,7 @@ Set the scan mode to:
         env:
           NODE_EXTRA_CA_CERTS: ${{ secrets.LOCAL_CA_CERT_PATH }}
         with:
-        		scan-mode: INTELLIGENT
+            scan-mode: INTELLIGENT
             github-token: ${{ secrets.GITHUB_TOKEN }}
             detect-version: 7.9.0
             blackduck-url: ${{ secrets.BLACKDUCK_URL }}
