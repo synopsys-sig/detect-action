@@ -189,8 +189,6 @@ Set the scan mode to:
       branches:
         - main
     push:
-    	branches:
-    		- *	
   ...
       - name: Run Synopsys Detect
         uses: synopsys-sig/detect-action@v0.0.1
