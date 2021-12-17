@@ -86,22 +86,21 @@ export class BlackduckApiService {
       })
   }
 
-  async checkIfEnabledBlackduckPoliciesExist(bearerToken : string): Promise<boolean> {
+  async checkIfEnabledBlackduckPoliciesExist(bearerToken: string): Promise<boolean> {
     debug('Requesting policies from Black Duck...')
-    return this.getPolicies(bearerToken, 1, true)
-      .then(blackduckPolicyPage => {
-        const policyCount = blackduckPolicyPage?.result?.totalCount
-        if (policyCount === undefined || policyCount === null) {
-          warning('Failed to check Black Duck for policies')
-          return false
-        } else if (policyCount > 0) {
-          debug(`${policyCount} Black Duck policies existed`)
-          return true
-        } else {
-          info('No Black Duck policies exist')
-          return false
-        }
-      })
+    return this.getPolicies(bearerToken, 1, true).then(blackduckPolicyPage => {
+      const policyCount = blackduckPolicyPage?.result?.totalCount
+      if (policyCount === undefined || policyCount === null) {
+        warning('Failed to check Black Duck for policies')
+        return false
+      } else if (policyCount > 0) {
+        debug(`${policyCount} Black Duck policies existed`)
+        return true
+      } else {
+        info('No Black Duck policies exist')
+        return false
+      }
+    })
   }
 
   async getUpgradeGuidanceFor(bearerToken: string, componentVersion: IComponentVersion): Promise<IRestResponse<IUpgradeGuidance>> {
