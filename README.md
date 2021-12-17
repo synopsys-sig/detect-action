@@ -180,8 +180,51 @@ The _Detect Action_ can be configured either to monitor your commits for policy 
 
 Set the scan mode to:
 
-* **RAPID** (default) if you want to enable the Black Duck policy check and comments on your pull requests
-* **INTELLIGENT** if you want to execute a full analysis of Detect and upload your results into a project in Black Duck.
+* **RAPID** (default) if you want to enable the Black Duck policy check and comments on your pull requests, for example:
+
+  ```yaml
+  name: Example: Policy check all commits and all Pull Requests to main
+  on:
+    pull_request:
+      branches:
+        - main
+    push:
+    	branches:
+    		- *	
+  ...
+      - name: Run Synopsys Detect
+        uses: synopsys-sig/detect-action@v0.0.1
+        env:
+          NODE_EXTRA_CA_CERTS: ${{ secrets.LOCAL_CA_CERT_PATH }}
+        with:
+        		scan-mode: RAPID # Can be omitted, since this is the default value
+            github-token: ${{ secrets.GITHUB_TOKEN }}
+            detect-version: 7.9.0
+            blackduck-url: ${{ secrets.BLACKDUCK_URL }}
+            blackduck-api-token: ${{ secrets.BLACKDUCK_API_TOKEN }}
+  ```
+
+* **INTELLIGENT** if you want to execute a full analysis of Detect and upload your results into a project in Black Duck, for example:
+
+  ```yaml
+  name: Example: Every day at midnight, update Black Duck project
+  on:
+    schedule:
+      - cron:  '0 0 * * *'
+  ...
+      - name: Run Synopsys Detect
+        uses: synopsys-sig/detect-action@v0.0.1
+        env:
+          NODE_EXTRA_CA_CERTS: ${{ secrets.LOCAL_CA_CERT_PATH }}
+        with:
+        		scan-mode: INTELLIGENT
+            github-token: ${{ secrets.GITHUB_TOKEN }}
+            detect-version: 7.9.0
+            blackduck-url: ${{ secrets.BLACKDUCK_URL }}
+            blackduck-api-token: ${{ secrets.BLACKDUCK_API_TOKEN }}
+  ```
+
+  
 
 These modes also have implications for how Detect is run. RAPID will not persist the results and disables select Detect functionality for faster results. INTELLIGENT persists the results and permits all features of Detect.
 
