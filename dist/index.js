@@ -376,7 +376,7 @@ exports.getSha = getSha;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.FAIL_ON_SEVERITIES = exports.DETECT_TRUST_CERT = exports.OUTPUT_PATH_OVERRIDE = exports.SCAN_MODE = exports.DETECT_VERSION = exports.BLACKDUCK_API_TOKEN = exports.BLACKDUCK_URL = exports.GITHUB_TOKEN = void 0;
+exports.DETECT_TRUST_CERT = exports.OUTPUT_PATH_OVERRIDE = exports.SCAN_MODE = exports.DETECT_VERSION = exports.BLACKDUCK_API_TOKEN = exports.BLACKDUCK_URL = exports.GITHUB_TOKEN = void 0;
 const core_1 = __nccwpck_require__(2186);
 exports.GITHUB_TOKEN = (0, core_1.getInput)('github-token');
 exports.BLACKDUCK_URL = (0, core_1.getInput)('blackduck-url');
@@ -385,7 +385,6 @@ exports.DETECT_VERSION = (0, core_1.getInput)('detect-version');
 exports.SCAN_MODE = (0, core_1.getInput)('scan-mode').toUpperCase();
 exports.OUTPUT_PATH_OVERRIDE = (0, core_1.getInput)('output-path-override');
 exports.DETECT_TRUST_CERT = (0, core_1.getInput)('detect-trust-cert');
-exports.FAIL_ON_SEVERITIES = (0, core_1.getInput)('fail-on-severities');
 
 
 /***/ }),
@@ -472,7 +471,7 @@ function runWithPolicyCheck(policyCheckId) {
                 (0, core_1.info)(`You have at least one enabled policy, executing ${detect_manager_1.TOOL_NAME} in ${inputs_1.SCAN_MODE} scan mode...`);
             }
         }
-        const detectArgs = [`--blackduck.trust.cert=${inputs_1.DETECT_TRUST_CERT}`, `--blackduck.url=${inputs_1.BLACKDUCK_URL}`, `--blackduck.api.token=${inputs_1.BLACKDUCK_API_TOKEN}`, `--detect.blackduck.scan.mode=${inputs_1.SCAN_MODE}`, `--detect.output.path=${outputPath}`, `--detect.scan.output.path=${outputPath}`, `--detect.policy.check.fail.on.severities=${inputs_1.FAIL_ON_SEVERITIES}`];
+        const detectArgs = [`--blackduck.trust.cert=${inputs_1.DETECT_TRUST_CERT}`, `--blackduck.url=${inputs_1.BLACKDUCK_URL}`, `--blackduck.api.token=${inputs_1.BLACKDUCK_API_TOKEN}`, `--detect.blackduck.scan.mode=${inputs_1.SCAN_MODE}`, `--detect.output.path=${outputPath}`, `--detect.scan.output.path=${outputPath}`];
         const detectPath = yield (0, detect_manager_1.findOrDownloadDetect)().catch(reason => {
             (0, core_1.setFailed)(`Could not download ${detect_manager_1.TOOL_NAME} ${inputs_1.DETECT_VERSION}: ${reason}`);
         });
