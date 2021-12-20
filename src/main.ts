@@ -21,7 +21,7 @@ export async function run() {
   })
 }
 
-export async function runWithPolicyCheck(policyCheckId : number): Promise<void> {
+export async function runWithPolicyCheck(policyCheckId: number): Promise<void> {
   info(`detect-version: ${DETECT_VERSION}`)
   info(`output-path-override: ${OUTPUT_PATH_OVERRIDE}`)
   info(`scan-mode: ${SCAN_MODE}`)

@@ -57,8 +57,7 @@ class BlackduckApiService {
     checkIfEnabledBlackduckPoliciesExist(bearerToken) {
         return __awaiter(this, void 0, void 0, function* () {
             (0, core_1.debug)('Requesting policies from Black Duck...');
-            return this.getPolicies(bearerToken, 1, true)
-                .then(blackduckPolicyPage => {
+            return this.getPolicies(bearerToken, 1, true).then(blackduckPolicyPage => {
                 var _a;
                 const policyCount = (_a = blackduckPolicyPage === null || blackduckPolicyPage === void 0 ? void 0 : blackduckPolicyPage.result) === null || _a === void 0 ? void 0 : _a.totalCount;
                 if (policyCount === undefined || policyCount === null) {
