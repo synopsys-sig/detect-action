@@ -1,44 +1,39 @@
-import { isPullRequest } from '../../src/github-context'
+describe('PR events', () => {
+  let ghContext: any
 
-beforeAll(() => {
-  //jest.resetModules()
-  //doMockGitHubActionModule('pull_request')
+  beforeAll(() => {
+    jest.resetModules()
+    jest.mock('@actions/github', () => {
+      return {
+        context: {
+          eventName: 'pull_request'
+        }
+      }
+    })
+  })
+
+  test('isPullRequest() returns true', () => {
+    ghContext = require('../../src/github-context')
+    expect(ghContext.isPullRequest()).toBeTruthy()
+  })
 })
 
-jest.mock('@actions/github', () => {
-  return {
-    context: {
-      eventName: 'pull_request'
-    }
-  }
+describe('Non-PR events', () => {
+  let ghContext: any
+
+  beforeAll(() => {
+    jest.resetModules()
+    jest.mock('@actions/github', () => {
+      return {
+        context: {
+          eventName: 'fake_event_type'
+        }
+      }
+    })
+  })
+
+  test('isPullRequest() returns false', () => {
+    ghContext = require('../../src/github-context')
+    expect(ghContext.isPullRequest()).toBeFalsy()
+  })
 })
-
-//const mockActionsGitHubModule = jest.mock('@actions/github')
-
-// const doMockGitHubActionModule = (eventNameValue: string) => { 
-//   jest.mock('@actions/github', () => {
-//     return {
-//       context: {
-//         eventName: eventNameValue
-//       }
-//     }
-//   })
-// }
-
-test('isPullRequest() returns true', () => {
-  expect(isPullRequest()).toBeTruthy()
-})
-
-// describe('False PR cases', () => {
-//   jest.mock('@actions/github', () => {
-//     return {
-//       context: {
-//         eventName: 'non_a_pr_event'
-//       }
-//     }
-//   })
-
-//   test('isPullRequest() returns false', () => {
-//     expect(isPullRequest()).toBeFalsy()
-//   })
-// })
