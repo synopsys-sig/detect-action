@@ -8,7 +8,7 @@ import { commentOnPR } from './comment'
 import { POLICY_SEVERITY, SUCCESS } from './detect-exit-codes'
 import { TOOL_NAME, findOrDownloadDetect, runDetect } from './detect-manager'
 import { isPullRequest } from './github-context'
-import { BLACKDUCK_API_TOKEN, BLACKDUCK_URL, DETECT_TRUST_CERT, DETECT_VERSION, FAIL_ON_SEVERITIES, OUTPUT_PATH_OVERRIDE, SCAN_MODE } from './inputs'
+import { BLACKDUCK_API_TOKEN, BLACKDUCK_URL, DETECT_TRUST_CERT, DETECT_VERSION, OUTPUT_PATH_OVERRIDE, SCAN_MODE } from './inputs'
 import { createReport, PolicyViolation } from './rapid-scan'
 import { uploadRapidScanJson, uploadDiagnosticZip } from './upload-artifacts'
 
@@ -59,7 +59,7 @@ export async function runWithPolicyCheck(policyCheckId : number): Promise<void> 
     }
   }
 
-  const detectArgs = [`--blackduck.trust.cert=${DETECT_TRUST_CERT}`, `--blackduck.url=${BLACKDUCK_URL}`, `--blackduck.api.token=${BLACKDUCK_API_TOKEN}`, `--detect.blackduck.scan.mode=${SCAN_MODE}`, `--detect.output.path=${outputPath}`, `--detect.scan.output.path=${outputPath}`, `--detect.policy.check.fail.on.severities=${FAIL_ON_SEVERITIES}`]
+  const detectArgs = [`--blackduck.trust.cert=${DETECT_TRUST_CERT}`, `--blackduck.url=${BLACKDUCK_URL}`, `--blackduck.api.token=${BLACKDUCK_API_TOKEN}`, `--detect.blackduck.scan.mode=${SCAN_MODE}`, `--detect.output.path=${outputPath}`, `--detect.scan.output.path=${outputPath}`]
 
   const detectPath = await findOrDownloadDetect().catch(reason => {
     setFailed(`Could not download ${TOOL_NAME} ${DETECT_VERSION}: ${reason}`)
