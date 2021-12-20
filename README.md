@@ -2,34 +2,23 @@
 
 (WIP)
 
-Execute Synopsys Detect against your source to easily import your code into Black Duck for dependency analysis.
+Richly integrate Synopsys Detect into GitHub action workflows.
 
-Comments on Pull Requests if any of your dependencies violate policies.
+Configure the action to run Detect in Rapid scan mode to get detailed Black Duck policy reports (default behavior), or in Intelligent scan mode to upload your data into Black Duck for more detailed analysis.
 
-# Table Of Contents
-- [Setup Workflow](#setup-workflow)
-- [Setup Job](#setup-job)
-  - [Runners: Self Hosted](#runners-self-hosted)
-    - [Java](#java)
-    - [Certificates](#self-hosted-certs)
-    - [More Info](#more-info)
-  - [Runners: GitHub Hosted](#runners-github-hosted)
-    - [Certificates](#github-hosted-certs)
-  - [Checkout](#checkout)
-  - [Build Your Project](#build-your-project)
-  - [Setup Java](#setup-java)
-  - [Create Black Duck Policy (Optional)](#create-black-duck-policy-optional)
-  - [Setup Detect Action](#setup-detect-action)
-    - [Additional Action Parameters](#additional-action-parameters)
-    - [Additional Detect Properties](#additional-detect-properties)
-  - [Include Custom Certificates (Optional)](#include-custom-certificates-optional)
-- [Policy Checks](#policy-checks)
+![Policy Report Screenshot](.github/policyReport.png)
 
-# Setup Workflow
+Once your dependencies are clean, configure the action to run Detect in Rapid scan mode to protect your branches with the Black Duck Policy Check and [_Branch Protection Rules_](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/defining-the-mergeability-of-pull-requests/about-protected-branches#require-status-checks-before-merging).
+
+![Black Duck Policy Check screenshot](.github/policyCheck.png)
+
+# Set Up Workflow
+
 To start using this action, you'll need to create a _job_ within a GitHub Workflow. You can either [create a new GitHub Workflow](https://docs.github.com/en/actions/learn-github-actions/workflow-syntax-for-github-actions) or use an existing one if appropriate for your use-case. 
 
 Once you have a GitHub Workflow selected, configure which [events will trigger the workflow](https://docs.github.com/en/actions/learn-github-actions/events-that-trigger-workflows) such as _pull requests_ or _schedules_.  
 **Example**:
+
 ```yaml
 name: Example Workflow
 on:
@@ -40,9 +29,11 @@ on:
     - cron:  '0 0 * * *'
 ```
 
-# Setup Job
+# Set Up Job
+
 Once you have setup a GitHub Workflow with event triggers, you will need to create a _job_ in which the _Detect Action_ will run.  
 Your job will look something like this if all configuration options are used:  
+
 ```yaml
 jobs:
   security:
@@ -74,7 +65,7 @@ jobs:
         NODE_EXTRA_CA_CERTS: ${{ secrets.LOCAL_CA_CERT_PATH }}
       with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          detect-version: 7.7.0
+          detect-version: 7.9.0
           blackduck-url: ${{ secrets.BLACKDUCK_URL }}
           blackduck-api-token: ${{ secrets.BLACKDUCK_API_TOKEN }}
 ```
@@ -148,7 +139,8 @@ Detect is meant to be run post-build. You should add steps necessary to build yo
 ```
 In the example job above, this needed to be done _after_ setting up Java because Gradle requires Java. If your project does not use Java, this step can be done before setting up Java.
 
-## Setup Java
+## Set Up Java
+
 Detect runs using Java 11 and the prefered distribution is from [AdoptOpenJDK](https://github.com/AdoptOpenJDK). Configure the _step_ it as follows: 
 ```yaml
     - name: Set up JDK 11
@@ -163,34 +155,86 @@ In order to run Detect using RAPID mode (which is the default mode for the _Dete
 
 The most basic usage of the action looks like this: 
 ```yaml
-    - name: Create Black Duck Policy
-      uses: blackducksoftware/create-policy-action@v0.0.1
+    - name: Synopsys Detect
+      uses: synopsys-sig/detect-action@v0.0.1
       with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        detect-version: 7.9.0
         blackduck-url: ${{ secrets.BLACKDUCK_URL }}
         blackduck-api-token: ${{ secrets.BLACKDUCK_API_TOKEN }}
 ```
 Please refer to [that action's documentation](https://github.com/blackducksoftware/create-policy-action) for more information on available parameters, certificate management, and troubleshooting.
 
-## Setup Detect Action
-Once your project is checked-out, built, and Java is configured, the _Detect Action_ can finally be run. At minimum for Detect to run, the Black Duck URL (`blackduck-url`), API Token (`blackduck-api-token`), and Detect Version (`detect-version`) must be provided as parameters. Additionally, a _GITHUB\_TOKEN_ (`github-token`) is required in order to comment on Pull Requests or hook into GitHub Checks.
+## Set Up Detect Action
+
+Once your project is checked-out, built, and Java is configured, the _Detect Action_ can be run. At minimum for Detect to run, provide:
+
+* Black Duck URL (`blackduck-url`)
+* Black Duck API Token (`blackduck-api-token`)
+* Your desired Detect Version (`detect-version`) to execute
+* Your _GITHUB\_TOKEN_ (`github-token`) to comment on Pull Requests or hook into GitHub Checks  (in most cases, this is `${{ secrets.GITHUB_TOKEN }}`)
+
+### Choose your Scanning Mode
+
+The _Detect Action_ can be configured either to monitor your commits for policy violations or upload the status of your repository to Black Duck as a project through use of the `scan-mode` option.
+
+Set the scan mode to:
+
+* **RAPID** (default) if you want to enable the Black Duck policy check and comments on your pull requests, for example:
+
+  ```yaml
+  name: Example: Policy check all commits and all Pull Requests to main
+  on:
+    pull_request:
+      branches:
+        - main
+    push:
+  ...
+      - name: Run Synopsys Detect
+        uses: synopsys-sig/detect-action@v0.0.1
+        env:
+          NODE_EXTRA_CA_CERTS: ${{ secrets.LOCAL_CA_CERT_PATH }}
+        with:
+            scan-mode: RAPID # Can be omitted, since this is the default value
+            github-token: ${{ secrets.GITHUB_TOKEN }}
+            detect-version: 7.9.0
+            blackduck-url: ${{ secrets.BLACKDUCK_URL }}
+            blackduck-api-token: ${{ secrets.BLACKDUCK_API_TOKEN }}
+  ```
+
+* **INTELLIGENT** if you want to execute a full analysis of Detect and upload your results into a project in Black Duck, for example:
+
+  ```yaml
+  name: Example: Every day at midnight, update Black Duck project
+  on:
+    schedule:
+      - cron:  '0 0 * * *'
+  ...
+      - name: Run Synopsys Detect
+        uses: synopsys-sig/detect-action@v0.0.1
+        env:
+          NODE_EXTRA_CA_CERTS: ${{ secrets.LOCAL_CA_CERT_PATH }}
+        with:
+            scan-mode: INTELLIGENT
+            github-token: ${{ secrets.GITHUB_TOKEN }}
+            detect-version: 7.9.0
+            blackduck-url: ${{ secrets.BLACKDUCK_URL }}
+            blackduck-api-token: ${{ secrets.BLACKDUCK_API_TOKEN }}
+  ```
+
+  
+
+These modes also have implications for how Detect is run. RAPID will not persist the results and disables select Detect functionality for faster results. INTELLIGENT persists the results and permits all features of Detect.
+
+See also: [Detect Documentation of Rapid Scan](https://community.synopsys.com/s/document-item?bundleId=integrations-detect&topicId=downloadingandrunning%2Frapidscan.html&_LANG=enus)
 
 ### Additional Action Parameters
- - `scan-mode`: Either RAPID or INTELLIGENT, configures how Detect is invoked. RAPID will not persist the results and disables select Detect functionality for faster results. INTELLIGENT persists the results and permits all features of Detect.
-   - Default: RAPID
+
  - `output-path-override`: Override for where to output Detect files
    - Default: $RUNNER_TEMP/blackduck/
 
-```yaml
-    - name: Synopsys Detect
-      uses: synopsys-sig/detect-action@v0.0.1
-      with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
-        detect-version: 7.7.0
-        blackduck-url: ${{ secrets.BLACKDUCK_URL }}
-        blackduck-api-token: ${{ secrets.BLACKDUCK_API_TOKEN }}
-```
-
 ### Additional Detect Properties
+
 Passing additional [Detect properties](https://community.synopsys.com/s/document-item?bundleId=integrations-detect&topicId=properties%2Fall-properties.html&_LANG=enus) can be done in several ways:
 1. Use individual environment variables 
 
@@ -220,9 +264,15 @@ Passing additional [Detect properties](https://community.synopsys.com/s/document
 
 Please refer to the [Detect documentation on this topic](https://community.synopsys.com/s/document-item?bundleId=integrations-detect&topicId=configuring%2Fothermethods.html&_LANG=enus) for more information.
 
+### Detect Diagnostic Zip
+
+When passing the properties DETECT_DIAGNOSTIC_MODE or DETECT_DIAGNOSTIC_EXTENDED as environment variables, the action will helpfully upload the zip as a build artifact for convenient troubleshooting.
+
 ## Include Custom Certificates (Optional)
+
 To include one or more certificates, set `NODE_EXTRA_CA_CERTS` to the certificate file-path(s) in the environment. 
 Notes: 
+
 - The certificate(s) must be in _pem_ format. 
 - This environment variable can also be used with the _Create Policy Action_.  
 
@@ -242,4 +292,5 @@ Notes:
   - Solution: You may only be including the server's certificate and not the _root CA certificate_. Ensure you are using the _root CA certificate_.
 
 # Policy Checks
+
 When the _Detect Action_ runs in RAPID mode, it creates a 'Black Duck Policy Check'. This check can be used within [_Branch Protection Rules_](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/defining-the-mergeability-of-pull-requests/about-protected-branches#require-status-checks-before-merging) to prevent merging Pull Requests that would introduce Black Duck Policy Violations.
