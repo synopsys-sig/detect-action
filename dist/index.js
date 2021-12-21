@@ -7,8 +7,9 @@ require('./sourcemap-register.js');/******/ (() => { // webpackBootstrap
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.APPLICATION_NAME = void 0;
+exports.CHECK_NAME = exports.APPLICATION_NAME = void 0;
 exports.APPLICATION_NAME = 'synopsys-sig/detect-action';
+exports.CHECK_NAME = 'Black Duck Policy Check';
 
 
 /***/ }),
@@ -114,102 +115,6 @@ function cleanUrl(blackduckUrl) {
     return blackduckUrl;
 }
 exports.cleanUrl = cleanUrl;
-
-
-/***/ }),
-
-/***/ 7657:
-/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
-
-"use strict";
-
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.finishBlackDuckPolicyCheck = exports.cancelBlackDuckPolicyCheck = exports.skipBlackDuckPolicyCheck = exports.failBlackDuckPolicyCheck = exports.passBlackDuckPolicyCheck = exports.createBlackDuckPolicyCheck = exports.CHECK_NAME = void 0;
-const core_1 = __nccwpck_require__(2186);
-const github_1 = __nccwpck_require__(5438);
-const github_context_1 = __nccwpck_require__(4251);
-const inputs_1 = __nccwpck_require__(6180);
-exports.CHECK_NAME = 'Black Duck Policy Check';
-function createBlackDuckPolicyCheck() {
-    return __awaiter(this, void 0, void 0, function* () {
-        const octokit = (0, github_1.getOctokit)(inputs_1.GITHUB_TOKEN);
-        const head_sha = (0, github_context_1.getSha)();
-        (0, core_1.info)(`Creating ${exports.CHECK_NAME}...`);
-        const response = yield octokit.rest.checks.create({
-            owner: github_1.context.repo.owner,
-            repo: github_1.context.repo.repo,
-            name: exports.CHECK_NAME,
-            head_sha
-        });
-        if (response.status !== 201) {
-            (0, core_1.warning)(`Unexpected status code recieved when creating ${exports.CHECK_NAME}: ${response.status}`);
-            (0, core_1.debug)(JSON.stringify(response, null, 2));
-        }
-        else {
-            (0, core_1.info)(`${exports.CHECK_NAME} created`);
-        }
-        return response.data.id;
-    });
-}
-exports.createBlackDuckPolicyCheck = createBlackDuckPolicyCheck;
-function passBlackDuckPolicyCheck(checkRunId, text) {
-    return __awaiter(this, void 0, void 0, function* () {
-        return finishBlackDuckPolicyCheck(checkRunId, 'success', 'No components found that violate your Black Duck policies!', text);
-    });
-}
-exports.passBlackDuckPolicyCheck = passBlackDuckPolicyCheck;
-function failBlackDuckPolicyCheck(checkRunId, text) {
-    return __awaiter(this, void 0, void 0, function* () {
-        return finishBlackDuckPolicyCheck(checkRunId, 'failure', 'Components found that violate your Black Duck Policies!', text);
-    });
-}
-exports.failBlackDuckPolicyCheck = failBlackDuckPolicyCheck;
-function skipBlackDuckPolicyCheck(checkRunId) {
-    return __awaiter(this, void 0, void 0, function* () {
-        return finishBlackDuckPolicyCheck(checkRunId, 'skipped', `${exports.CHECK_NAME} was skipped`, '');
-    });
-}
-exports.skipBlackDuckPolicyCheck = skipBlackDuckPolicyCheck;
-function cancelBlackDuckPolicyCheck(checkRunId) {
-    return __awaiter(this, void 0, void 0, function* () {
-        return finishBlackDuckPolicyCheck(checkRunId, 'cancelled', `${exports.CHECK_NAME} Check could not be completed`, `Something went wrong and the ${exports.CHECK_NAME} could not be completed. Check your action logs for more details.`);
-    });
-}
-exports.cancelBlackDuckPolicyCheck = cancelBlackDuckPolicyCheck;
-function finishBlackDuckPolicyCheck(checkRunId, conclusion, summary, text) {
-    return __awaiter(this, void 0, void 0, function* () {
-        const octokit = (0, github_1.getOctokit)(inputs_1.GITHUB_TOKEN);
-        const response = yield octokit.rest.checks.update({
-            owner: github_1.context.repo.owner,
-            repo: github_1.context.repo.repo,
-            check_run_id: checkRunId,
-            status: 'completed',
-            conclusion,
-            output: {
-                title: exports.CHECK_NAME,
-                summary,
-                text
-            }
-        });
-        if (response.status !== 200) {
-            (0, core_1.warning)(`Unexpected status code recieved when creating check: ${response.status}`);
-            (0, core_1.debug)(JSON.stringify(response, null, 2));
-        }
-        else {
-            (0, core_1.info)(`${exports.CHECK_NAME} updated`);
-        }
-    });
-}
-exports.finishBlackDuckPolicyCheck = finishBlackDuckPolicyCheck;
 
 
 /***/ }),
@@ -460,6 +365,103 @@ exports.getSha = getSha;
 
 /***/ }),
 
+/***/ 710:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.GitHubCheck = exports.createCheck = void 0;
+const core_1 = __nccwpck_require__(2186);
+const github_1 = __nccwpck_require__(5438);
+const github_context_1 = __nccwpck_require__(4251);
+const inputs_1 = __nccwpck_require__(6180);
+function createCheck(checkName) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const octokit = (0, github_1.getOctokit)(inputs_1.GITHUB_TOKEN);
+        const head_sha = (0, github_context_1.getSha)();
+        (0, core_1.info)(`Creating ${checkName}...`);
+        const response = yield octokit.rest.checks.create({
+            owner: github_1.context.repo.owner,
+            repo: github_1.context.repo.repo,
+            name: checkName,
+            head_sha
+        });
+        if (response.status !== 201) {
+            (0, core_1.warning)(`Unexpected status code recieved when creating ${checkName}: ${response.status}`);
+            (0, core_1.debug)(JSON.stringify(response, null, 2));
+        }
+        else {
+            (0, core_1.info)(`${checkName} created`);
+        }
+        return new GitHubCheck(checkName, response.data.id);
+    });
+}
+exports.createCheck = createCheck;
+class GitHubCheck {
+    constructor(checkName, checkRunId) {
+        this.checkName = checkName;
+        this.checkRunId = checkRunId;
+    }
+    passCheck(summary, text) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return this.finishCheck('success', summary, text);
+        });
+    }
+    failCheck(summary, text) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return this.finishCheck('failure', summary, text);
+        });
+    }
+    skipCheck() {
+        return __awaiter(this, void 0, void 0, function* () {
+            return this.finishCheck('skipped', `${this.checkName} was skipped`, '');
+        });
+    }
+    cancelCheck() {
+        return __awaiter(this, void 0, void 0, function* () {
+            return this.finishCheck('cancelled', `${this.checkName} Check could not be completed`, `Something went wrong and the ${this.checkName} could not be completed. Check your action logs for more details.`);
+        });
+    }
+    finishCheck(conclusion, summary, text) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const octokit = (0, github_1.getOctokit)(inputs_1.GITHUB_TOKEN);
+            const response = yield octokit.rest.checks.update({
+                owner: github_1.context.repo.owner,
+                repo: github_1.context.repo.repo,
+                check_run_id: this.checkRunId,
+                status: 'completed',
+                conclusion,
+                output: {
+                    title: this.checkName,
+                    summary,
+                    text
+                }
+            });
+            if (response.status !== 200) {
+                (0, core_1.warning)(`Unexpected status code recieved when creating check: ${response.status}`);
+                (0, core_1.debug)(JSON.stringify(response, null, 2));
+            }
+            else {
+                (0, core_1.info)(`${this.checkName} updated`);
+            }
+        });
+    }
+}
+exports.GitHubCheck = GitHubCheck;
+
+
+/***/ }),
+
 /***/ 6180:
 /***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
 
@@ -503,7 +505,7 @@ const glob_1 = __nccwpck_require__(8090);
 const path_1 = __importDefault(__nccwpck_require__(5622));
 const fs_1 = __importDefault(__nccwpck_require__(5747));
 const blackduck_api_1 = __nccwpck_require__(7495);
-const check_1 = __nccwpck_require__(7657);
+const check_1 = __nccwpck_require__(710);
 const comment_1 = __nccwpck_require__(1667);
 const exit_codes_1 = __nccwpck_require__(3062);
 const detect_manager_1 = __nccwpck_require__(841);
@@ -511,18 +513,19 @@ const github_context_1 = __nccwpck_require__(4251);
 const inputs_1 = __nccwpck_require__(6180);
 const reporting_1 = __nccwpck_require__(322);
 const upload_artifacts_1 = __nccwpck_require__(2854);
+const application_constants_1 = __nccwpck_require__(9717);
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
-        const policyCheckId = yield (0, check_1.createBlackDuckPolicyCheck)();
-        runWithPolicyCheck(policyCheckId).catch(unhandledError => {
+        const blackduckPolicyCheck = yield (0, check_1.createCheck)(application_constants_1.CHECK_NAME);
+        runWithPolicyCheck(blackduckPolicyCheck).catch(unhandledError => {
             (0, core_1.debug)('Canceling policy check because of an unhandled error.');
-            (0, check_1.cancelBlackDuckPolicyCheck)(policyCheckId);
+            blackduckPolicyCheck.cancelCheck();
             (0, core_1.setFailed)(`Failed due to an unhandled error: '${unhandledError}'`);
         });
     });
 }
 exports.run = run;
-function runWithPolicyCheck(policyCheckId) {
+function runWithPolicyCheck(blackduckPolicyCheck) {
     var _a, _b;
     return __awaiter(this, void 0, void 0, function* () {
         (0, core_1.info)(`detect-version: ${inputs_1.DETECT_VERSION}`);
@@ -535,7 +538,7 @@ function runWithPolicyCheck(policyCheckId) {
         }
         else if (runnerTemp === undefined) {
             (0, core_1.setFailed)('$RUNNER_TEMP is not defined and output-path-override was not set. Cannot determine where to store output files.');
-            (0, check_1.cancelBlackDuckPolicyCheck)(policyCheckId);
+            blackduckPolicyCheck.cancelCheck();
             return;
         }
         else {
@@ -550,7 +553,7 @@ function runWithPolicyCheck(policyCheckId) {
             });
             if (policiesExist === undefined) {
                 (0, core_1.debug)('Could not determine if policies existed. Canceling policy check.');
-                (0, check_1.cancelBlackDuckPolicyCheck)(policyCheckId);
+                blackduckPolicyCheck.cancelCheck();
                 return;
             }
             else if (!policiesExist) {
@@ -567,7 +570,7 @@ function runWithPolicyCheck(policyCheckId) {
         });
         if (detectPath === undefined) {
             (0, core_1.debug)(`Could not determine ${detect_manager_1.TOOL_NAME} path. Canceling policy check.`);
-            (0, check_1.cancelBlackDuckPolicyCheck)(policyCheckId);
+            blackduckPolicyCheck.cancelCheck();
             return;
         }
         const detectExitCode = yield (0, detect_manager_1.runDetect)(detectPath, detectArgs).catch(reason => {
@@ -575,7 +578,7 @@ function runWithPolicyCheck(policyCheckId) {
         });
         if (detectExitCode === undefined) {
             (0, core_1.debug)(`Could not determine ${detect_manager_1.TOOL_NAME} exit code. Canceling policy check.`);
-            (0, check_1.cancelBlackDuckPolicyCheck)(policyCheckId);
+            blackduckPolicyCheck.cancelCheck();
             return;
         }
         (0, core_1.info)(`${detect_manager_1.TOOL_NAME} executed successfully.`);
@@ -594,16 +597,16 @@ function runWithPolicyCheck(policyCheckId) {
                 (0, core_1.info)('Successfully commented on PR.');
             }
             if (detectExitCode === exit_codes_1.POLICY_SEVERITY) {
-                (0, check_1.failBlackDuckPolicyCheck)(policyCheckId, rapidScanReport);
+                blackduckPolicyCheck.failCheck('Components found that violate your Black Duck Policies!', rapidScanReport);
             }
             else {
-                (0, check_1.passBlackDuckPolicyCheck)(policyCheckId, rapidScanReport);
+                blackduckPolicyCheck.passCheck('No components found that violate your Black Duck policies!', rapidScanReport);
             }
             (0, core_1.info)('Reporting complete.');
         }
         else {
             (0, core_1.info)(`${detect_manager_1.TOOL_NAME} executed in ${inputs_1.SCAN_MODE} mode. Skipping policy check.`);
-            (0, check_1.skipBlackDuckPolicyCheck)(policyCheckId);
+            blackduckPolicyCheck.skipCheck();
         }
         const diagnosticMode = ((_a = process.env.DETECT_DIAGNOSTIC) === null || _a === void 0 ? void 0 : _a.toLowerCase()) === 'true';
         const extendedDiagnosticMode = ((_b = process.env.DETECT_DIAGNOSTIC_EXTENDED) === null || _b === void 0 ? void 0 : _b.toLowerCase()) === 'true';
