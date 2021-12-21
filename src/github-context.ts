@@ -1,5 +1,5 @@
 import { context } from '@actions/github'
-import { PullRequest } from './namespaces/Github'
+import { PullRequest } from './_namespaces/Github'
 
 const prEvents = ['pull_request', 'pull_request_review', 'pull_request_review_comment']
 

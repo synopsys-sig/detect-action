@@ -1,27 +1,21 @@
 import { warning } from '@actions/core'
 import { IRestResponse } from 'typed-rest-client'
-import { BlackduckApiService, cleanUrl, IBlackduckPage, IComponentVersion, IRapidScanViolation, IUpgradeGuidance } from './blackduck-api'
-import { BLACKDUCK_API_TOKEN, BLACKDUCK_URL } from './inputs'
+import { BlackduckApiService, cleanUrl, IBlackduckPage, IBlackduckView, IComponentVersion, IRapidScanViolation, IUpgradeGuidance } from '../blackduck-api'
+import { BLACKDUCK_API_TOKEN, BLACKDUCK_URL } from '../inputs'
 
-export interface PolicyViolation {
-  _meta: {
-    href: string
-  }
-}
-
-export async function createReport(scanJson: PolicyViolation[]): Promise<string> {
+export async function createRapidScanReport(policyViolations: IBlackduckView[]): Promise<string> {
   let message = ''
-  if (scanJson.length == 0) {
+  if (policyViolations.length == 0) {
     message = message.concat('# :white_check_mark: None of your dependencies violate policy!')
   } else {
     message = message.concat('# :x: Found dependencies violating policy!\r\n')
 
     const blackduckApiService = new BlackduckApiService(BLACKDUCK_URL, BLACKDUCK_API_TOKEN)
     const bearerToken = await blackduckApiService.getBearerToken()
-    const fullResultsResponse: IRestResponse<IBlackduckPage<IRapidScanViolation>> = await blackduckApiService.get(bearerToken, scanJson[0]._meta.href + '/full-result')
+    const fullResultsResponse: IRestResponse<IBlackduckPage<IRapidScanViolation>> = await blackduckApiService.get(bearerToken, policyViolations[0]._meta.href + '/full-result')
     const fullResults = fullResultsResponse?.result?.items
     if (fullResults === undefined) {
-      return Promise.reject(`Could not retrieve Black Duck RAPID scan results from ${scanJson[0]._meta.href + '/full-result'}, response was ${fullResultsResponse.statusCode}`)
+      return Promise.reject(`Could not retrieve Black Duck RAPID scan results from ${policyViolations[0]._meta.href + '/full-result'}, response was ${fullResultsResponse.statusCode}`)
     }
 
     message = message.concat('\r\n')

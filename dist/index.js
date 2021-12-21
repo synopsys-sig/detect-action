@@ -275,20 +275,7 @@ exports.commentOnPR = commentOnPR;
 
 /***/ }),
 
-/***/ 5137:
-/***/ ((__unused_webpack_module, exports) => {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.POLICY_SEVERITY = exports.SUCCESS = void 0;
-exports.SUCCESS = 0;
-exports.POLICY_SEVERITY = 3;
-
-
-/***/ }),
-
-/***/ 3762:
+/***/ 841:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
 "use strict";
@@ -336,6 +323,110 @@ function runDetect(detectPath, detectArguments) {
 exports.runDetect = runDetect;
 function createDetectDownloadUrl(repoUrl = DETECT_BINARY_REPO_URL) {
     return `${repoUrl}/bds-integrations-release/com/synopsys/integration/synopsys-detect/${inputs_1.DETECT_VERSION}/synopsys-detect-${inputs_1.DETECT_VERSION}.jar`;
+}
+
+
+/***/ }),
+
+/***/ 3062:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.POLICY_SEVERITY = exports.SUCCESS = void 0;
+exports.SUCCESS = 0;
+exports.POLICY_SEVERITY = 3;
+
+
+/***/ }),
+
+/***/ 322:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.createRapidScanReport = void 0;
+const core_1 = __nccwpck_require__(2186);
+const blackduck_api_1 = __nccwpck_require__(7495);
+const inputs_1 = __nccwpck_require__(6180);
+function createRapidScanReport(policyViolations) {
+    var _a;
+    return __awaiter(this, void 0, void 0, function* () {
+        let message = '';
+        if (policyViolations.length == 0) {
+            message = message.concat('# :white_check_mark: None of your dependencies violate policy!');
+        }
+        else {
+            message = message.concat('# :x: Found dependencies violating policy!\r\n');
+            const blackduckApiService = new blackduck_api_1.BlackduckApiService(inputs_1.BLACKDUCK_URL, inputs_1.BLACKDUCK_API_TOKEN);
+            const bearerToken = yield blackduckApiService.getBearerToken();
+            const fullResultsResponse = yield blackduckApiService.get(bearerToken, policyViolations[0]._meta.href + '/full-result');
+            const fullResults = (_a = fullResultsResponse === null || fullResultsResponse === void 0 ? void 0 : fullResultsResponse.result) === null || _a === void 0 ? void 0 : _a.items;
+            if (fullResults === undefined) {
+                return Promise.reject(`Could not retrieve Black Duck RAPID scan results from ${policyViolations[0]._meta.href + '/full-result'}, response was ${fullResultsResponse.statusCode}`);
+            }
+            message = message.concat('\r\n');
+            const reportTable = yield createTable(blackduckApiService, bearerToken, fullResults);
+            message = message.concat(reportTable);
+        }
+        return message;
+    });
+}
+exports.createRapidScanReport = createRapidScanReport;
+function createTable(blackduckApiService, bearerToken, fullResults) {
+    var _a;
+    return __awaiter(this, void 0, void 0, function* () {
+        let table = '| Policies Violated | Dependency | License(s) | Vulnerabilities | Short Term Recommended Upgrade | Long Term Recommended Upgrade |\r\n|-|-|-|-|-|-|\r\n';
+        for (const violation of fullResults) {
+            const componentVersionResponse = yield blackduckApiService.getComponentsMatching(bearerToken, violation.componentIdentifier);
+            const componentVersion = (_a = componentVersionResponse === null || componentVersionResponse === void 0 ? void 0 : componentVersionResponse.result) === null || _a === void 0 ? void 0 : _a.items[0];
+            let upgradeGuidance = undefined;
+            if (componentVersion !== undefined) {
+                const upgradeGuidanceResponse = yield blackduckApiService.getUpgradeGuidanceFor(bearerToken, componentVersion).catch(reason => (0, core_1.warning)(`Could not get upgrade guidance for ${violation.componentIdentifier}: ${reason}`));
+                upgradeGuidance = upgradeGuidanceResponse === null || upgradeGuidanceResponse === void 0 ? void 0 : upgradeGuidanceResponse.result;
+            }
+            table = table.concat(`${createComponentRow(componentVersion, upgradeGuidance, violation)}\r\n`);
+        }
+        return table;
+    });
+}
+function createComponentRow(componentVersion, upgradeGuidance, violation) {
+    const violatingLicenseNames = violation.policyViolationLicenses.map(license => license.name);
+    const violatingVulnerabilityNames = violation.policyViolationVulnerabilities.map(vulnerability => vulnerability.name);
+    const violatedPolicies = violation.violatingPolicies.map(policy => `${policy.policyName} ${policy.policySeverity === 'UNSPECIFIED' ? '' : `(${policy.policySeverity})`}`).join('<br/>');
+    let componentInViolation = `${violation.componentName} ${violation.versionName}`;
+    if ((componentVersion === null || componentVersion === void 0 ? void 0 : componentVersion.version) !== undefined) {
+        componentInViolation = `[${violation.componentName} ${violation.versionName}](${componentVersion === null || componentVersion === void 0 ? void 0 : componentVersion.version})`;
+    }
+    const componentLicenses = violation.allLicenses.map(license => `${violatingLicenseNames.includes(license.name) ? ':x: &nbsp; ' : ''}[${license.name}](${license._meta.href}/text)`).join('<br/>');
+    const vulnerabilities = violation.allVulnerabilities.map(vulnerability => `${violatingVulnerabilityNames.includes(vulnerability.name) ? ':x: &nbsp; ' : ''}[${vulnerability.name}](${(0, blackduck_api_1.cleanUrl)(inputs_1.BLACKDUCK_URL)}/api/vulnerabilities/${vulnerability.name}) (${vulnerability.vulnSeverity}: CVSS ${vulnerability.overallScore})`).join('<br/>');
+    if (upgradeGuidance === undefined || upgradeGuidance === null) {
+        return `| ${violatedPolicies} | ${componentInViolation} | ${componentLicenses}  | ${vulnerabilities} |  |  | `;
+    }
+    let shortTermString = '';
+    let longTermString = '';
+    const shortTerm = upgradeGuidance === null || upgradeGuidance === void 0 ? void 0 : upgradeGuidance.shortTerm;
+    if (shortTerm !== undefined) {
+        const vulnerabilitiesAfterUpgrade = Object.values(shortTerm.vulnerabilityRisk).reduce((accumulatedValues, value) => accumulatedValues + value, 0);
+        shortTermString = `[${shortTerm.versionName}](${shortTerm.version}) (${vulnerabilitiesAfterUpgrade} known vulnerabilities)`;
+    }
+    const longTerm = upgradeGuidance === null || upgradeGuidance === void 0 ? void 0 : upgradeGuidance.longTerm;
+    if (longTerm !== undefined) {
+        const vulnerabilitiesAfterUpgrade = Object.values(longTerm.vulnerabilityRisk).reduce((accumulatedValues, value) => accumulatedValues + value, 0);
+        longTermString = `[${longTerm.versionName}](${longTerm.version}) (${vulnerabilitiesAfterUpgrade} known vulnerabilities)`;
+    }
+    return `| ${violatedPolicies} | ${componentInViolation} | ${componentLicenses} | ${vulnerabilities} | ${shortTermString} | ${longTermString} |`;
 }
 
 
@@ -414,11 +505,11 @@ const fs_1 = __importDefault(__nccwpck_require__(5747));
 const blackduck_api_1 = __nccwpck_require__(7495);
 const check_1 = __nccwpck_require__(7657);
 const comment_1 = __nccwpck_require__(1667);
-const detect_exit_codes_1 = __nccwpck_require__(5137);
-const detect_manager_1 = __nccwpck_require__(3762);
+const exit_codes_1 = __nccwpck_require__(3062);
+const detect_manager_1 = __nccwpck_require__(841);
 const github_context_1 = __nccwpck_require__(4251);
 const inputs_1 = __nccwpck_require__(6180);
-const rapid_scan_1 = __nccwpck_require__(8631);
+const reporting_1 = __nccwpck_require__(322);
 const upload_artifacts_1 = __nccwpck_require__(2854);
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
@@ -496,13 +587,13 @@ function runWithPolicyCheck(policyCheckId) {
             const scanJsonPath = scanJsonPaths[0];
             const rawdata = fs_1.default.readFileSync(scanJsonPath);
             const scanJson = JSON.parse(rawdata.toString());
-            const rapidScanReport = yield (0, rapid_scan_1.createReport)(scanJson);
+            const rapidScanReport = yield (0, reporting_1.createRapidScanReport)(scanJson);
             if ((0, github_context_1.isPullRequest)()) {
                 (0, core_1.info)('This is a pull request, commenting...');
                 (0, comment_1.commentOnPR)(rapidScanReport);
                 (0, core_1.info)('Successfully commented on PR.');
             }
-            if (detectExitCode === detect_exit_codes_1.POLICY_SEVERITY) {
+            if (detectExitCode === exit_codes_1.POLICY_SEVERITY) {
                 (0, check_1.failBlackDuckPolicyCheck)(policyCheckId, rapidScanReport);
             }
             else {
@@ -522,111 +613,20 @@ function runWithPolicyCheck(policyCheckId) {
             (0, upload_artifacts_1.uploadDiagnosticZip)(outputPath, diagnosticZip);
         }
         if (detectExitCode > 0) {
-            if (detectExitCode === detect_exit_codes_1.POLICY_SEVERITY) {
+            if (detectExitCode === exit_codes_1.POLICY_SEVERITY) {
                 (0, core_1.warning)('Found dependencies violating policy!');
             }
             else {
                 (0, core_1.warning)('Dependency check failed! See Detect output for more information.');
             }
         }
-        else if (detectExitCode === detect_exit_codes_1.SUCCESS) {
+        else if (detectExitCode === exit_codes_1.SUCCESS) {
             (0, core_1.info)('None of your dependencies violate your Black Duck policies!');
         }
     });
 }
 exports.runWithPolicyCheck = runWithPolicyCheck;
 run();
-
-
-/***/ }),
-
-/***/ 8631:
-/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
-
-"use strict";
-
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.createReport = void 0;
-const core_1 = __nccwpck_require__(2186);
-const blackduck_api_1 = __nccwpck_require__(7495);
-const inputs_1 = __nccwpck_require__(6180);
-function createReport(scanJson) {
-    var _a;
-    return __awaiter(this, void 0, void 0, function* () {
-        let message = '';
-        if (scanJson.length == 0) {
-            message = message.concat('# :white_check_mark: None of your dependencies violate policy!');
-        }
-        else {
-            message = message.concat('# :x: Found dependencies violating policy!\r\n');
-            const blackduckApiService = new blackduck_api_1.BlackduckApiService(inputs_1.BLACKDUCK_URL, inputs_1.BLACKDUCK_API_TOKEN);
-            const bearerToken = yield blackduckApiService.getBearerToken();
-            const fullResultsResponse = yield blackduckApiService.get(bearerToken, scanJson[0]._meta.href + '/full-result');
-            const fullResults = (_a = fullResultsResponse === null || fullResultsResponse === void 0 ? void 0 : fullResultsResponse.result) === null || _a === void 0 ? void 0 : _a.items;
-            if (fullResults === undefined) {
-                return Promise.reject(`Could not retrieve Black Duck RAPID scan results from ${scanJson[0]._meta.href + '/full-result'}, response was ${fullResultsResponse.statusCode}`);
-            }
-            message = message.concat('\r\n');
-            const reportTable = yield createTable(blackduckApiService, bearerToken, fullResults);
-            message = message.concat(reportTable);
-        }
-        return message;
-    });
-}
-exports.createReport = createReport;
-function createTable(blackduckApiService, bearerToken, fullResults) {
-    var _a;
-    return __awaiter(this, void 0, void 0, function* () {
-        let table = '| Policies Violated | Dependency | License(s) | Vulnerabilities | Short Term Recommended Upgrade | Long Term Recommended Upgrade |\r\n|-|-|-|-|-|-|\r\n';
-        for (const violation of fullResults) {
-            const componentVersionResponse = yield blackduckApiService.getComponentsMatching(bearerToken, violation.componentIdentifier);
-            const componentVersion = (_a = componentVersionResponse === null || componentVersionResponse === void 0 ? void 0 : componentVersionResponse.result) === null || _a === void 0 ? void 0 : _a.items[0];
-            let upgradeGuidance = undefined;
-            if (componentVersion !== undefined) {
-                const upgradeGuidanceResponse = yield blackduckApiService.getUpgradeGuidanceFor(bearerToken, componentVersion).catch(reason => (0, core_1.warning)(`Could not get upgrade guidance for ${violation.componentIdentifier}: ${reason}`));
-                upgradeGuidance = upgradeGuidanceResponse === null || upgradeGuidanceResponse === void 0 ? void 0 : upgradeGuidanceResponse.result;
-            }
-            table = table.concat(`${createComponentRow(componentVersion, upgradeGuidance, violation)}\r\n`);
-        }
-        return table;
-    });
-}
-function createComponentRow(componentVersion, upgradeGuidance, violation) {
-    const violatingLicenseNames = violation.policyViolationLicenses.map(license => license.name);
-    const violatingVulnerabilityNames = violation.policyViolationVulnerabilities.map(vulnerability => vulnerability.name);
-    const violatedPolicies = violation.violatingPolicies.map(policy => `${policy.policyName} ${policy.policySeverity === 'UNSPECIFIED' ? '' : `(${policy.policySeverity})`}`).join('<br/>');
-    let componentInViolation = `${violation.componentName} ${violation.versionName}`;
-    if ((componentVersion === null || componentVersion === void 0 ? void 0 : componentVersion.version) !== undefined) {
-        componentInViolation = `[${violation.componentName} ${violation.versionName}](${componentVersion === null || componentVersion === void 0 ? void 0 : componentVersion.version})`;
-    }
-    const componentLicenses = violation.allLicenses.map(license => `${violatingLicenseNames.includes(license.name) ? ':x: &nbsp; ' : ''}[${license.name}](${license._meta.href}/text)`).join('<br/>');
-    const vulnerabilities = violation.allVulnerabilities.map(vulnerability => `${violatingVulnerabilityNames.includes(vulnerability.name) ? ':x: &nbsp; ' : ''}[${vulnerability.name}](${(0, blackduck_api_1.cleanUrl)(inputs_1.BLACKDUCK_URL)}/api/vulnerabilities/${vulnerability.name}) (${vulnerability.vulnSeverity}: CVSS ${vulnerability.overallScore})`).join('<br/>');
-    if (upgradeGuidance === undefined || upgradeGuidance === null) {
-        return `| ${violatedPolicies} | ${componentInViolation} | ${componentLicenses}  | ${vulnerabilities} |  |  | `;
-    }
-    let shortTermString = '';
-    let longTermString = '';
-    const shortTerm = upgradeGuidance === null || upgradeGuidance === void 0 ? void 0 : upgradeGuidance.shortTerm;
-    if (shortTerm !== undefined) {
-        const vulnerabilitiesAfterUpgrade = Object.values(shortTerm.vulnerabilityRisk).reduce((accumulatedValues, value) => accumulatedValues + value, 0);
-        shortTermString = `[${shortTerm.versionName}](${shortTerm.version}) (${vulnerabilitiesAfterUpgrade} known vulnerabilities)`;
-    }
-    const longTerm = upgradeGuidance === null || upgradeGuidance === void 0 ? void 0 : upgradeGuidance.longTerm;
-    if (longTerm !== undefined) {
-        const vulnerabilitiesAfterUpgrade = Object.values(longTerm.vulnerabilityRisk).reduce((accumulatedValues, value) => accumulatedValues + value, 0);
-        longTermString = `[${longTerm.versionName}](${longTerm.version}) (${vulnerabilitiesAfterUpgrade} known vulnerabilities)`;
-    }
-    return `| ${violatedPolicies} | ${componentInViolation} | ${componentLicenses} | ${vulnerabilities} | ${shortTermString} | ${longTermString} |`;
-}
 
 
 /***/ }),

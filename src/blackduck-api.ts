@@ -5,10 +5,15 @@ import { HttpClient } from 'typed-rest-client/HttpClient'
 import { IRestResponse, RestClient } from 'typed-rest-client/RestClient'
 import { APPLICATION_NAME } from './application-constants'
 
-export interface IBlackduckPage<Type> {
+export interface IBlackduckView {
+  _meta: {
+    href: string
+  }
+}
+
+export interface IBlackduckPage<Type> extends IBlackduckView {
   totalCount: number
   items: Array<Type>
-  _meta: Object
 }
 
 export interface IUpgradeGuidance {

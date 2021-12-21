@@ -2,14 +2,14 @@ import { info, warning, setFailed, debug } from '@actions/core'
 import { create } from '@actions/glob'
 import path from 'path'
 import fs from 'fs'
-import { BlackduckApiService } from './blackduck-api'
+import { BlackduckApiService, IBlackduckView } from './blackduck-api'
 import { createBlackDuckPolicyCheck, failBlackDuckPolicyCheck, passBlackDuckPolicyCheck, skipBlackDuckPolicyCheck, cancelBlackDuckPolicyCheck } from './check'
 import { commentOnPR } from './comment'
-import { POLICY_SEVERITY, SUCCESS } from './detect-exit-codes'
-import { TOOL_NAME, findOrDownloadDetect, runDetect } from './detect-manager'
+import { POLICY_SEVERITY, SUCCESS } from './detect/exit-codes'
+import { TOOL_NAME, findOrDownloadDetect, runDetect } from './detect/detect-manager'
 import { isPullRequest } from './github-context'
 import { BLACKDUCK_API_TOKEN, BLACKDUCK_URL, DETECT_TRUST_CERT, DETECT_VERSION, OUTPUT_PATH_OVERRIDE, SCAN_MODE } from './inputs'
-import { createReport, PolicyViolation } from './rapid-scan'
+import { createRapidScanReport } from './detect/reporting'
 import { uploadRapidScanJson, uploadDiagnosticZip } from './upload-artifacts'
 
 export async function run() {
@@ -92,8 +92,8 @@ export async function runWithPolicyCheck(policyCheckId: number): Promise<void> {
 
     const scanJsonPath = scanJsonPaths[0]
     const rawdata = fs.readFileSync(scanJsonPath)
-    const scanJson = JSON.parse(rawdata.toString()) as PolicyViolation[]
-    const rapidScanReport = await createReport(scanJson)
+    const scanJson = JSON.parse(rawdata.toString()) as IBlackduckView[]
+    const rapidScanReport = await createRapidScanReport(scanJson)
 
     if (isPullRequest()) {
       info('This is a pull request, commenting...')
