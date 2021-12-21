@@ -1,6 +1,6 @@
 import { debug, info, warning } from '@actions/core'
 import { context, getOctokit } from '@actions/github'
-import { getSha } from '../github-context'
+import { getSha } from './github-context'
 import { GITHUB_TOKEN } from '../inputs'
 
 export async function createCheck(checkName: string): Promise<GitHubCheck> {
@@ -35,25 +35,25 @@ export class GitHubCheck {
     this.checkRunId = checkRunId
   }
 
-   async passCheck(summary: string, text: string) {
+  async passCheck(summary: string, text: string) {
     return this.finishCheck('success', summary, text)
   }
-  
-   async failCheck(summary: string, text: string) {
+
+  async failCheck(summary: string, text: string) {
     return this.finishCheck('failure', summary, text)
   }
-  
-   async  skipCheck() {
+
+  async skipCheck() {
     return this.finishCheck('skipped', `${this.checkName} was skipped`, '')
   }
-  
-   async  cancelCheck() {
+
+  async cancelCheck() {
     return this.finishCheck('cancelled', `${this.checkName} Check could not be completed`, `Something went wrong and the ${this.checkName} could not be completed. Check your action logs for more details.`)
   }
 
   private async finishCheck(conclusion: string, summary: string, text: string) {
     const octokit = getOctokit(GITHUB_TOKEN)
-  
+
     const response = await octokit.rest.checks.update({
       owner: context.repo.owner,
       repo: context.repo.repo,
@@ -66,7 +66,7 @@ export class GitHubCheck {
         text
       }
     })
-  
+
     if (response.status !== 200) {
       warning(`Unexpected status code recieved when creating check: ${response.status}`)
       debug(JSON.stringify(response, null, 2))
@@ -74,5 +74,4 @@ export class GitHubCheck {
       info(`${this.checkName} updated`)
     }
   }
-
 }

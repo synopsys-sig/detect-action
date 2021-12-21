@@ -337,34 +337,6 @@ function createComponentRow(componentVersion, upgradeGuidance, violation) {
 
 /***/ }),
 
-/***/ 4251:
-/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.getSha = exports.isPullRequest = void 0;
-const github_1 = __nccwpck_require__(5438);
-const prEvents = ['pull_request', 'pull_request_review', 'pull_request_review_comment'];
-function isPullRequest() {
-    return prEvents.includes(github_1.context.eventName);
-}
-exports.isPullRequest = isPullRequest;
-function getSha() {
-    let sha = github_1.context.sha;
-    if (isPullRequest()) {
-        const pull = github_1.context.payload.pull_request;
-        if (pull === null || pull === void 0 ? void 0 : pull.head.sha) {
-            sha = pull === null || pull === void 0 ? void 0 : pull.head.sha;
-        }
-    }
-    return sha;
-}
-exports.getSha = getSha;
-
-
-/***/ }),
-
 /***/ 710:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
@@ -383,7 +355,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.GitHubCheck = exports.createCheck = void 0;
 const core_1 = __nccwpck_require__(2186);
 const github_1 = __nccwpck_require__(5438);
-const github_context_1 = __nccwpck_require__(4251);
+const github_context_1 = __nccwpck_require__(4915);
 const inputs_1 = __nccwpck_require__(6180);
 function createCheck(checkName) {
     return __awaiter(this, void 0, void 0, function* () {
@@ -462,6 +434,77 @@ exports.GitHubCheck = GitHubCheck;
 
 /***/ }),
 
+/***/ 4915:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.getSha = exports.isPullRequest = void 0;
+const github_1 = __nccwpck_require__(5438);
+const prEvents = ['pull_request', 'pull_request_review', 'pull_request_review_comment'];
+function isPullRequest() {
+    return prEvents.includes(github_1.context.eventName);
+}
+exports.isPullRequest = isPullRequest;
+function getSha() {
+    let sha = github_1.context.sha;
+    if (isPullRequest()) {
+        const pull = github_1.context.payload.pull_request;
+        if (pull === null || pull === void 0 ? void 0 : pull.head.sha) {
+            sha = pull === null || pull === void 0 ? void 0 : pull.head.sha;
+        }
+    }
+    return sha;
+}
+exports.getSha = getSha;
+
+
+/***/ }),
+
+/***/ 1003:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.uploadArtifact = void 0;
+const core_1 = __nccwpck_require__(2186);
+const artifact_1 = __nccwpck_require__(2605);
+function uploadArtifact(name, outputPath, files) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const artifactClient = (0, artifact_1.create)();
+        const options = {
+            continueOnError: false,
+            retentionDays: 0
+        };
+        (0, core_1.info)(`Attempting to upload ${name}...`);
+        const uploadResponse = yield artifactClient.uploadArtifact(name, files, outputPath, options);
+        if (files.length === 0) {
+            (0, core_1.warning)(`Expected to upload ${name}, but the action couldn't find any. Was output-path set correctly?`);
+        }
+        else if (uploadResponse.failedItems.length > 0) {
+            (0, core_1.warning)(`An error was encountered when uploading ${uploadResponse.artifactName}. There were ${uploadResponse.failedItems.length} items that failed to upload.`);
+        }
+        else {
+            (0, core_1.info)(`Artifact ${uploadResponse.artifactName} has been successfully uploaded!`);
+        }
+    });
+}
+exports.uploadArtifact = uploadArtifact;
+
+
+/***/ }),
+
 /***/ 6180:
 /***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
 
@@ -509,10 +552,10 @@ const check_1 = __nccwpck_require__(710);
 const comment_1 = __nccwpck_require__(1667);
 const exit_codes_1 = __nccwpck_require__(3062);
 const detect_manager_1 = __nccwpck_require__(841);
-const github_context_1 = __nccwpck_require__(4251);
+const github_context_1 = __nccwpck_require__(4915);
 const inputs_1 = __nccwpck_require__(6180);
 const reporting_1 = __nccwpck_require__(322);
-const upload_artifacts_1 = __nccwpck_require__(2854);
+const upload_artifacts_1 = __nccwpck_require__(1003);
 const application_constants_1 = __nccwpck_require__(9717);
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
@@ -586,7 +629,7 @@ function runWithPolicyCheck(blackduckPolicyCheck) {
             (0, core_1.info)(`${detect_manager_1.TOOL_NAME} executed in RAPID mode. Beginning reporting...`);
             const jsonGlobber = yield (0, glob_1.create)(`${outputPath}/*.json`);
             const scanJsonPaths = yield jsonGlobber.glob();
-            (0, upload_artifacts_1.uploadRapidScanJson)(outputPath, scanJsonPaths);
+            (0, upload_artifacts_1.uploadArtifact)('Rapid Scan JSON', outputPath, scanJsonPaths);
             const scanJsonPath = scanJsonPaths[0];
             const rawdata = fs_1.default.readFileSync(scanJsonPath);
             const scanJson = JSON.parse(rawdata.toString());
@@ -613,7 +656,7 @@ function runWithPolicyCheck(blackduckPolicyCheck) {
         if (diagnosticMode || extendedDiagnosticMode) {
             const diagnosticGlobber = yield (0, glob_1.create)(`${outputPath}/runs/*.zip`);
             const diagnosticZip = yield diagnosticGlobber.glob();
-            (0, upload_artifacts_1.uploadDiagnosticZip)(outputPath, diagnosticZip);
+            (0, upload_artifacts_1.uploadArtifact)('Detect Diagnostic Zip', outputPath, diagnosticZip);
         }
         if (detectExitCode > 0) {
             if (detectExitCode === exit_codes_1.POLICY_SEVERITY) {
@@ -630,60 +673,6 @@ function runWithPolicyCheck(blackduckPolicyCheck) {
 }
 exports.runWithPolicyCheck = runWithPolicyCheck;
 run();
-
-
-/***/ }),
-
-/***/ 2854:
-/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
-
-"use strict";
-
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.uploadDiagnosticZip = exports.uploadRapidScanJson = void 0;
-const core_1 = __nccwpck_require__(2186);
-const artifact_1 = __nccwpck_require__(2605);
-function uploadRapidScanJson(outputPath, jsonFiles) {
-    return __awaiter(this, void 0, void 0, function* () {
-        uploadArtifact('Rapid Scan JSON', outputPath, jsonFiles);
-    });
-}
-exports.uploadRapidScanJson = uploadRapidScanJson;
-function uploadDiagnosticZip(outputPath, diagnosticZips) {
-    return __awaiter(this, void 0, void 0, function* () {
-        uploadArtifact('Detect Diagnostic Zip', outputPath, diagnosticZips);
-    });
-}
-exports.uploadDiagnosticZip = uploadDiagnosticZip;
-function uploadArtifact(name, outputPath, files) {
-    return __awaiter(this, void 0, void 0, function* () {
-        const artifactClient = (0, artifact_1.create)();
-        const options = {
-            continueOnError: false,
-            retentionDays: 0
-        };
-        (0, core_1.info)(`Attempting to upload ${name}...`);
-        const uploadResponse = yield artifactClient.uploadArtifact(name, files, outputPath, options);
-        if (files.length === 0) {
-            (0, core_1.warning)(`Expected to upload ${name}, but the action couldn't find any. Was output-path set correctly?`);
-        }
-        else if (uploadResponse.failedItems.length > 0) {
-            (0, core_1.warning)(`An error was encountered when uploading ${uploadResponse.artifactName}. There were ${uploadResponse.failedItems.length} items that failed to upload.`);
-        }
-        else {
-            (0, core_1.info)(`Artifact ${uploadResponse.artifactName} has been successfully uploaded!`);
-        }
-    });
-}
 
 
 /***/ }),

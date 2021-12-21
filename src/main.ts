@@ -7,10 +7,10 @@ import { createCheck, GitHubCheck } from './github/check'
 import { commentOnPR } from './comment'
 import { POLICY_SEVERITY, SUCCESS } from './detect/exit-codes'
 import { TOOL_NAME, findOrDownloadDetect, runDetect } from './detect/detect-manager'
-import { isPullRequest } from './github-context'
+import { isPullRequest } from './github/github-context'
 import { BLACKDUCK_API_TOKEN, BLACKDUCK_URL, DETECT_TRUST_CERT, DETECT_VERSION, OUTPUT_PATH_OVERRIDE, SCAN_MODE } from './inputs'
 import { createRapidScanReport } from './detect/reporting'
-import { uploadRapidScanJson, uploadDiagnosticZip } from './upload-artifacts'
+import { uploadArtifact } from './github/upload-artifacts'
 import { CHECK_NAME } from './application-constants'
 
 export async function run() {
@@ -89,7 +89,7 @@ export async function runWithPolicyCheck(blackduckPolicyCheck: GitHubCheck): Pro
 
     const jsonGlobber = await create(`${outputPath}/*.json`)
     const scanJsonPaths = await jsonGlobber.glob()
-    uploadRapidScanJson(outputPath, scanJsonPaths)
+    uploadArtifact('Rapid Scan JSON', outputPath, scanJsonPaths)
 
     const scanJsonPath = scanJsonPaths[0]
     const rawdata = fs.readFileSync(scanJsonPath)
@@ -118,7 +118,7 @@ export async function runWithPolicyCheck(blackduckPolicyCheck: GitHubCheck): Pro
   if (diagnosticMode || extendedDiagnosticMode) {
     const diagnosticGlobber = await create(`${outputPath}/runs/*.zip`)
     const diagnosticZip = await diagnosticGlobber.glob()
-    uploadDiagnosticZip(outputPath, diagnosticZip)
+    uploadArtifact('Detect Diagnostic Zip', outputPath, diagnosticZip)
   }
 
   if (detectExitCode > 0) {
