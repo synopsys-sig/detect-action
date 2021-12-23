@@ -1,15 +1,7 @@
 import { warning, info, debug } from '@actions/core'
 import { create, UploadOptions } from '@actions/artifact'
 
-export async function uploadRapidScanJson(outputPath: string, jsonFiles: string[]): Promise<void> {
-  uploadArtifact('Rapid Scan JSON', outputPath, jsonFiles)
-}
-
-export async function uploadDiagnosticZip(outputPath: string, diagnosticZips: string[]): Promise<void> {
-  uploadArtifact('Detect Diagnostic Zip', outputPath, diagnosticZips)
-}
-
-async function uploadArtifact(name: string, outputPath: string, files: string[]): Promise<void> {
+export async function uploadArtifact(name: string, outputPath: string, files: string[]): Promise<void> {
   const artifactClient = create()
   const options: UploadOptions = {
     continueOnError: false,

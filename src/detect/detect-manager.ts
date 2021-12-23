@@ -1,7 +1,7 @@
 import { find, downloadTool, cacheFile } from '@actions/tool-cache'
 import { exec } from '@actions/exec'
 import path from 'path'
-import { DETECT_VERSION } from './inputs'
+import { DETECT_VERSION } from '../inputs'
 
 const DETECT_BINARY_REPO_URL = 'https://sig-repo.synopsys.com'
 export const TOOL_NAME = 'detect'

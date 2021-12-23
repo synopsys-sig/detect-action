@@ -2,26 +2,27 @@ import { info, warning, setFailed, debug } from '@actions/core'
 import { create } from '@actions/glob'
 import path from 'path'
 import fs from 'fs'
-import { BlackduckApiService } from './blackduck-api'
-import { createBlackDuckPolicyCheck, failBlackDuckPolicyCheck, passBlackDuckPolicyCheck, skipBlackDuckPolicyCheck, cancelBlackDuckPolicyCheck } from './check'
+import { BlackduckApiService, IBlackduckView } from './blackduck-api'
+import { createCheck, GitHubCheck } from './github/check'
 import { commentOnPR } from './comment'
-import { POLICY_SEVERITY, SUCCESS } from './detect-exit-codes'
-import { TOOL_NAME, findOrDownloadDetect, runDetect } from './detect-manager'
-import { isPullRequest } from './github-context'
+import { POLICY_SEVERITY, SUCCESS } from './detect/exit-codes'
+import { TOOL_NAME, findOrDownloadDetect, runDetect } from './detect/detect-manager'
+import { isPullRequest } from './github/github-context'
 import { BLACKDUCK_API_TOKEN, BLACKDUCK_URL, DETECT_TRUST_CERT, DETECT_VERSION, OUTPUT_PATH_OVERRIDE, SCAN_MODE } from './inputs'
-import { createReport, PolicyViolation } from './rapid-scan'
-import { uploadRapidScanJson, uploadDiagnosticZip } from './upload-artifacts'
+import { createRapidScanReport } from './detect/reporting'
+import { uploadArtifact } from './github/upload-artifacts'
+import { CHECK_NAME } from './application-constants'
 
 export async function run() {
-  const policyCheckId = await createBlackDuckPolicyCheck()
-  runWithPolicyCheck(policyCheckId).catch(unhandledError => {
+  const blackduckPolicyCheck = await createCheck(CHECK_NAME)
+  runWithPolicyCheck(blackduckPolicyCheck).catch(unhandledError => {
     debug('Canceling policy check because of an unhandled error.')
-    cancelBlackDuckPolicyCheck(policyCheckId)
+    blackduckPolicyCheck.cancelCheck()
     setFailed(`Failed due to an unhandled error: '${unhandledError}'`)
   })
 }
 
-export async function runWithPolicyCheck(policyCheckId: number): Promise<void> {
+export async function runWithPolicyCheck(blackduckPolicyCheck: GitHubCheck): Promise<void> {
   info(`detect-version: ${DETECT_VERSION}`)
   info(`output-path-override: ${OUTPUT_PATH_OVERRIDE}`)
   info(`scan-mode: ${SCAN_MODE}`)
@@ -32,7 +33,7 @@ export async function runWithPolicyCheck(policyCheckId: number): Promise<void> {
     outputPath = OUTPUT_PATH_OVERRIDE
   } else if (runnerTemp === undefined) {
     setFailed('$RUNNER_TEMP is not defined and output-path-override was not set. Cannot determine where to store output files.')
-    cancelBlackDuckPolicyCheck(policyCheckId)
+    blackduckPolicyCheck.cancelCheck()
     return
   } else {
     outputPath = path.resolve(runnerTemp, 'blackduck')
@@ -49,7 +50,7 @@ export async function runWithPolicyCheck(policyCheckId: number): Promise<void> {
 
     if (policiesExist === undefined) {
       debug('Could not determine if policies existed. Canceling policy check.')
-      cancelBlackDuckPolicyCheck(policyCheckId)
+      blackduckPolicyCheck.cancelCheck()
       return
     } else if (!policiesExist) {
       setFailed(`Could not run ${TOOL_NAME} using ${SCAN_MODE} scan mode. No enabled policies found on the specified Black Duck server.`)
@@ -67,7 +68,7 @@ export async function runWithPolicyCheck(policyCheckId: number): Promise<void> {
 
   if (detectPath === undefined) {
     debug(`Could not determine ${TOOL_NAME} path. Canceling policy check.`)
-    cancelBlackDuckPolicyCheck(policyCheckId)
+    blackduckPolicyCheck.cancelCheck()
     return
   }
 
@@ -77,7 +78,7 @@ export async function runWithPolicyCheck(policyCheckId: number): Promise<void> {
 
   if (detectExitCode === undefined) {
     debug(`Could not determine ${TOOL_NAME} exit code. Canceling policy check.`)
-    cancelBlackDuckPolicyCheck(policyCheckId)
+    blackduckPolicyCheck.cancelCheck()
     return
   }
 
@@ -88,12 +89,12 @@ export async function runWithPolicyCheck(policyCheckId: number): Promise<void> {
 
     const jsonGlobber = await create(`${outputPath}/*.json`)
     const scanJsonPaths = await jsonGlobber.glob()
-    uploadRapidScanJson(outputPath, scanJsonPaths)
+    uploadArtifact('Rapid Scan JSON', outputPath, scanJsonPaths)
 
     const scanJsonPath = scanJsonPaths[0]
     const rawdata = fs.readFileSync(scanJsonPath)
-    const scanJson = JSON.parse(rawdata.toString()) as PolicyViolation[]
-    const rapidScanReport = await createReport(scanJson)
+    const scanJson = JSON.parse(rawdata.toString()) as IBlackduckView[]
+    const rapidScanReport = await createRapidScanReport(scanJson)
 
     if (isPullRequest()) {
       info('This is a pull request, commenting...')
@@ -102,14 +103,14 @@ export async function runWithPolicyCheck(policyCheckId: number): Promise<void> {
     }
 
     if (detectExitCode === POLICY_SEVERITY) {
-      failBlackDuckPolicyCheck(policyCheckId, rapidScanReport)
+      blackduckPolicyCheck.failCheck('Components found that violate your Black Duck Policies!', rapidScanReport)
     } else {
-      passBlackDuckPolicyCheck(policyCheckId, rapidScanReport)
+      blackduckPolicyCheck.passCheck('No components found that violate your Black Duck policies!', rapidScanReport)
     }
     info('Reporting complete.')
   } else {
     info(`${TOOL_NAME} executed in ${SCAN_MODE} mode. Skipping policy check.`)
-    skipBlackDuckPolicyCheck(policyCheckId)
+    blackduckPolicyCheck.skipCheck()
   }
 
   const diagnosticMode = process.env.DETECT_DIAGNOSTIC?.toLowerCase() === 'true'
@@ -117,7 +118,7 @@ export async function runWithPolicyCheck(policyCheckId: number): Promise<void> {
   if (diagnosticMode || extendedDiagnosticMode) {
     const diagnosticGlobber = await create(`${outputPath}/runs/*.zip`)
     const diagnosticZip = await diagnosticGlobber.glob()
-    uploadDiagnosticZip(outputPath, diagnosticZip)
+    uploadArtifact('Detect Diagnostic Zip', outputPath, diagnosticZip)
   }
 
   if (detectExitCode > 0) {
