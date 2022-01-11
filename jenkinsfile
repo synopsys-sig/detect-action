@@ -8,7 +8,7 @@ import com.synopsys.integration.pipeline.SimplePipeline
 boolean runRelease = params.RUN_RELEASE
 boolean runPipeline = runRelease
 
-String emailRecipients = 'justiceleague@synopsys.com'
+String emailRecipients = ''
 def gitUrl = 'https://github.com/synopsys-sig/detect-action.git'
 String branch = (params.BRANCH != null) ? "${BRANCH}" : 'origin/master'
 String archivePattern = '**/dist/*.js'
