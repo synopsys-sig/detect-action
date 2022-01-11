@@ -10,17 +10,11 @@ boolean runPipeline = runRelease
 
 String emailRecipients = 'justiceleague@synopsys.com'
 def gitUrl = 'https://github.com/synopsys-sig/detect-action.git'
-String branch = (params.BRANCH != null) ? "${BRANCH}" : 'origin/master'
 String archivePattern = '**/dist/*.js'
 
 node('integrations') {
     SimplePipeline pipeline = new SimplePipeline(this)
     pipeline.addCleanupStep('.')
-
-    String gitBranch = pipeline.determineGitBranch(branch)
-    pipeline.setDirectoryFromBranch(gitBranch)
-    GitStage gitStage = pipeline.addGitStage(gitUrl, gitBranch, false)
-    gitStage.setChangelog(true)
 
     pipeline.addApiTokenStage()
 
