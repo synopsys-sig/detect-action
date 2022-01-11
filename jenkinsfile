@@ -1,0 +1,36 @@
+/*
+* This pipeline script was created manually based on scripts created by jenkins-build-creator.
+*
+*/
+@Library('integration-pipeline-library@master')
+import com.synopsys.integration.pipeline.SimplePipeline
+
+boolean runRelease = params.RUN_RELEASE
+boolean runPipeline = runRelease
+
+String emailRecipients = 'justiceleague@synopsys.com'
+def gitUrl = 'https://github.com/synopsys-sig/detect-action.git'
+String branch = (params.BRANCH != null) ? "${BRANCH}" : 'origin/master'
+String archivePattern = '**/dist/*.js'
+
+node('integrations') {
+    SimplePipeline pipeline = new SimplePipeline(this)
+    pipeline.addCleanupStep('.')
+
+    String gitBranch = pipeline.determineGitBranch(branch)
+    pipeline.setDirectoryFromBranch(gitBranch)
+    GitStage gitStage = pipeline.addGitStage(gitUrl, gitBranch, false)
+    gitStage.setChangelog(true)
+
+    pipeline.addApiTokenStage()
+
+    pipeline.setUrl(gitUrl)
+    pipeline.setGithubCredentialsId(gitStage.getCredentialsId())
+    pipeline.addEmailPipelineWrapper(emailRecipients)
+
+    def buildStage = pipeline.addCustomStage(sh 'npm run all')
+
+    pipeline.addArchiveStage(archivePattern)
+
+    pipeline.run()
+}
