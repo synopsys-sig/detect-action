@@ -28,7 +28,7 @@ node('integrations') {
     pipeline.setGithubCredentialsId(gitStage.getCredentialsId())
     pipeline.addEmailPipelineWrapper(emailRecipients)
 
-    def buildStage = pipeline.addCustomStage(sh 'npm run all')
+    def buildStage = pipeline.addCustomStage{ sh 'npm run all' }
 
     pipeline.addArchiveStage(archivePattern)
 
