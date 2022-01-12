@@ -28,7 +28,8 @@ node('integrations') {
     pipeline.setGithubCredentialsId(gitStage.getCredentialsId())
     pipeline.addEmailPipelineWrapper(emailRecipients)
 
-    def buildStage = pipeline.addStage('Build'){ 
+    def buildStage = pipeline.addStage('Build'){
+        sh 'npm ci'
         sh 'npm run all' 
     }
 
