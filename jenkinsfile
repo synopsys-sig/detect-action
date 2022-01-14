@@ -6,27 +6,7 @@
 import com.synopsys.integration.pipeline.SimplePipeline
 properties(
     [
-        [
-            $class: 'BuildBlockerProperty', 
-            blockLevel: <object of type hudson.plugins.buildblocker.BuildBlockerProperty.BlockLevel>, 
-            blockingJobs: '', 
-            scanQueueFor: <object of type hudson.plugins.buildblocker.BuildBlockerProperty.QueueScanScope>, 
-            useBuildBlocker: false
-        ], 
-        [
-            $class: 'ScannerJobProperty', 
-            doNotScan: false
-        ], 
         disableConcurrentBuilds(), 
-        [
-            $class: 'LeastLoadDisabledProperty', 
-            leastLoadDisabled: false
-        ], 
-        [
-            $class: 'RebuildSettings', 
-            autoRebuild: false,
-            rebuildDisabled: false
-        ],
         parameters(
             [
                 gitParameter(
@@ -43,24 +23,6 @@ properties(
                 )
             ]
         ),
-        [
-            $class: 'EnvInjectJobProperty',
-            info: [
-                loadFilesFromMaster: false,
-                secureGroovyScript: [
-                    classpath: [], 
-                    sandbox: false, 
-                    script: ''
-                ]
-            ],
-            keepBuildVariables: true,
-            keepJenkinsSystemVariables: true,
-            on: true
-        ],
-        [
-            $class: 'JobLocalConfiguration',
-            changeReasonComment: ''
-        ],
         pipelineTriggers(
             [
                 cron('H H(0-6) * * *'),
