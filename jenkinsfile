@@ -6,6 +6,14 @@
 import com.synopsys.integration.pipeline.SimplePipeline
 properties(
     [
+        buildDiscarder(
+            logRotator(
+                artifactDaysToKeepStr: '', 
+                artifactNumToKeepStr: '', 
+                daysToKeepStr: '', 
+                numToKeepStr: '20'
+            )
+        ),
         disableConcurrentBuilds(), 
         parameters(
             [
