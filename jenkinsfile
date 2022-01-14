@@ -2,47 +2,24 @@
 * This pipeline script was created manually based on scripts created by jenkins-build-creator.
 *
 */
-@Library('integration-pipeline-library@master')
+@Library('integration-pipeline-library@ro-declarative-support')
 import com.synopsys.integration.pipeline.SimplePipeline
+import com.synopsys.integration.Constants
 properties(
     [
-        buildDiscarder(
-            logRotator(
-                artifactDaysToKeepStr: '', 
-                artifactNumToKeepStr: '', 
-                daysToKeepStr: '', 
-                numToKeepStr: '20'
-            )
-        ),
+        limitBuildsToKeep(),
         disableConcurrentBuilds(), 
         parameters(
             [
-                gitParameter(
-                    branch: '', 
-                    branchFilter: '.*', 
-                    defaultValue: 'origin/main', 
-                    description: 'The branch you want to build. If none are selected, origin/main will be chosen', 
-                    name: 'BRANCH', 
-                    quickFilterEnabled: false, 
-                    selectedValue: 'NONE', 
-                    sortMode: 'NONE', 
-                    tagFilter: '*', 
-                    type: 'PT_BRANCH_TAG'
-                )
+                branchSelectorParameter('origin/main')
             ]
         ),
-        pipelineTriggers(
-            [
-                cron('H H(0-6) * * *'),
-                pollSCM('H/15 * * * *')
-            ]
-        )
+        defaultPipelineTriggers()
     ]
 )
 
-String emailRecipients = ''
-def gitUrl = 'https://github.com/synopsys-sig/detect-action.git'
-String branch = (params.BRANCH != null) ? "${BRANCH}" : 'origin/master'
+String emailRecipients = Constants.CENTRAL_INTEGRATIONS_TEAM_EMAIL
+String gitUrl = 'https://github.com/synopsys-sig/detect-action.git'
 String archivePattern = 'dist/*.js*'
 
 node('integrations') {
