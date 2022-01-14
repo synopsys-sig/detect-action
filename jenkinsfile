@@ -4,9 +4,71 @@
 */
 @Library('integration-pipeline-library@master')
 import com.synopsys.integration.pipeline.SimplePipeline
-
-boolean runRelease = params.RUN_RELEASE
-boolean runPipeline = runRelease
+properties(
+    [
+        [
+            $class: 'BuildBlockerProperty', 
+            blockLevel: <object of type hudson.plugins.buildblocker.BuildBlockerProperty.BlockLevel>, 
+            blockingJobs: '', 
+            scanQueueFor: <object of type hudson.plugins.buildblocker.BuildBlockerProperty.QueueScanScope>, 
+            useBuildBlocker: false
+        ], 
+        [
+            $class: 'ScannerJobProperty', 
+            doNotScan: false
+        ], 
+        disableConcurrentBuilds(), 
+        [
+            $class: 'LeastLoadDisabledProperty', 
+            leastLoadDisabled: false
+        ], 
+        [
+            $class: 'RebuildSettings', 
+            autoRebuild: false,
+            rebuildDisabled: false
+        ],
+        parameters(
+            [
+                gitParameter(
+                    branch: '', 
+                    branchFilter: '.*', 
+                    defaultValue: 'origin/main', 
+                    description: 'The branch you want to build. If none are selected, origin/main will be chosen', 
+                    name: 'BRANCH', 
+                    quickFilterEnabled: false, 
+                    selectedValue: 'NONE', 
+                    sortMode: 'NONE', 
+                    tagFilter: '*', 
+                    type: 'PT_BRANCH_TAG'
+                )
+            ]
+        ),
+        [
+            $class: 'EnvInjectJobProperty',
+            info: [
+                loadFilesFromMaster: false,
+                secureGroovyScript: [
+                    classpath: [], 
+                    sandbox: false, 
+                    script: ''
+                ]
+            ],
+            keepBuildVariables: true,
+            keepJenkinsSystemVariables: true,
+            on: true
+        ],
+        [
+            $class: 'JobLocalConfiguration',
+            changeReasonComment: ''
+        ],
+        pipelineTriggers(
+            [
+                cron('H H(0-6) * * *'),
+                pollSCM('H/15 * * * *')
+            ]
+        )
+    ]
+)
 
 String emailRecipients = ''
 def gitUrl = 'https://github.com/synopsys-sig/detect-action.git'
@@ -29,8 +91,7 @@ node('integrations') {
     pipeline.addEmailPipelineWrapper(emailRecipients)
 
     def buildStage = pipeline.addStage('Build'){
-        sh 'npm ci'
-        sh 'npm run all' 
+        sh 'npm ci && npm run all'
     }
 
     pipeline.addArchiveStage(archivePattern)
