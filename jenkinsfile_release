@@ -11,7 +11,9 @@ properties(
         disableConcurrentBuilds(), 
         parameters(
             [
-                branchSelectorParameter('origin/main')
+                releaseCheckbox(),
+                releaseCommitMessage(),
+                selectBranch('origin/main')
             ]
         ),
         defaultPipelineTriggers()
@@ -21,6 +23,9 @@ properties(
 String emailRecipients = Constants.CENTRAL_INTEGRATIONS_TEAM_EMAIL
 String gitUrl = 'https://github.com/synopsys-sig/detect-action.git'
 String archivePattern = 'dist/*.js*'
+
+boolean runRelease = params.RUN_RELEASE
+boolean runPipeline = runRelease
 
 node('integrations') {
     SimplePipeline pipeline = new SimplePipeline(this)
@@ -37,11 +42,15 @@ node('integrations') {
     pipeline.setGithubCredentialsId(gitStage.getCredentialsId())
     pipeline.addEmailPipelineWrapper(emailRecipients)
 
-    def buildStage = pipeline.addStage('Build'){
-        sh 'npm ci && npm run all'
+    if (runPipeline) {
+        if (branch.equals('origin/main')) {
+            error('We do not release solutions from origin/main - create a release branch and use that to perform the release.')
+        }
+        
+        githubReleaseStage.setOwner('blackducksoftware')
+    
+        pipeline.addArchiveStage(archivePattern)
     }
-
-    pipeline.addArchiveStage(archivePattern)
 
     pipeline.run()
 }
