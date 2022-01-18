@@ -1,7 +1,5 @@
 # Detect Action
 
-(WIP)
-
 Richly integrate Synopsys Detect into GitHub action workflows.
 
 Configure the action to run Detect in Rapid scan mode to get detailed Black Duck policy reports (default behavior), or in Intelligent scan mode to upload your data into Black Duck for more detailed analysis.
@@ -11,6 +9,12 @@ Configure the action to run Detect in Rapid scan mode to get detailed Black Duck
 Once your dependencies are clean, configure the action to run Detect in Rapid scan mode to protect your branches with the Black Duck Policy Check and [_Branch Protection Rules_](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/defining-the-mergeability-of-pull-requests/about-protected-branches#require-status-checks-before-merging).
 
 ![Black Duck Policy Check screenshot](.github/policyCheck.png)
+
+# Recommended Usage
+
+To get the most out of this action, we recommend using _RAPID_ scan-mode for all Pull Requests. 
+
+_INTELLIGENT_ scan-mode is best run on a schedule that can vary by repository. A very active repository would benefit from at least one daily scan, while a less active repository might only need to be scanned once or twice a week. It is still important that low-activity repositories be scanned regularly because new vulnerabilities can be descovered for existing dependencies and source-code.
 
 # Set Up Workflow
 
