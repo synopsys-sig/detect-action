@@ -107,7 +107,7 @@ export async function runWithPolicyCheck(blackduckPolicyCheck: GitHubCheck): Pro
     }
 
     if (hasPolicyViolations) {
-      if (detectExitCode == POLICY_SEVERITY || FAIL_ON_ALL_POLICY_SEVERITIES) {
+      if (detectExitCode === POLICY_SEVERITY || FAIL_ON_ALL_POLICY_SEVERITIES) {
         blackduckPolicyCheck.failCheck('Components found that violate your Black Duck Policies!', rapidScanReport)
       } else {
         blackduckPolicyCheck.passCheck('No components violated your BLOCKER or CRITICAL Black Duck Policies!', rapidScanReport)
@@ -130,7 +130,7 @@ export async function runWithPolicyCheck(blackduckPolicyCheck: GitHubCheck): Pro
   }
 
   if (detectExitCode > 0) {
-    if (detectExitCode == POLICY_SEVERITY || (FAIL_ON_ALL_POLICY_SEVERITIES && hasPolicyViolations)) {
+    if (detectExitCode === POLICY_SEVERITY || (FAIL_ON_ALL_POLICY_SEVERITIES && hasPolicyViolations)) {
       warning('Found dependencies violating policy!')
     } else {
       warning('Dependency check failed! See Detect output for more information.')
