@@ -206,6 +206,8 @@ Set the scan mode to:
             blackduck-api-token: ${{ secrets.BLACKDUCK_API_TOKEN }}
   ```
 
+**Note**: By default, Detect will only fail on BLOCKER and CRITICAL policy violations. This can be overridden to fail on all severities by setting `fail-on-all-policy-severities=true` in the _detect-action_ workflow parameters.
+
 * **INTELLIGENT** if you want to execute a full analysis of Detect and upload your results into a project in Black Duck, for example:
 
   ```yaml
