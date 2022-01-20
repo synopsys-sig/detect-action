@@ -99,6 +99,7 @@ export async function runWithPolicyCheck(blackduckPolicyCheck: GitHubCheck): Pro
     const rapidScanReport = await createRapidScanReport(scanJson)
 
     hasPolicyViolations = scanJson.length > 0;
+    debug(`Policy Violations Present: ${hasPolicyViolations}`)
 
     if (isPullRequest()) {
       info('This is a pull request, commenting...')
@@ -129,12 +130,10 @@ export async function runWithPolicyCheck(blackduckPolicyCheck: GitHubCheck): Pro
     uploadArtifact('Detect Diagnostic Zip', outputPath, diagnosticZip)
   }
 
-  if (detectExitCode > 0) {
-    if (detectExitCode === POLICY_SEVERITY || (FAIL_ON_ALL_POLICY_SEVERITIES && hasPolicyViolations)) {
-      warning('Found dependencies violating policy!')
-    } else {
-      warning('Dependency check failed! See Detect output for more information.')
-    }
+  if (hasPolicyViolations) {
+    warning('Found dependencies violating policy!')
+  } else if (detectExitCode > 0) {
+    warning('Dependency check failed! See Detect output for more information.')
   } else if (detectExitCode === SUCCESS) {
     info('None of your dependencies violate your Black Duck policies!')
   }
