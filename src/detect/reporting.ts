@@ -3,12 +3,13 @@ import { IRestResponse } from 'typed-rest-client'
 import { BlackduckApiService, cleanUrl, IBlackduckPage, IBlackduckView, IComponentVersion, IRapidScanViolation, IUpgradeGuidance } from '../blackduck-api'
 import { BLACKDUCK_API_TOKEN, BLACKDUCK_URL } from '../inputs'
 
-export async function createRapidScanReport(policyViolations: IBlackduckView[]): Promise<string> {
+export async function createRapidScanReport(policyViolations: IBlackduckView[], policyCheckWillFail: boolean): Promise<string> {
   let message = ''
   if (policyViolations.length == 0) {
     message = message.concat('# :white_check_mark: None of your dependencies violate policy!')
   } else {
-    message = message.concat('# :x: Found dependencies violating policy!\r\n')
+    const violationSymbol = policyCheckWillFail ? ':x:' : ':warning:'
+    message = message.concat(`# ${violationSymbol} Found dependencies violating policy!\r\n`)
 
     const blackduckApiService = new BlackduckApiService(BLACKDUCK_URL, BLACKDUCK_API_TOKEN)
     const bearerToken = await blackduckApiService.getBearerToken()
