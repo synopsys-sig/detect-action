@@ -157,15 +157,17 @@ Detect runs using Java 11 and the prefered distribution is from [AdoptOpenJDK](h
 ## Create Black Duck Policy (Optional)
 In order to run Detect using RAPID mode (which is the default mode for the _Detect Action_), the Black Duck server Detect connects to must have at least one _policy_ and that policy must be enabled. You can create a policy within your Black Duck instance, or you can create a policy directly from your workflow using Black Duck's [_Create Policy Action_](https://github.com/blackducksoftware/create-policy-action). Note: The _Create Policy Action_ is provided for convenience and not the preferred way to manage Black Duck policies.  
 
-The most basic usage of the action looks like this: 
+The most basic usage of the action looks something like this: 
 ```yaml
-    - name: Synopsys Detect
-      uses: synopsys-sig/detect-action@v0.0.1
+    - name: Create Black Duck Policy
+      env:
+        NODE_EXTRA_CA_CERTS: ${{ secrets.LOCAL_CA_CERT_PATH }}
+      uses: blackducksoftware/create-policy-action@v0.0.1
       with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
-        detect-version: 7.9.0
         blackduck-url: ${{ secrets.BLACKDUCK_URL }}
         blackduck-api-token: ${{ secrets.BLACKDUCK_API_TOKEN }}
+        policy-name: 'My Black Duck Policy For GitHub Actions'
+        no-fail-if-policy-exists: true
 ```
 Please refer to [that action's documentation](https://github.com/blackducksoftware/create-policy-action) for more information on available parameters, certificate management, and troubleshooting.
 
