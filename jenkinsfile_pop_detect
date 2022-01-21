@@ -34,6 +34,7 @@ node('integrations') {
     pipeline.setGithubCredentialsId(gitStage.getCredentialsId())
     pipeline.addEmailPipelineWrapper(emailRecipients)
 
+    pipeline.addSetJdkStage('jdk11')
     pipeline.addDetectPopSourceStage()
 
     pipeline.run()
