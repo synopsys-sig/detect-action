@@ -265,7 +265,7 @@ exports.createRapidScanReport = void 0;
 const core_1 = __nccwpck_require__(2186);
 const blackduck_api_1 = __nccwpck_require__(7495);
 const inputs_1 = __nccwpck_require__(6180);
-function createRapidScanReport(policyViolations) {
+function createRapidScanReport(policyViolations, policyCheckWillFail) {
     var _a;
     return __awaiter(this, void 0, void 0, function* () {
         let message = '';
@@ -273,7 +273,8 @@ function createRapidScanReport(policyViolations) {
             message = message.concat('# :white_check_mark: None of your dependencies violate policy!');
         }
         else {
-            message = message.concat('# :x: Found dependencies violating policy!\r\n');
+            const violationSymbol = policyCheckWillFail ? ':x:' : ':warning:';
+            message = message.concat(`# ${violationSymbol} Found dependencies violating policy!\r\n`);
             const blackduckApiService = new blackduck_api_1.BlackduckApiService(inputs_1.BLACKDUCK_URL, inputs_1.BLACKDUCK_API_TOKEN);
             const bearerToken = yield blackduckApiService.getBearerToken();
             const fullResultsResponse = yield blackduckApiService.get(bearerToken, policyViolations[0]._meta.href + '/full-result');
@@ -634,17 +635,18 @@ function runWithPolicyCheck(blackduckPolicyCheck) {
             (0, upload_artifacts_1.uploadArtifact)('Rapid Scan JSON', outputPath, scanJsonPaths);
             const scanJsonPath = scanJsonPaths[0];
             const rawdata = fs_1.default.readFileSync(scanJsonPath);
-            const scanJson = JSON.parse(rawdata.toString());
-            const rapidScanReport = yield (0, reporting_1.createRapidScanReport)(scanJson);
-            hasPolicyViolations = scanJson.length > 0;
+            const policyViolations = JSON.parse(rawdata.toString());
+            hasPolicyViolations = policyViolations.length > 0;
             (0, core_1.debug)(`Policy Violations Present: ${hasPolicyViolations}`);
+            const failureConditionsMet = detectExitCode === exit_codes_1.POLICY_SEVERITY || inputs_1.FAIL_ON_ALL_POLICY_SEVERITIES;
+            const rapidScanReport = yield (0, reporting_1.createRapidScanReport)(policyViolations, hasPolicyViolations && failureConditionsMet);
             if ((0, github_context_1.isPullRequest)()) {
                 (0, core_1.info)('This is a pull request, commenting...');
                 (0, comment_1.commentOnPR)(rapidScanReport);
                 (0, core_1.info)('Successfully commented on PR.');
             }
             if (hasPolicyViolations) {
-                if (detectExitCode === exit_codes_1.POLICY_SEVERITY || inputs_1.FAIL_ON_ALL_POLICY_SEVERITIES) {
+                if (failureConditionsMet) {
                     blackduckPolicyCheck.failCheck('Components found that violate your Black Duck Policies!', rapidScanReport);
                 }
                 else {

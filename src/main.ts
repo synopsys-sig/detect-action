@@ -95,11 +95,13 @@ export async function runWithPolicyCheck(blackduckPolicyCheck: GitHubCheck): Pro
 
     const scanJsonPath = scanJsonPaths[0]
     const rawdata = fs.readFileSync(scanJsonPath)
-    const scanJson = JSON.parse(rawdata.toString()) as IBlackduckView[]
-    const rapidScanReport = await createRapidScanReport(scanJson)
+    const policyViolations = JSON.parse(rawdata.toString()) as IBlackduckView[]
 
-    hasPolicyViolations = scanJson.length > 0;
+    hasPolicyViolations = policyViolations.length > 0;
     debug(`Policy Violations Present: ${hasPolicyViolations}`)
+
+    const failureConditionsMet = detectExitCode === POLICY_SEVERITY || FAIL_ON_ALL_POLICY_SEVERITIES
+    const rapidScanReport = await createRapidScanReport(policyViolations, hasPolicyViolations && failureConditionsMet)
 
     if (isPullRequest()) {
       info('This is a pull request, commenting...')
@@ -108,7 +110,7 @@ export async function runWithPolicyCheck(blackduckPolicyCheck: GitHubCheck): Pro
     }
 
     if (hasPolicyViolations) {
-      if (detectExitCode === POLICY_SEVERITY || FAIL_ON_ALL_POLICY_SEVERITIES) {
+      if (failureConditionsMet) {
         blackduckPolicyCheck.failCheck('Components found that violate your Black Duck Policies!', rapidScanReport)
       } else {
         blackduckPolicyCheck.passCheck('No components violated your BLOCKER or CRITICAL Black Duck Policies!', rapidScanReport)
