@@ -1,7 +1,5 @@
 # Detect Action
 
-(WIP)
-
 Richly integrate Synopsys Detect into GitHub action workflows.
 
 Configure the action to run Detect in Rapid scan mode to get detailed Black Duck policy reports (default behavior), or in Intelligent scan mode to upload your data into Black Duck for more detailed analysis.
@@ -11,6 +9,12 @@ Configure the action to run Detect in Rapid scan mode to get detailed Black Duck
 Once your dependencies are clean, configure the action to run Detect in Rapid scan mode to protect your branches with the Black Duck Policy Check and [_Branch Protection Rules_](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/defining-the-mergeability-of-pull-requests/about-protected-branches#require-status-checks-before-merging).
 
 ![Black Duck Policy Check screenshot](.github/policyCheck.png)
+
+# Recommended Usage
+
+To get the most out of this action, we recommend using _RAPID_ scan-mode for all Pull Requests. 
+
+_INTELLIGENT_ scan-mode is best run on a schedule that can vary by repository. A very active repository would benefit from at least one daily scan, while a less active repository might only need to be scanned once or twice a week. It is still important that low-activity repositories be scanned regularly because new vulnerabilities can be descovered for existing dependencies and source-code.
 
 # Set Up Workflow
 
@@ -153,15 +157,17 @@ Detect runs using Java 11 and the prefered distribution is from [AdoptOpenJDK](h
 ## Create Black Duck Policy (Optional)
 In order to run Detect using RAPID mode (which is the default mode for the _Detect Action_), the Black Duck server Detect connects to must have at least one _policy_ and that policy must be enabled. You can create a policy within your Black Duck instance, or you can create a policy directly from your workflow using Black Duck's [_Create Policy Action_](https://github.com/blackducksoftware/create-policy-action). Note: The _Create Policy Action_ is provided for convenience and not the preferred way to manage Black Duck policies.  
 
-The most basic usage of the action looks like this: 
+The most basic usage of the action looks something like this: 
 ```yaml
-    - name: Synopsys Detect
-      uses: synopsys-sig/detect-action@v0.0.1
+    - name: Create Black Duck Policy
+      env:
+        NODE_EXTRA_CA_CERTS: ${{ secrets.LOCAL_CA_CERT_PATH }}
+      uses: blackducksoftware/create-policy-action@v0.0.1
       with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
-        detect-version: 7.9.0
         blackduck-url: ${{ secrets.BLACKDUCK_URL }}
         blackduck-api-token: ${{ secrets.BLACKDUCK_API_TOKEN }}
+        policy-name: 'My Black Duck Policy For GitHub Actions'
+        no-fail-if-policy-exists: true
 ```
 Please refer to [that action's documentation](https://github.com/blackducksoftware/create-policy-action) for more information on available parameters, certificate management, and troubleshooting.
 
@@ -201,6 +207,8 @@ Set the scan mode to:
             blackduck-url: ${{ secrets.BLACKDUCK_URL }}
             blackduck-api-token: ${{ secrets.BLACKDUCK_API_TOKEN }}
   ```
+
+**Note**: By default, Detect will only fail on BLOCKER and CRITICAL policy violations. This can be overridden to fail on all severities by setting `fail-on-all-policy-severities=true` in the _detect-action_ workflow parameters.
 
 * **INTELLIGENT** if you want to execute a full analysis of Detect and upload your results into a project in Black Duck, for example:
 

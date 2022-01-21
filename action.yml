@@ -17,6 +17,10 @@ inputs:
     description: 'Either RAPID or INTELLIGENT, configures how Detect is invoked. RAPID will not persist the results and disables select Detect functionality for faster results. INTELLIGENT persists the results and permits all features of Detect.'
     required: false
     default: 'RAPID'
+  fail-on-all-policy-severities:
+    description: 'By default, Detect will only fail on policy violations with BLOCKER or CRITICAL severities. This flag will cause the action to fail on all policy severities.'
+    required: false
+    default: false
   output-path-override:
     description: 'Override for where to output Detect files, default is $RUNNER_TEMP/blackduck/'
     required: false

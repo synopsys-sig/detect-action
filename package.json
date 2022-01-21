@@ -1,6 +1,6 @@
 {
   "name": "detect-action",
-  "version": "1.0.0",
+  "version": "0.2.1-SNAPSHOT",
   "description": "",
   "main": "lib/main.js",
   "scripts": {

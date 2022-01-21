@@ -8,7 +8,7 @@ import { commentOnPR } from './comment'
 import { POLICY_SEVERITY, SUCCESS } from './detect/exit-codes'
 import { TOOL_NAME, findOrDownloadDetect, runDetect } from './detect/detect-manager'
 import { isPullRequest } from './github/github-context'
-import { BLACKDUCK_API_TOKEN, BLACKDUCK_URL, DETECT_TRUST_CERT, DETECT_VERSION, OUTPUT_PATH_OVERRIDE, SCAN_MODE } from './inputs'
+import { BLACKDUCK_API_TOKEN, BLACKDUCK_URL, DETECT_TRUST_CERT, DETECT_VERSION, FAIL_ON_ALL_POLICY_SEVERITIES, OUTPUT_PATH_OVERRIDE, SCAN_MODE } from './inputs'
 import { createRapidScanReport } from './detect/reporting'
 import { uploadArtifact } from './github/upload-artifacts'
 import { CHECK_NAME } from './application-constants'
@@ -84,6 +84,8 @@ export async function runWithPolicyCheck(blackduckPolicyCheck: GitHubCheck): Pro
 
   info(`${TOOL_NAME} executed successfully.`)
 
+  let hasPolicyViolations = false
+
   if (SCAN_MODE === 'RAPID') {
     info(`${TOOL_NAME} executed in RAPID mode. Beginning reporting...`)
 
@@ -93,8 +95,13 @@ export async function runWithPolicyCheck(blackduckPolicyCheck: GitHubCheck): Pro
 
     const scanJsonPath = scanJsonPaths[0]
     const rawdata = fs.readFileSync(scanJsonPath)
-    const scanJson = JSON.parse(rawdata.toString()) as IBlackduckView[]
-    const rapidScanReport = await createRapidScanReport(scanJson)
+    const policyViolations = JSON.parse(rawdata.toString()) as IBlackduckView[]
+
+    hasPolicyViolations = policyViolations.length > 0
+    debug(`Policy Violations Present: ${hasPolicyViolations}`)
+
+    const failureConditionsMet = detectExitCode === POLICY_SEVERITY || FAIL_ON_ALL_POLICY_SEVERITIES
+    const rapidScanReport = await createRapidScanReport(policyViolations, hasPolicyViolations && failureConditionsMet)
 
     if (isPullRequest()) {
       info('This is a pull request, commenting...')
@@ -102,8 +109,12 @@ export async function runWithPolicyCheck(blackduckPolicyCheck: GitHubCheck): Pro
       info('Successfully commented on PR.')
     }
 
-    if (detectExitCode === POLICY_SEVERITY) {
-      blackduckPolicyCheck.failCheck('Components found that violate your Black Duck Policies!', rapidScanReport)
+    if (hasPolicyViolations) {
+      if (failureConditionsMet) {
+        blackduckPolicyCheck.failCheck('Components found that violate your Black Duck Policies!', rapidScanReport)
+      } else {
+        blackduckPolicyCheck.passCheck('No components violated your BLOCKER or CRITICAL Black Duck Policies!', rapidScanReport)
+      }
     } else {
       blackduckPolicyCheck.passCheck('No components found that violate your Black Duck policies!', rapidScanReport)
     }
@@ -121,12 +132,10 @@ export async function runWithPolicyCheck(blackduckPolicyCheck: GitHubCheck): Pro
     uploadArtifact('Detect Diagnostic Zip', outputPath, diagnosticZip)
   }
 
-  if (detectExitCode > 0) {
-    if (detectExitCode === POLICY_SEVERITY) {
-      warning('Found dependencies violating policy!')
-    } else {
-      warning('Dependency check failed! See Detect output for more information.')
-    }
+  if (hasPolicyViolations) {
+    warning('Found dependencies violating policy!')
+  } else if (detectExitCode > 0) {
+    warning('Dependency check failed! See Detect output for more information.')
   } else if (detectExitCode === SUCCESS) {
     info('None of your dependencies violate your Black Duck policies!')
   }
