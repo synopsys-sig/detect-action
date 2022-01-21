@@ -84,7 +84,7 @@ export async function runWithPolicyCheck(blackduckPolicyCheck: GitHubCheck): Pro
 
   info(`${TOOL_NAME} executed successfully.`)
 
-  let hasPolicyViolations = false;
+  let hasPolicyViolations = false
 
   if (SCAN_MODE === 'RAPID') {
     info(`${TOOL_NAME} executed in RAPID mode. Beginning reporting...`)
@@ -97,7 +97,7 @@ export async function runWithPolicyCheck(blackduckPolicyCheck: GitHubCheck): Pro
     const rawdata = fs.readFileSync(scanJsonPath)
     const policyViolations = JSON.parse(rawdata.toString()) as IBlackduckView[]
 
-    hasPolicyViolations = policyViolations.length > 0;
+    hasPolicyViolations = policyViolations.length > 0
     debug(`Policy Violations Present: ${hasPolicyViolations}`)
 
     const failureConditionsMet = detectExitCode === POLICY_SEVERITY || FAIL_ON_ALL_POLICY_SEVERITIES
