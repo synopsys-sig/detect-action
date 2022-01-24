@@ -1,0 +1,58 @@
+/*
+* This pipeline script was created manually based on scripts created by jenkins-build-creator.
+*
+*/
+@Library('integration-pipeline-library@master')
+import com.synopsys.integration.pipeline.SimplePipeline
+import com.synopsys.integration.Constants
+properties(
+    [
+        limitBuildsToKeep(),
+        disableConcurrentBuilds(), 
+        parameters(
+            [
+                releaseCheckbox(),
+                releaseCommitMessage(),
+                selectBranch('origin/main')
+            ]
+        ),
+        defaultPipelineTriggers()
+    ]
+)
+
+String emailRecipients = Constants.CENTRAL_INTEGRATIONS_TEAM_EMAIL
+String gitUrl = 'https://github.com/synopsys-sig/detect-action.git'
+String archivePattern = 'dist/*.js*'
+
+boolean runRelease = params.RUN_RELEASE
+boolean runPipeline = runRelease
+
+node('integrations') {
+    SimplePipeline pipeline = new SimplePipeline(this)
+    pipeline.addCleanupStep('.')
+
+    String gitBranch = pipeline.determineGitBranch(branch)
+    pipeline.setDirectoryFromBranch(gitBranch)
+    def gitStage = pipeline.addGitStage(gitUrl, gitBranch, false)
+    gitStage.setChangelog(true)
+
+    pipeline.addApiTokenStage()
+
+    pipeline.setUrl(gitUrl)
+    pipeline.setGithubCredentialsId(gitStage.getCredentialsId())
+    pipeline.addEmailPipelineWrapper(emailRecipients)
+
+    if (runPipeline) {
+        if (branch.equals('origin/main')) {
+            error('We do not release solutions from origin/main - create a release branch and use that to perform the release.')
+        }
+        
+        pipeline.addStage('Release'){
+            sh 'npm version $(git rev-parse --abbrev-ref HEAD)'
+        }
+
+        pipeline.addArchiveStage(archivePattern)
+    }
+
+    pipeline.run()
+}

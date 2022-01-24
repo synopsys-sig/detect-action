@@ -1,4 +1,4 @@
-import { warning, info, debug } from '@actions/core'
+import { warning, info } from '@actions/core'
 import { create, UploadOptions } from '@actions/artifact'
 
 export async function uploadArtifact(name: string, outputPath: string, files: string[]): Promise<void> {

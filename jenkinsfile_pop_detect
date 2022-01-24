@@ -4,14 +4,22 @@
 */
 @Library('integration-pipeline-library@master')
 import com.synopsys.integration.pipeline.SimplePipeline
+import com.synopsys.integration.Constants
+properties(
+    [
+        limitBuildsToKeep(),
+        disableConcurrentBuilds(), 
+        parameters(
+            [
+                selectBranch('origin/main')
+            ]
+        ),
+        defaultPipelineTriggers()
+    ]
+)
 
-boolean runRelease = params.RUN_RELEASE
-boolean runPipeline = runRelease
-
-String emailRecipients = ''
-def gitUrl = 'https://github.com/synopsys-sig/detect-action.git'
-String branch = (params.BRANCH != null) ? "${BRANCH}" : 'origin/master'
-String archivePattern = '**/dist/*.js'
+String emailRecipients = Constants.CENTRAL_INTEGRATIONS_TEAM_EMAIL
+String gitUrl = 'https://github.com/synopsys-sig/detect-action.git'
 
 node('integrations') {
     SimplePipeline pipeline = new SimplePipeline(this)
@@ -22,15 +30,12 @@ node('integrations') {
     def gitStage = pipeline.addGitStage(gitUrl, gitBranch, false)
     gitStage.setChangelog(true)
 
-    pipeline.addApiTokenStage()
-
     pipeline.setUrl(gitUrl)
     pipeline.setGithubCredentialsId(gitStage.getCredentialsId())
     pipeline.addEmailPipelineWrapper(emailRecipients)
 
-    def buildStage = pipeline.addCustomStage{ sh 'npm run all' }
-
-    pipeline.addArchiveStage(archivePattern)
+    pipeline.addSetJdkStage('jdk11')
+    pipeline.addDetectPopSourceStage()
 
     pipeline.run()
 }

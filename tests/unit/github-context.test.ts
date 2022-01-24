@@ -13,7 +13,7 @@ describe('PR events', () => {
   })
 
   test('isPullRequest() returns true', () => {
-    ghContext = require('../../src/github-context')
+    ghContext = require('../../src/github/github-context')
     expect(ghContext.isPullRequest()).toBeTruthy()
   })
 })
@@ -33,7 +33,7 @@ describe('Non-PR events', () => {
   })
 
   test('isPullRequest() returns false', () => {
-    ghContext = require('../../src/github-context')
+    ghContext = require('../../src/github/github-context')
     expect(ghContext.isPullRequest()).toBeFalsy()
   })
 })

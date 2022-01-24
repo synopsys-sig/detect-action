@@ -31,7 +31,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.cleanUrl = exports.BlackduckApiService = void 0;
 const core_1 = __nccwpck_require__(2186);
-const handlers_1 = __nccwpck_require__(2188);
+const Handlers_1 = __nccwpck_require__(4442);
 const HttpClient_1 = __nccwpck_require__(5538);
 const RestClient_1 = __nccwpck_require__(7405);
 const application_constants_1 = __nccwpck_require__(9717);
@@ -101,7 +101,7 @@ class BlackduckApiService {
     }
     get(bearerToken, requestUrl) {
         return __awaiter(this, void 0, void 0, function* () {
-            const bearerTokenHandler = new handlers_1.BearerCredentialHandler(bearerToken, true);
+            const bearerTokenHandler = new Handlers_1.BearerCredentialHandler(bearerToken, true);
             const blackduckRestClient = new RestClient_1.RestClient(application_constants_1.APPLICATION_NAME, this.blackduckUrl, [bearerTokenHandler]);
             return blackduckRestClient.get(requestUrl);
         });
@@ -20113,6 +20113,24 @@ exports.debug = debug; // for test
 
 /***/ }),
 
+/***/ 4442:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+var basiccreds_1 = __nccwpck_require__(7954);
+exports.BasicCredentialHandler = basiccreds_1.BasicCredentialHandler;
+var bearertoken_1 = __nccwpck_require__(7431);
+exports.BearerCredentialHandler = bearertoken_1.BearerCredentialHandler;
+var ntlm_1 = __nccwpck_require__(4157);
+exports.NtlmCredentialHandler = ntlm_1.NtlmCredentialHandler;
+var personalaccesstoken_1 = __nccwpck_require__(7799);
+exports.PersonalAccessTokenCredentialHandler = personalaccesstoken_1.PersonalAccessTokenCredentialHandler;
+
+
+/***/ }),
+
 /***/ 5538:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
@@ -20992,24 +21010,6 @@ function obtainContentCharset(response) {
     return (matches && matches[1] && nodeSupportedEncodings.indexOf(matches[1]) != -1) ? matches[1] : 'utf-8';
 }
 exports.obtainContentCharset = obtainContentCharset;
-
-
-/***/ }),
-
-/***/ 2188:
-/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-var basiccreds_1 = __nccwpck_require__(7954);
-exports.BasicCredentialHandler = basiccreds_1.BasicCredentialHandler;
-var bearertoken_1 = __nccwpck_require__(7431);
-exports.BearerCredentialHandler = bearertoken_1.BearerCredentialHandler;
-var ntlm_1 = __nccwpck_require__(4157);
-exports.NtlmCredentialHandler = ntlm_1.NtlmCredentialHandler;
-var personalaccesstoken_1 = __nccwpck_require__(7799);
-exports.PersonalAccessTokenCredentialHandler = personalaccesstoken_1.PersonalAccessTokenCredentialHandler;
 
 
 /***/ }),
