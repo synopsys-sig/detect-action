@@ -15,8 +15,7 @@ properties(
                 releaseCommitMessage(),
                 selectBranch('origin/main')
             ]
-        ),
-        defaultPipelineTriggers()
+        )
     ]
 )
 
