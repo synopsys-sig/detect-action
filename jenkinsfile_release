@@ -47,8 +47,10 @@ node('integrations') {
             error('We do not release solutions from origin/main - create a release branch and use that to perform the release.')
         }
         
-        githubReleaseStage.setOwner('blackducksoftware')
-    
+        pipeline.addStage('Release'){
+            sh 'npm version $(git rev-parse --abbrev-ref HEAD)'
+        }
+
         pipeline.addArchiveStage(archivePattern)
     }
 
