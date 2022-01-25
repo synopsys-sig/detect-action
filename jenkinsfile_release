@@ -30,7 +30,7 @@ node('integrations') {
     SimplePipeline pipeline = new SimplePipeline(this)
     pipeline.addCleanupStep('.')
 
-    String gitBranch = pipeline.determineGitBranch(branch)
+    String gitBranch = pipeline.determineGitBranch(params.BRANCH)
     pipeline.setDirectoryFromBranch(gitBranch)
     def gitStage = pipeline.addGitStage(gitUrl, gitBranch, false)
     gitStage.setChangelog(true)
@@ -47,6 +47,7 @@ node('integrations') {
         }
         
         pipeline.addStage('Release'){
+            sh 'git push --set-upstream origin $(git rev-parse --abbrev-ref HEAD)'
             sh 'npm ci && npm version $(git rev-parse --abbrev-ref HEAD)'
         }
 
