@@ -13,7 +13,7 @@
     "all": "npm run build && npm run format && npm run lint && npm run package && npm test",
     "preversion": "npm test",
     "version": "npm run build && git add -A dist",
-    "postversion": "git push && git push --tags && rm -rf build/temp"
+    "postversion": "git push https://github.com/synopsys-sig/detect-action.git && git push https://github.com/synopsys-sig/detect-action.git --tags"
   },
   "repository": {
     "type": "git",
