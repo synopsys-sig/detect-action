@@ -47,7 +47,7 @@ node('integrations') {
         }
         
         pipeline.addStage('Release'){
-            sh 'npm version $(git rev-parse --abbrev-ref HEAD)'
+            sh 'npm ci && npm version $(git rev-parse --abbrev-ref HEAD)'
         }
 
         pipeline.addArchiveStage(archivePattern)
