@@ -4,6 +4,7 @@
 */
 @Library('integration-pipeline-library@master')
 import com.synopsys.integration.Constants
+import com.synopsys.integration.pipeline.scm.GitStage
 
 properties(
     [
@@ -26,7 +27,22 @@ pipeline {
     stages {
         stage('Git') {
             steps {
-                git branch: params.BRANCH, url: 'https://github.com/synopsys-sig/detect-action.git'
+                script {
+                    def branch = params.BRANCH
+                    def localBranch = branch.replace("origin/", "")
+
+                    checkout(
+                        [
+                            $class: 'GitSCM', 
+                            branches: [[name: params.BRANCH]], 
+                            doGenerateSubmoduleConfigurations: false, 
+                            extensions: [[$class: 'WipeWorkspace'], [$class: 'LocalBranch', localBranch: localBranch]], 
+                            gitTool: 'Default', 
+                            submoduleCfg: [], 
+                            userRemoteConfigs: [[credentialsId: GitStage.DEFAULT_CREDENTIALS_ID, url: 'https://github.com/synopsys-sig/detect-action.git']]
+                        ]
+                    )
+                }
             }
         }
         stage('Release') {
