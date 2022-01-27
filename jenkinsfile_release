@@ -2,20 +2,26 @@
 * This pipeline script was created manually based on scripts created by jenkins-build-creator.
 *
 */
-@Library('integration-pipeline-library@master') _
+@Library('integration-pipeline-library@master')
 import com.synopsys.integration.Constants
+
+properties(
+    [
+        limitBuildsToKeep(),
+        disableConcurrentBuilds(), 
+        parameters(
+            [
+                releaseCheckbox(),
+                releaseCommitMessage(),
+                selectBranch('origin/main')
+            ]
+        )
+    ]
+)
+
 pipeline {
     agent {
         label 'integrations'
-    }
-    options {
-        limitBuildsToKeep()
-        disableConcurrentBuilds()
-    }
-    parameters {
-        releaseCheckbox()
-        releaseCommitMessage()
-        selectBranch('origin/main')
     }
     stages {
         stage('Git') {
