@@ -5,6 +5,9 @@
 @Library('integration-pipeline-library@master') _
 import com.synopsys.integration.Constants
 pipeline {
+    agent {
+        label 'integrations'
+    }
     options {
         limitBuildsToKeep()
         disableConcurrentBuilds()
@@ -14,22 +17,24 @@ pipeline {
         releaseCommitMessage()
         selectBranch('origin/main')
     }
-    stage('Git') {
-        steps {
-            git branch: params.BRANCH, url: 'https://github.com/synopsys-sig/detect-action.git'
-        }
-    }
-    stage('Release') {
-        when {
-            allOf {
-                expression { return params.RUN_RELEASE }
-                not { branch 'main' }
+    stages {
+        stage('Git') {
+            steps {
+                git branch: params.BRANCH, url: 'https://github.com/synopsys-sig/detect-action.git'
             }
         }
-        steps {
-            sh 'npm ci'
-            sh 'npm version $(git rev-parse --abbrev-ref HEAD)'
-            archiveArtifacts 'dist/*.js*'
+        stage('Release') {
+            when {
+                allOf {
+                    expression { return params.RUN_RELEASE }
+                    not { branch 'main' }
+                }
+            }
+            steps {
+                sh 'npm ci'
+                sh 'npm version $(git rev-parse --abbrev-ref HEAD)'
+                archiveArtifacts 'dist/*.js*'
+            }
         }
     }
     post {
