@@ -2,59 +2,50 @@
 * This pipeline script was created manually based on scripts created by jenkins-build-creator.
 *
 */
-@Library('integration-pipeline-library@master')
-import com.synopsys.integration.pipeline.SimplePipeline
+@Library('integration-pipeline-library@master') _
 import com.synopsys.integration.Constants
-properties(
-    [
-        limitBuildsToKeep(),
-        disableConcurrentBuilds(), 
-        parameters(
-            [
-                releaseCheckbox(),
-                releaseCommitMessage(),
-                selectBranch('origin/main')
-            ]
-        )
-    ]
-)
-
-String emailRecipients = Constants.CENTRAL_INTEGRATIONS_TEAM_EMAIL
-String gitUrl = 'https://github.com/synopsys-sig/detect-action.git'
-String archivePattern = 'dist/*.js*'
-
-boolean runRelease = params.RUN_RELEASE
-boolean runPipeline = runRelease
-
-node('integrations') {
-    SimplePipeline pipeline = new SimplePipeline(this)
-    pipeline.addCleanupStep('.')
-
-    String gitBranch = pipeline.determineGitBranch(params.BRANCH)
-    pipeline.setDirectoryFromBranch(gitBranch)
-    def gitStage = pipeline.addGitStage(gitUrl, gitBranch, false)
-    gitStage.setChangelog(true)
-
-    pipeline.addApiTokenStage()
-
-    pipeline.setUrl(gitUrl)
-    pipeline.setGithubCredentialsId(gitStage.getCredentialsId())
-    pipeline.addEmailPipelineWrapper(emailRecipients)
-
-    if (runPipeline) {
-        if (branch.equals('origin/main')) {
-            error('We do not release solutions from origin/main - create a release branch and use that to perform the release.')
+pipeline {
+    options {
+        limitBuildsToKeep()
+        disableConcurrentBuilds()
+    }
+    parameters {
+        releaseCheckbox()
+        releaseCommitMessage()
+        selectBranch('origin/main')
+    }
+    stage('Git') {
+        steps {
+            git branch: params.BRANCH, url: 'https://github.com/synopsys-sig/detect-action.git'
         }
-        
-        pipeline.addStage('Release'){
-            withCredentials([usernamePassword(credentialsId: 'integrations-github-pat', passwordVariable: 'GIT_PASSWORD', usernameVariable: 'GIT_USERNAME')]) {
-                sh 'git push ' + gitUrl.replace('https://', "https://${env.GIT_USERNAME}:${env.GIT_PASSWORD}@") + ' --set-upstream origin $(git rev-parse --abbrev-ref HEAD)'
-                sh 'npm ci && npm version $(git rev-parse --abbrev-ref HEAD)'
+    }
+    stage('Release') {
+        when {
+            allOf {
+                expression { return params.RUN_RELEASE }
+                not { branch 'main' }
             }
         }
-
-        pipeline.addArchiveStage(archivePattern)
+        steps {
+            sh 'npm ci'
+            sh 'npm version $(git rev-parse --abbrev-ref HEAD)'
+            archiveArtifacts 'dist/*.js*'
+        }
     }
-
-    pipeline.run()
+    post {
+        failure {
+            echo 'Sending out Build Failure email'
+            emailext 
+                body: '$DEFAULT_CONTENT', 
+                subject: '$DEFAULT_SUBJECT', 
+                to: Constants.CENTRAL_INTEGRATIONS_TEAM_EMAIL
+        } 
+        fixed {
+            echo 'Sending out Build Fixed email'
+            emailext 
+                body: "${env.JOB_NAME} - Build #${env.BUILD_NUMBER} - Fixed!\nCheck console output at ${env.BUILD_URL} to view the results.", 
+                subject: "${env.JOB_NAME} - Build #${env.BUILD_NUMBER} - Fixed!", 
+                to: Constants.CENTRAL_INTEGRATIONS_TEAM_EMAIL
+        }
+    }
 }
