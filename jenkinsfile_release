@@ -39,7 +39,7 @@ pipeline {
                             extensions: [[$class: 'WipeWorkspace'], [$class: 'LocalBranch', localBranch: localBranch]], 
                             gitTool: 'Default', 
                             submoduleCfg: [], 
-                            userRemoteConfigs: [[credentialsId: GitStage.DEFAULT_CREDENTIALS_ID, url: 'git@github.com:synopsys-sig/detect-action.git']]
+                            userRemoteConfigs: [[credentialsId: GitStage.DEFAULT_CREDENTIALS_ID, url: 'https://github.com/synopsys-sig/detect-action.git']]
                         ]
                     )
 
