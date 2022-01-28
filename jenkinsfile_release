@@ -32,7 +32,7 @@ pipeline {
                         $class: 'GitSCM', 
                         branches: [[name: params.BRANCH]], 
                         doGenerateSubmoduleConfigurations: false, 
-                        extensions: [[$class: 'WipeWorkspace']], 
+                        extensions: [[$class: 'WipeWorkspace'], [$class: 'LocalBranch']], 
                         gitTool: 'Default', 
                         submoduleCfg: [], 
                         userRemoteConfigs: [[credentialsId: GitStage.DEFAULT_CREDENTIALS_ID, url: 'https://github.com/synopsys-sig/detect-action.git']]
@@ -48,8 +48,9 @@ pipeline {
                 }
             }
             steps {
+                sh "git pull origin ${env.GIT_LOCAL_BRANCH}"
                 sh 'npm ci'
-                sh 'npm version $(git rev-parse --abbrev-ref HEAD)'
+                sh "npm version ${env.GIT_LOCAL_BRANCH}"
                 archiveArtifacts 'dist/*.js*'
             }
         }
