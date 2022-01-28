@@ -42,12 +42,18 @@ pipeline {
                             userRemoteConfigs: [[credentialsId: GitStage.DEFAULT_CREDENTIALS_ID, url: 'https://github.com/synopsys-sig/detect-action.git']]
                         ]
                     )
-
+                    
+                    env.GIT_URL = gitEnvironment.GIT_URL
+                    println "GIT_URL: ${env.GIT_URL}"
                     env.GIT_LOCAL_BRANCH = gitEnvironment.GIT_LOCAL_BRANCH
+                    println "GIT_LOCAL_BRANCH: ${env.GIT_URL}"
                 }
             }
         }
         stage('Release') {
+            environment {
+                GIT = credentials(GitStage.DEFAULT_CREDENTIALS_ID)
+            }
             when {
                 allOf {
                     expression { return params.RUN_RELEASE }
@@ -56,6 +62,7 @@ pipeline {
             }
             steps {
                 sh "git branch -u origin/${env.GIT_LOCAL_BRANCH}"
+                sh "git remote set-url origin https://${GIT_USR}:${GIT_PSW}@github.com/synopsys-sig/detect-action.git"
                 sh 'npm ci'
                 sh "npm version ${env.GIT_LOCAL_BRANCH}"
                 archiveArtifacts 'dist/*.js*'
