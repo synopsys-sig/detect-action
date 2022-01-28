@@ -55,7 +55,7 @@ pipeline {
                 }
             }
             steps {
-                sh "git pull origin ${env.GIT_LOCAL_BRANCH}"
+                sh "git branch -u origin/${env.GIT_LOCAL_BRANCH}"
                 sh 'npm ci'
                 sh "npm version ${env.GIT_LOCAL_BRANCH}"
                 archiveArtifacts 'dist/*.js*'
