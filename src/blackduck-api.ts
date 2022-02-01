@@ -34,7 +34,7 @@ export interface IComponentVersion {
   version: string
 }
 
-export interface IRapidScanViolation {
+export interface IRapidScanFullResults {
   componentName: string
   versionName: string
   componentIdentifier: string
