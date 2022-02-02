@@ -1,0 +1,58 @@
+[
+    {
+    "componentName": "Apache Commons Compress",
+    "versionName": "0.00",
+    "componentIdentifier": "maven:org.apache.commons:commons-compress:0.00",
+    "externalId": "org.apache.commons:commons-compress:0.00",
+    "violatingPolicies": [],
+    "componentViolatingPolicies": [],
+    "allVulnerabilities": [
+      {
+        "name": "BDSA-XXXX-XXXX",
+        "description": "Description",
+        "vulnSeverity": "Severity",
+        "overallScore": 0.0,
+        "_meta": {
+          "allow": ["GET"],
+          "href": "https://example.com/",
+          "links": []
+        }
+      }
+    ],
+    "allLicenses": [
+      {
+        "name": "Apache License 2.0",
+        "licenseFamilyName": "LICENSE_FAMILY_NAME",
+        "_meta": {
+          "allow": ["GET"],
+          "href": "https://example.com/",
+          "links": []
+        }
+      }
+    ],
+    "policyViolationVulnerabilities": [],
+    "policyViolationLicenses": [],
+    "failedEvaluationPolicies": [],
+    "partiallyEvaluatedPolicies": [],
+    "nonEvaluatedPolicies": [],
+    "overriddenPolicies": [],
+    "_meta": {
+      "allow": ["GET"],
+      "href": "https://example.com/",
+      "links": [
+        {
+          "rel": "component",
+          "href": "https://example.com/"
+        },
+        {
+          "rel": "version",
+          "href": "https://example.com/"
+        },
+        {
+          "rel": "origin",
+          "href": "https://example.com/"
+        }
+      ]
+    }
+  }
+]

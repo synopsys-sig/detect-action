@@ -3,6 +3,8 @@ import { IRestResponse } from 'typed-rest-client'
 import { BlackduckApiService, cleanUrl, IBlackduckPage, IBlackduckView, IComponentVersion, IRapidScanFullResults, IUpgradeGuidance } from '../blackduck-api'
 import { BLACKDUCK_API_TOKEN, BLACKDUCK_URL } from '../inputs'
 
+export const TABLE_HEADER = '| Policies Violated | Dependency | License(s) | Vulnerabilities | Short Term Recommended Upgrade | Long Term Recommended Upgrade |\r\n' + '|-|-|-|-|-|-|\r\n'
+
 export async function createRapidScanReport(policyViolations: IBlackduckView[], policyCheckWillFail: boolean): Promise<string> {
   let message = ''
   if (policyViolations.length == 0) {
@@ -28,8 +30,8 @@ export async function createRapidScanReport(policyViolations: IBlackduckView[], 
   return message
 }
 
-async function createTable(blackduckApiService: BlackduckApiService, bearerToken: string, fullResults: IRapidScanFullResults[]) {
-  let table = '| Policies Violated | Dependency | License(s) | Vulnerabilities | Short Term Recommended Upgrade | Long Term Recommended Upgrade |\r\n|-|-|-|-|-|-|\r\n'
+export async function createTable(blackduckApiService: BlackduckApiService, bearerToken: string, fullResults: IRapidScanFullResults[]): Promise<string> {
+  let table = TABLE_HEADER
 
   for (const violation of fullResults) {
     if (violation.violatingPolicies.length > 0) {

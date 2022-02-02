@@ -261,10 +261,12 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.createRapidScanReport = void 0;
+exports.createTable = exports.createRapidScanReport = exports.TABLE_HEADER = void 0;
 const core_1 = __nccwpck_require__(2186);
 const blackduck_api_1 = __nccwpck_require__(7495);
 const inputs_1 = __nccwpck_require__(6180);
+exports.TABLE_HEADER = '| Policies Violated | Dependency | License(s) | Vulnerabilities | Short Term Recommended Upgrade | Long Term Recommended Upgrade |\r\n'
+    + '|-|-|-|-|-|-|\r\n';
 function createRapidScanReport(policyViolations, policyCheckWillFail) {
     var _a;
     return __awaiter(this, void 0, void 0, function* () {
@@ -293,7 +295,7 @@ exports.createRapidScanReport = createRapidScanReport;
 function createTable(blackduckApiService, bearerToken, fullResults) {
     var _a;
     return __awaiter(this, void 0, void 0, function* () {
-        let table = '| Policies Violated | Dependency | License(s) | Vulnerabilities | Short Term Recommended Upgrade | Long Term Recommended Upgrade |\r\n|-|-|-|-|-|-|\r\n';
+        let table = exports.TABLE_HEADER;
         for (const violation of fullResults) {
             if (violation.violatingPolicies.length > 0) {
                 const componentVersionResponse = yield blackduckApiService.getComponentsMatching(bearerToken, violation.componentIdentifier);
@@ -309,6 +311,7 @@ function createTable(blackduckApiService, bearerToken, fullResults) {
         return table;
     });
 }
+exports.createTable = createTable;
 function createComponentRow(componentVersion, upgradeGuidance, violation) {
     const violatingLicenseNames = violation.policyViolationLicenses.map(license => license.name);
     const violatingVulnerabilityNames = violation.policyViolationVulnerabilities.map(vulnerability => vulnerability.name);
