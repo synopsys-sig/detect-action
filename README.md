@@ -1,5 +1,7 @@
 # Detect Action
 
+![GitHub tag (latest SemVer)](https://img.shields.io/github/v/tag/synopsys-sig/detect-action?color=blue&label=Latest%20Version&sort=semver)
+
 Richly integrate Synopsys Detect into GitHub action workflows.
 
 Configure the action to run Detect in Rapid scan mode to get detailed Black Duck policy reports (default behavior), or in Intelligent scan mode to upload your data into Black Duck for more detailed analysis.
