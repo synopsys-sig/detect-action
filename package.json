@@ -1,7 +1,7 @@
 {
   "name": "detect-action",
   "version": "0.2.1",
-  "description": "",
+  "description": "Richly integrate Synopsys Detect and Black Duck policy into your GitHub Action pipelines",
   "main": "lib/main.js",
   "scripts": {
     "build": "tsc",
@@ -21,7 +21,7 @@
   },
   "keywords": [],
   "author": "Synopsys Inc.",
-  "license": "ISC",
+  "license": "Apache 2.0",
   "bugs": {
     "url": "https://github.com/synopsys-sig/detect-action/issues"
   },

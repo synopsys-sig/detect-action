@@ -265,8 +265,7 @@ exports.createTable = exports.createRapidScanReport = exports.TABLE_HEADER = voi
 const core_1 = __nccwpck_require__(2186);
 const blackduck_api_1 = __nccwpck_require__(7495);
 const inputs_1 = __nccwpck_require__(6180);
-exports.TABLE_HEADER = '| Policies Violated | Dependency | License(s) | Vulnerabilities | Short Term Recommended Upgrade | Long Term Recommended Upgrade |\r\n'
-    + '|-|-|-|-|-|-|\r\n';
+exports.TABLE_HEADER = '| Policies Violated | Dependency | License(s) | Vulnerabilities | Short Term Recommended Upgrade | Long Term Recommended Upgrade |\r\n' + '|-|-|-|-|-|-|\r\n';
 function createRapidScanReport(policyViolations, policyCheckWillFail) {
     var _a;
     return __awaiter(this, void 0, void 0, function* () {
