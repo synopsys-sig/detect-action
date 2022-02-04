@@ -2,7 +2,7 @@
 
 Richly integrate Synopsys Detect into GitHub action workflows.
 
-Configure the action to run Detect in Rapid scan mode to get detailed Black Duck policy reports (default behavior), or in Intelligent scan mode to upload your data into Black Duck for more detailed analysis.
+Configure the action to run Detect in Rapid scan mode to get detailed Black Duck policy reports (default behavior), or in Intelligent scan mode to upload your data into Black Duck for more detailed analysis.
 
 ![Policy Report Screenshot](.github/policyReport.png)
 
@@ -64,7 +64,7 @@ jobs:
         policy-name: 'My Black Duck Policy For GitHub Actions'
         no-fail-if-policy-exists: true
     - name: Run Synopsys Detect
-      uses: synopsys-sig/detect-action@v0.0.1
+      uses: synopsys-sig/detect-action@v0.3.0
       env:
         NODE_EXTRA_CA_CERTS: ${{ secrets.LOCAL_CA_CERT_PATH }}
       with:
@@ -88,7 +88,7 @@ To do this:
 
 ```yaml
     - name: Run Synopsys Detect
-      uses: synopsys-sig/detect-action@v0.0.1
+      uses: synopsys-sig/detect-action@v0.3.0
       env:
         NODE_EXTRA_CA_CERTS: /certificates/my_custom_cert.pem
       with:
@@ -120,7 +120,7 @@ The file created through one of those options can then be provided as a value fo
 
 ```yaml
     - name: Run Synopsys Detect
-      uses: synopsys-sig/detect-action@v0.0.1
+      uses: synopsys-sig/detect-action@v0.3.0
       env:
         NODE_EXTRA_CA_CERTS: ./my-cert.pem
       with:
@@ -197,7 +197,7 @@ Set the scan mode to:
     push:
   ...
       - name: Run Synopsys Detect
-        uses: synopsys-sig/detect-action@v0.0.1
+        uses: synopsys-sig/detect-action@v0.3.0
         env:
           NODE_EXTRA_CA_CERTS: ${{ secrets.LOCAL_CA_CERT_PATH }}
         with:
@@ -219,7 +219,7 @@ Set the scan mode to:
       - cron:  '0 0 * * *'
   ...
       - name: Run Synopsys Detect
-        uses: synopsys-sig/detect-action@v0.0.1
+        uses: synopsys-sig/detect-action@v0.3.0
         env:
           NODE_EXTRA_CA_CERTS: ${{ secrets.LOCAL_CA_CERT_PATH }}
         with:
@@ -249,7 +249,7 @@ Passing additional [Detect properties](https://community.synopsys.com/s/document
 **Example**:
 ```yaml
     - name: Synopsys Detect
-      uses: synopsys-sig/detect-action@v0.0.1
+      uses: synopsys-sig/detect-action@v0.3.0
       env:
         DETECT_TOOLS: DOCKER
         DETECT_DOCKER_IMAGE_ID: abc123
@@ -262,7 +262,7 @@ Passing additional [Detect properties](https://community.synopsys.com/s/document
 **Example**:
 ```yaml
     - name: Synopsys Detect
-      uses: synopsys-sig/detect-action@v0.0.1
+      uses: synopsys-sig/detect-action@v0.3.0
       env:
         SPRING_APPLICATION_JSON: '{"detect.tools":"DOCKER","detect.docker.image.id":"abc123","detect.docker.path.required":"TRUE"}'
       with:
