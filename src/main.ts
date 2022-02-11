@@ -2,7 +2,7 @@ import { info, warning, setFailed, debug } from '@actions/core'
 import { create } from '@actions/glob'
 import path from 'path'
 import fs from 'fs'
-import { BlackduckApiService, IBlackduckView } from './blackduck-api'
+import { BlackduckApiService, IBlackduckView, IRapidScanResults } from './blackduck-api'
 import { createCheck, GitHubCheck } from './github/check'
 import { commentOnPR } from './comment'
 import { POLICY_SEVERITY, SUCCESS } from './detect/exit-codes'
@@ -95,7 +95,7 @@ export async function runWithPolicyCheck(blackduckPolicyCheck: GitHubCheck): Pro
 
     const scanJsonPath = scanJsonPaths[0]
     const rawdata = fs.readFileSync(scanJsonPath)
-    const policyViolations = JSON.parse(rawdata.toString()) as IBlackduckView[]
+    const policyViolations = JSON.parse(rawdata.toString()) as IRapidScanResults[]
 
     hasPolicyViolations = policyViolations.length > 0
     debug(`Policy Violations Present: ${hasPolicyViolations}`)

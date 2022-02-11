@@ -1,11 +1,11 @@
 import { warning } from '@actions/core'
 import { IRestResponse } from 'typed-rest-client'
-import { BlackduckApiService, cleanUrl, IBlackduckPage, IBlackduckView, IComponentVersion, IRapidScanFullResults, IUpgradeGuidance } from '../blackduck-api'
+import { BlackduckApiService, cleanUrl, IBlackduckPage, IComponentVersion, IRapidScanFullResults, IRapidScanResults, IUpgradeGuidance } from '../blackduck-api'
 import { BLACKDUCK_API_TOKEN, BLACKDUCK_URL } from '../inputs'
 
 export const TABLE_HEADER = '| Policies Violated | Dependency | License(s) | Vulnerabilities | Short Term Recommended Upgrade | Long Term Recommended Upgrade |\r\n' + '|-|-|-|-|-|-|\r\n'
 
-export async function createRapidScanReport(policyViolations: IBlackduckView[], policyCheckWillFail: boolean): Promise<string> {
+export async function createRapidScanReport(policyViolations: IRapidScanResults[], policyCheckWillFail: boolean): Promise<string> {
   let message = ''
   if (policyViolations.length == 0) {
     message = message.concat('# :white_check_mark: None of your dependencies violate policy!')
@@ -17,7 +17,7 @@ export async function createRapidScanReport(policyViolations: IBlackduckView[], 
     const bearerToken = await blackduckApiService.getBearerToken()
     const fullResultsResponse: IRestResponse<IBlackduckPage<IRapidScanFullResults>> = await blackduckApiService.get(bearerToken, policyViolations[0]._meta.href + '/full-result')
     const fullResults = fullResultsResponse?.result?.items
-    if (fullResults === undefined) {
+    if (fullResults === undefined || fullResults.length == 0) {
       return Promise.reject(`Could not retrieve Black Duck RAPID scan results from ${policyViolations[0]._meta.href + '/full-result'}, response was ${fullResultsResponse.statusCode}`)
     }
 
@@ -38,19 +38,80 @@ export async function createTable(blackduckApiService: BlackduckApiService, bear
       const componentVersionResponse = await blackduckApiService.getComponentsMatching(bearerToken, violation.componentIdentifier)
       const componentVersion = componentVersionResponse?.result?.items[0]
 
-      let upgradeGuidance = undefined
+      let upgradeGuidance = null
       if (componentVersion !== undefined) {
         const upgradeGuidanceResponse = await blackduckApiService.getUpgradeGuidanceFor(bearerToken, componentVersion).catch(reason => warning(`Could not get upgrade guidance for ${violation.componentIdentifier}: ${reason}`))
         upgradeGuidance = upgradeGuidanceResponse?.result
       }
-      table = table.concat(`${createComponentRow(componentVersion, upgradeGuidance, violation)}\r\n`)
+      table = table.concat(`${createComponentRowFromFullResults(componentVersion, upgradeGuidance, violation)}\r\n`)
     }
   }
 
   return table
 }
 
-function createComponentRow(componentVersion: IComponentVersion | undefined, upgradeGuidance: IUpgradeGuidance | null | undefined, violation: IRapidScanFullResults): string {
+interface ComponentReport {
+  violatedPolicies: PolicyReport[]
+  name: string
+  href?: string
+  licenses: LicenseReport[]
+  vulnerabilities: VulnerabilityReport[]
+  shortTermUpgrade?: UpgradeReport
+  longTermUpgrade?: UpgradeReport
+}
+
+interface PolicyReport {
+  name: string
+  severity?: string
+}
+interface LicenseReport {
+  name: string
+  href: string
+  violatesPolicy: boolean
+}
+
+interface VulnerabilityReport {
+  name: string
+  href: string
+  severity?: string
+  cvssScore?: string
+  violatesPolicy: boolean
+}
+
+interface UpgradeReport {
+  name: string
+  href: string
+  vulnerabilityCount: number
+}
+
+function createComponentReport(violation: IRapidScanResults, componentVersion?: IComponentVersion): ComponentReport {
+  return {
+    violatedPolicies: violation.violatingPolicyNames.map(policyName => {
+      return { name: policyName }
+    }),
+    name: `${violation.componentName} ${violation.versionName}`,
+    href: componentVersion?.version,
+    licenses: violation.policyViolationLicenses.map(license => {
+      return { name: license.name, href: license._meta.href + '/text', violatesPolicy: true }
+    }),
+    vulnerabilities: violation.policyViolationVulnerabilities.map(vulnerability => {
+      return { name: vulnerability.name, href: `${cleanUrl(BLACKDUCK_URL)}/api/vulnerabilities/${vulnerability.name}`, violatesPolicy: true }
+    })
+  }
+}
+
+function createComponentRow(component: ComponentReport): string {
+  const violatedPolicies = component.violatedPolicies.map(policy => `${policy.name} ${policy.severity === 'UNSPECIFIED' ? '' : `(${policy.severity})`}`).join('<br/>')
+  const componentInViolation = component?.href ? `[${component.name}](${component.href})` : component.name
+  const componentLicenses = component.licenses.map(license => `${license.violatesPolicy ? ':x: &nbsp; ' : ''}[${license.name}](${license.href})`).join('<br/>')
+  const vulnerabilities = component.vulnerabilities.map(vulnerability => `${vulnerability.violatesPolicy ? ':x: &nbsp; ' : ''}[${vulnerability.name}](${vulnerability.href})${vulnerability.cvssScore && vulnerability.severity ? ` ${vulnerability.severity}: CVSS ${vulnerability.cvssScore}` : ''}`).join('<br/>')
+  const shortTermString = component.shortTermUpgrade ? `[${component.shortTermUpgrade.name}](${component.shortTermUpgrade.href}) (${component.shortTermUpgrade.vulnerabilityCount} known vulnerabilities)` : ''
+  const longTermString = component.longTermUpgrade ? `[${component.longTermUpgrade.name}](${component.longTermUpgrade.href}) (${component.longTermUpgrade.vulnerabilityCount} known vulnerabilities)` : ''
+
+  return `| ${violatedPolicies} | ${componentInViolation} | ${componentLicenses} | ${vulnerabilities} | ${shortTermString} | ${longTermString} |`
+}
+
+function createComponentRowFromFullResults(componentVersion: IComponentVersion | undefined, upgradeGuidance: IUpgradeGuidance | null | undefined, violation: IRapidScanFullResults): string {
   const violatingLicenseNames = violation.policyViolationLicenses.map(license => license.name)
   const violatingVulnerabilityNames = violation.policyViolationVulnerabilities.map(vulnerability => vulnerability.name)
 

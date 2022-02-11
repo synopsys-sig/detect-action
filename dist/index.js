@@ -280,7 +280,7 @@ function createRapidScanReport(policyViolations, policyCheckWillFail) {
             const bearerToken = yield blackduckApiService.getBearerToken();
             const fullResultsResponse = yield blackduckApiService.get(bearerToken, policyViolations[0]._meta.href + '/full-result');
             const fullResults = (_a = fullResultsResponse === null || fullResultsResponse === void 0 ? void 0 : fullResultsResponse.result) === null || _a === void 0 ? void 0 : _a.items;
-            if (fullResults === undefined) {
+            if (fullResults === undefined || fullResults.length == 0) {
                 return Promise.reject(`Could not retrieve Black Duck RAPID scan results from ${policyViolations[0]._meta.href + '/full-result'}, response was ${fullResultsResponse.statusCode}`);
             }
             message = message.concat('\r\n');
@@ -299,19 +299,37 @@ function createTable(blackduckApiService, bearerToken, fullResults) {
             if (violation.violatingPolicies.length > 0) {
                 const componentVersionResponse = yield blackduckApiService.getComponentsMatching(bearerToken, violation.componentIdentifier);
                 const componentVersion = (_a = componentVersionResponse === null || componentVersionResponse === void 0 ? void 0 : componentVersionResponse.result) === null || _a === void 0 ? void 0 : _a.items[0];
-                let upgradeGuidance = undefined;
+                let upgradeGuidance = null;
                 if (componentVersion !== undefined) {
                     const upgradeGuidanceResponse = yield blackduckApiService.getUpgradeGuidanceFor(bearerToken, componentVersion).catch(reason => (0, core_1.warning)(`Could not get upgrade guidance for ${violation.componentIdentifier}: ${reason}`));
                     upgradeGuidance = upgradeGuidanceResponse === null || upgradeGuidanceResponse === void 0 ? void 0 : upgradeGuidanceResponse.result;
                 }
-                table = table.concat(`${createComponentRow(componentVersion, upgradeGuidance, violation)}\r\n`);
+                table = table.concat(`${createComponentRowFromFullResults(componentVersion, upgradeGuidance, violation)}\r\n`);
             }
         }
         return table;
     });
 }
 exports.createTable = createTable;
-function createComponentRow(componentVersion, upgradeGuidance, violation) {
+function createComponentReport(violation, componentVersion) {
+    return {
+        violatedPolicies: violation.violatingPolicyNames.map(policyName => { return { name: policyName }; }),
+        name: `${violation.componentName} ${violation.versionName}`,
+        href: componentVersion === null || componentVersion === void 0 ? void 0 : componentVersion.version,
+        licenses: violation.policyViolationLicenses.map(license => { return { name: license.name, href: license._meta.href + '/text', violatesPolicy: true }; }),
+        vulnerabilities: violation.policyViolationVulnerabilities.map(vulnerability => { return { name: vulnerability.name, href: `${(0, blackduck_api_1.cleanUrl)(inputs_1.BLACKDUCK_URL)}/api/vulnerabilities/${vulnerability.name}`, violatesPolicy: true }; })
+    };
+}
+function createComponentRow(component) {
+    const violatedPolicies = component.violatedPolicies.map(policy => `${policy.name} ${policy.severity === 'UNSPECIFIED' ? '' : `(${policy.severity})`}`).join('<br/>');
+    const componentInViolation = (component === null || component === void 0 ? void 0 : component.href) ? `[${component.name}](${component.href})` : component.name;
+    const componentLicenses = component.licenses.map(license => `${license.violatesPolicy ? ':x: &nbsp; ' : ''}[${license.name}](${license.href})`).join('<br/>');
+    const vulnerabilities = component.vulnerabilities.map(vulnerability => `${vulnerability.violatesPolicy ? ':x: &nbsp; ' : ''}[${vulnerability.name}](${vulnerability.href})${vulnerability.cvssScore && vulnerability.severity ? ` ${vulnerability.severity}: CVSS ${vulnerability.cvssScore}` : ''}`).join('<br/>');
+    const shortTermString = component.shortTermUpgrade ? `[${component.shortTermUpgrade.name}](${component.shortTermUpgrade.href}) (${component.shortTermUpgrade.vulnerabilityCount} known vulnerabilities)` : '';
+    const longTermString = component.longTermUpgrade ? `[${component.longTermUpgrade.name}](${component.longTermUpgrade.href}) (${component.longTermUpgrade.vulnerabilityCount} known vulnerabilities)` : '';
+    return `| ${violatedPolicies} | ${componentInViolation} | ${componentLicenses} | ${vulnerabilities} | ${shortTermString} | ${longTermString} |`;
+}
+function createComponentRowFromFullResults(componentVersion, upgradeGuidance, violation) {
     const violatingLicenseNames = violation.policyViolationLicenses.map(license => license.name);
     const violatingVulnerabilityNames = violation.policyViolationVulnerabilities.map(vulnerability => vulnerability.name);
     const violatedPolicies = violation.violatingPolicies.map(policy => `${policy.policyName} ${policy.policySeverity === 'UNSPECIFIED' ? '' : `(${policy.policySeverity})`}`).join('<br/>');

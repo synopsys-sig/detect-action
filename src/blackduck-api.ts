@@ -34,6 +34,24 @@ export interface IComponentVersion {
   version: string
 }
 
+export interface IRapidScanResults {
+  componentName: string
+  versionName: string
+  componentIdentifier: string
+  violatingPolicyNames: string[]
+  policyViolationVulnerabilities: {
+    name: string
+  }[]
+  policyViolationLicenses: {
+    name: string
+    _meta: {
+      href: string
+    }
+  }[]
+  _meta: {
+    href: string
+  }
+}
 export interface IRapidScanFullResults {
   componentName: string
   versionName: string
