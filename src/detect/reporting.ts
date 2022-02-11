@@ -87,15 +87,25 @@ interface UpgradeReport {
 function createComponentReport(violation: IRapidScanResults, componentVersion?: IComponentVersion): ComponentReport {
   return {
     violatedPolicies: violation.violatingPolicyNames.map(policyName => {
-      return { name: policyName }
+      return {
+        name: policyName
+      }
     }),
     name: `${violation.componentName} ${violation.versionName}`,
     href: componentVersion?.version,
     licenses: violation.policyViolationLicenses.map(license => {
-      return { name: license.name, href: license._meta.href + '/text', violatesPolicy: true }
+      return {
+        name: license.name,
+        href: license._meta.href + '/text',
+        violatesPolicy: true
+      }
     }),
     vulnerabilities: violation.policyViolationVulnerabilities.map(vulnerability => {
-      return { name: vulnerability.name, href: `${cleanUrl(BLACKDUCK_URL)}/api/vulnerabilities/${vulnerability.name}`, violatesPolicy: true }
+      return {
+        name: vulnerability.name,
+        href: `${cleanUrl(BLACKDUCK_URL)}/api/vulnerabilities/${vulnerability.name}`,
+        violatesPolicy: true
+      }
     })
   }
 }
