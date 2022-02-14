@@ -18,16 +18,14 @@ export interface IBlackduckPage<Type> extends IBlackduckView {
 
 export interface IUpgradeGuidance {
   version: string
-  shortTerm: {
-    version: string
-    versionName: string
-    vulnerabilityRisk: Object
-  }
-  longTerm: {
-    version: string
-    versionName: string
-    vulnerabilityRisk: Object
-  }
+  shortTerm: IRecommendedVersion
+  longTerm: IRecommendedVersion
+}
+
+export interface IRecommendedVersion {
+  version: string
+  versionName: string
+  vulnerabilityRisk: Object
 }
 
 export interface IComponentVersion {
@@ -39,19 +37,24 @@ export interface IRapidScanResults {
   versionName: string
   componentIdentifier: string
   violatingPolicyNames: string[]
-  policyViolationVulnerabilities: {
-    name: string
-  }[]
-  policyViolationLicenses: {
-    name: string
-    _meta: {
-      href: string
-    }
-  }[]
+  policyViolationVulnerabilities: IRapidScanVulnerability[]
+  policyViolationLicenses: IRapidScanLicense[]
   _meta: {
     href: string
   }
 }
+
+export interface IRapidScanVulnerability {
+  name: string
+}
+
+export interface IRapidScanLicense {
+  name: string
+  _meta: {
+    href: string
+  }
+}
+
 export interface IRapidScanFullResults {
   componentName: string
   versionName: string
@@ -61,9 +64,7 @@ export interface IRapidScanFullResults {
     description: string
     policySeverity: string
   }[]
-  policyViolationVulnerabilities: {
-    name: string
-  }[]
+  policyViolationVulnerabilities: IRapidScanVulnerability[]
   policyViolationLicenses: {
     name: string
   }[]

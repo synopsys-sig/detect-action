@@ -2,6 +2,7 @@ import { warning } from '@actions/core'
 import { IRestResponse } from 'typed-rest-client'
 import { BlackduckApiService, cleanUrl, IBlackduckPage, IComponentVersion, IRapidScanFullResults, IRapidScanResults, IUpgradeGuidance } from '../blackduck-api'
 import { BLACKDUCK_API_TOKEN, BLACKDUCK_URL } from '../inputs'
+import { IComponentReport } from './report'
 
 export const TABLE_HEADER = '| Policies Violated | Dependency | License(s) | Vulnerabilities | Short Term Recommended Upgrade | Long Term Recommended Upgrade |\r\n' + '|-|-|-|-|-|-|\r\n'
 
@@ -50,67 +51,7 @@ export async function createTable(blackduckApiService: BlackduckApiService, bear
   return table
 }
 
-interface ComponentReport {
-  violatedPolicies: PolicyReport[]
-  name: string
-  href?: string
-  licenses: LicenseReport[]
-  vulnerabilities: VulnerabilityReport[]
-  shortTermUpgrade?: UpgradeReport
-  longTermUpgrade?: UpgradeReport
-}
-
-interface PolicyReport {
-  name: string
-  severity?: string
-}
-interface LicenseReport {
-  name: string
-  href: string
-  violatesPolicy: boolean
-}
-
-interface VulnerabilityReport {
-  name: string
-  href: string
-  severity?: string
-  cvssScore?: string
-  violatesPolicy: boolean
-}
-
-interface UpgradeReport {
-  name: string
-  href: string
-  vulnerabilityCount: number
-}
-
-function createComponentReport(violation: IRapidScanResults, componentVersion?: IComponentVersion): ComponentReport {
-  return {
-    violatedPolicies: violation.violatingPolicyNames.map(policyName => {
-      return {
-        name: policyName
-      }
-    }),
-    name: `${violation.componentName} ${violation.versionName}`,
-    href: componentVersion?.version,
-    licenses: violation.policyViolationLicenses.map(license => {
-      return {
-        name: license.name,
-        href: license._meta.href + '/text',
-        violatesPolicy: true
-      }
-    }),
-    vulnerabilities: violation.policyViolationVulnerabilities.map(vulnerability => {
-      return {
-        name: vulnerability.name,
-        href: `${cleanUrl(BLACKDUCK_URL)}/api/vulnerabilities/${vulnerability.name}`,
-        violatesPolicy: true
-      }
-    })
-  }
-}
-
-function createComponentRow(component: ComponentReport): string {
+function createComponentRow(component: IComponentReport): string {
   const violatedPolicies = component.violatedPolicies.map(policy => `${policy.name} ${policy.severity === 'UNSPECIFIED' ? '' : `(${policy.severity})`}`).join('<br/>')
   const componentInViolation = component?.href ? `[${component.name}](${component.href})` : component.name
   const componentLicenses = component.licenses.map(license => `${license.violatesPolicy ? ':x: &nbsp; ' : ''}[${license.name}](${license.href})`).join('<br/>')

@@ -311,31 +311,6 @@ function createTable(blackduckApiService, bearerToken, fullResults) {
     });
 }
 exports.createTable = createTable;
-function createComponentReport(violation, componentVersion) {
-    return {
-        violatedPolicies: violation.violatingPolicyNames.map(policyName => {
-            return {
-                name: policyName
-            };
-        }),
-        name: `${violation.componentName} ${violation.versionName}`,
-        href: componentVersion === null || componentVersion === void 0 ? void 0 : componentVersion.version,
-        licenses: violation.policyViolationLicenses.map(license => {
-            return {
-                name: license.name,
-                href: license._meta.href + '/text',
-                violatesPolicy: true
-            };
-        }),
-        vulnerabilities: violation.policyViolationVulnerabilities.map(vulnerability => {
-            return {
-                name: vulnerability.name,
-                href: `${(0, blackduck_api_1.cleanUrl)(inputs_1.BLACKDUCK_URL)}/api/vulnerabilities/${vulnerability.name}`,
-                violatesPolicy: true
-            };
-        })
-    };
-}
 function createComponentRow(component) {
     const violatedPolicies = component.violatedPolicies.map(policy => `${policy.name} ${policy.severity === 'UNSPECIFIED' ? '' : `(${policy.severity})`}`).join('<br/>');
     const componentInViolation = (component === null || component === void 0 ? void 0 : component.href) ? `[${component.name}](${component.href})` : component.name;
