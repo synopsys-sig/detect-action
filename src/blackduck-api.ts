@@ -30,6 +30,12 @@ export interface IRecommendedVersion {
 
 export interface IComponentVersion {
   version: string
+  license: {
+    licenses: {
+      license: string
+      name: string
+    }[]
+  }
 }
 
 export interface IRapidScanResults {

@@ -17,7 +17,6 @@ export interface IPolicyReport {
   severity?: string // Not yet implemented
 }
 
-// Missing no policy violation licenses
 export interface ILicenseReport {
   name: string
   href: string
@@ -25,6 +24,7 @@ export interface ILicenseReport {
 }
 
 // Missing no policy violation vulnerabilities
+// Available through IComponentVersion.meta.href.vulnerabilities -> GET -> .name ._meta.href .baseScore .severity
 export interface IVulnerabilityReport {
   name: string
   href: string
@@ -83,7 +83,7 @@ function createComponentReport(violation: IRapidScanResults, componentVersion?: 
     violatedPolicies: violation.violatingPolicyNames.map(policyName => createPolicyReport(policyName)),
     name: `${violation.componentName} ${violation.versionName}`,
     href: componentVersion?.version,
-    licenses: violation.policyViolationLicenses.map(license => createPolicyViolatingLicenseReport(license)),
+    licenses: createFullLicenseReport(violation.policyViolationLicenses, componentVersion),
     vulnerabilities: violation.policyViolationVulnerabilities.map(violation => createPolicyViolatingVulnerabilityReport(violation)),
     shortTermUpgrade: createUpgradeReport(upgradeGuidance?.shortTerm),
     longTermUpgrade: createUpgradeReport(upgradeGuidance?.longTerm)
@@ -96,11 +96,23 @@ function createPolicyReport(policyName: string): IPolicyReport {
   }
 }
 
-function createPolicyViolatingLicenseReport(policyViolatingLicense: IRapidScanLicense): ILicenseReport {
+function createFullLicenseReport(policyViolatingLicenses: IRapidScanLicense[], componentVersion?: IComponentVersion): ILicenseReport[] {
+  let licenseReport = []
+  if (componentVersion === undefined) {
+    licenseReport = policyViolatingLicenses.map(license => createLicenseReport(license.name, license._meta.href, true))
+  } else {
+    const violatingPolicyNames = policyViolatingLicenses.map(license => license.name)
+    licenseReport = componentVersion.license.licenses.map(license => createLicenseReport(license.name, license.license, violatingPolicyNames.includes(license.name)))
+  }
+
+  return licenseReport
+}
+
+function createLicenseReport(name: string, href: string, violatesPolicy: boolean): ILicenseReport {
   return {
-    name: policyViolatingLicense.name,
-    href: policyViolatingLicense._meta.href + '/text',
-    violatesPolicy: true
+    name: name,
+    href: href,
+    violatesPolicy: violatesPolicy
   }
 }
 
