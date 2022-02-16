@@ -284,7 +284,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.createUpgradeReport = exports.createVulnerabilityReport = exports.createLicenseReport = exports.createPolicyReport = exports.createComponentVulnerabilityReports = exports.createComponentLicenseReports = exports.createComponentReport = exports.createRapidScanReport = void 0;
+exports.createUpgradeReport = exports.createVulnerabilityReport = exports.createLicenseReport = exports.createComponentVulnerabilityReports = exports.createComponentLicenseReports = exports.createComponentReport = exports.createRapidScanReport = void 0;
 const core_1 = __nccwpck_require__(2186);
 const blackduck_api_1 = __nccwpck_require__(7495);
 const inputs_1 = __nccwpck_require__(6180);
@@ -328,7 +328,7 @@ function createRapidScanReport(policyViolations, blackduckApiService) {
 exports.createRapidScanReport = createRapidScanReport;
 function createComponentReport(violation, componentVersion, upgradeGuidance, vulnerabilities) {
     return {
-        violatedPolicies: violation.violatingPolicyNames.map(policyName => createPolicyReport(policyName)),
+        violatedPolicies: violation.violatingPolicyNames,
         name: `${violation.componentName} ${violation.versionName}`,
         href: componentVersion === null || componentVersion === void 0 ? void 0 : componentVersion._meta.href,
         licenses: createComponentLicenseReports(violation.policyViolationLicenses, componentVersion),
@@ -362,13 +362,6 @@ function createComponentVulnerabilityReports(policyViolatingVulnerabilities, com
     return vulnerabilityReport;
 }
 exports.createComponentVulnerabilityReports = createComponentVulnerabilityReports;
-function createPolicyReport(policyName, severity) {
-    return {
-        name: policyName,
-        severity: severity
-    };
-}
-exports.createPolicyReport = createPolicyReport;
 function createLicenseReport(name, href, violatesPolicy) {
     return {
         name: name,
@@ -439,7 +432,7 @@ function createRapidScanReportString(policyViolations, policyCheckWillFail) {
 }
 exports.createRapidScanReportString = createRapidScanReportString;
 function createComponentRow(component) {
-    const violatedPolicies = component.violatedPolicies.map(policy => `${policy.name} ${policy.severity === 'UNSPECIFIED' ? '' : `(${policy.severity})`}`).join('<br/>');
+    const violatedPolicies = component.violatedPolicies.join('<br/>');
     const componentInViolation = (component === null || component === void 0 ? void 0 : component.href) ? `[${component.name}](${component.href})` : component.name;
     const componentLicenses = component.licenses.map(license => `${license.violatesPolicy ? ':x: &nbsp; ' : ''}[${license.name}](${license.href})`).join('<br/>');
     const vulnerabilities = component.vulnerabilities.map(vulnerability => `${vulnerability.violatesPolicy ? ':x: &nbsp; ' : ''}[${vulnerability.name}](${vulnerability.href})${vulnerability.cvssScore && vulnerability.severity ? ` ${vulnerability.severity}: CVSS ${vulnerability.cvssScore}` : ''}`).join('<br/>');
