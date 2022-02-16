@@ -732,6 +732,10 @@ function runWithPolicyCheck(blackduckPolicyCheck) {
             blackduckPolicyCheck.cancelCheck();
             return;
         }
+        else if (detectExitCode > 0 && detectExitCode != exit_codes_1.POLICY_SEVERITY) {
+            (0, core_1.setFailed)(`Detect failed with exit code: ${detectExitCode}. Check the logs for more information.`);
+            return;
+        }
         (0, core_1.info)(`${detect_manager_1.TOOL_NAME} executed successfully.`);
         let hasPolicyViolations = false;
         if (inputs_1.SCAN_MODE === 'RAPID') {
