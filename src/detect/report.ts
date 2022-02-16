@@ -2,6 +2,48 @@ import { warning } from '@actions/core'
 import { BlackduckApiService, IComponentVersion, IComponentVulnerability, IRapidScanLicense, IRapidScanResults, IRapidScanVulnerability, IRecommendedVersion, IUpgradeGuidance } from '../blackduck-api'
 import { BLACKDUCK_API_TOKEN, BLACKDUCK_URL } from '../inputs'
 
+export async function createRapidScanReport(policyViolations: IRapidScanResults[], blackduckApiService?: BlackduckApiService): Promise<IComponentReport[]> {
+  const rapidScanReport: IComponentReport[] = []
+
+  if (blackduckApiService === undefined) {
+    blackduckApiService = new BlackduckApiService(BLACKDUCK_URL, BLACKDUCK_API_TOKEN)
+  }
+
+  const bearerToken = await blackduckApiService.getBearerToken()
+
+  for (const policyViolation of policyViolations) {
+    const componentIdentifier = policyViolation.componentIdentifier
+    const componentVersionResponse = await blackduckApiService.getComponentsMatching(bearerToken, componentIdentifier)
+    const componentVersion = componentVersionResponse?.result?.items[0]
+
+    let upgradeGuidance = undefined
+    let vulnerabilities = undefined
+    if (componentVersion !== undefined) {
+      upgradeGuidance = await blackduckApiService
+        .getUpgradeGuidanceFor(bearerToken, componentVersion)
+        .then(response => {
+          if (response.result === null) {
+            warning(`Could not get upgrade guidance for ${componentIdentifier}: The upgrade guidance result was empty`)
+            return undefined
+          }
+
+          return response.result
+        })
+        .catch(reason => {
+          warning(`Could not get upgrade guidance for ${componentIdentifier}: ${reason}`)
+          return undefined
+        })
+
+      const vulnerabilityResponse = await blackduckApiService.getComponentVulnerabilties(bearerToken, componentVersion)
+      vulnerabilities = vulnerabilityResponse?.result?.items
+    }
+
+    const componentReport = createComponentReport(policyViolation, componentVersion, upgradeGuidance, vulnerabilities)
+    rapidScanReport.push(componentReport)
+  }
+
+  return rapidScanReport
+}
 export interface IComponentReport {
   violatedPolicies: IPolicyReport[]
   name: string
@@ -108,47 +150,4 @@ export function createUpgradeReport(recommendedVersion?: IRecommendedVersion): I
     href: recommendedVersion.version,
     vulnerabilityCount: Object.values(recommendedVersion.vulnerabilityRisk).reduce((accumulatedValues, value) => accumulatedValues + value, 0)
   }
-}
-
-export async function createRapidScanReport(policyViolations: IRapidScanResults[], blackduckApiService?: BlackduckApiService): Promise<IComponentReport[]> {
-  const rapidScanReport: IComponentReport[] = []
-
-  if (blackduckApiService === undefined) {
-    blackduckApiService = new BlackduckApiService(BLACKDUCK_URL, BLACKDUCK_API_TOKEN)
-  }
-
-  const bearerToken = await blackduckApiService.getBearerToken()
-
-  for (const policyViolation of policyViolations) {
-    const componentIdentifier = policyViolation.componentIdentifier
-    const componentVersionResponse = await blackduckApiService.getComponentsMatching(bearerToken, componentIdentifier)
-    const componentVersion = componentVersionResponse?.result?.items[0]
-
-    let upgradeGuidance = undefined
-    let vulnerabilities = undefined
-    if (componentVersion !== undefined) {
-      upgradeGuidance = await blackduckApiService
-        .getUpgradeGuidanceFor(bearerToken, componentVersion)
-        .then(response => {
-          if (response.result === null) {
-            warning(`Could not get upgrade guidance for ${componentIdentifier}: The upgrade guidance result was empty`)
-            return undefined
-          }
-
-          return response.result
-        })
-        .catch(reason => {
-          warning(`Could not get upgrade guidance for ${componentIdentifier}: ${reason}`)
-          return undefined
-        })
-
-      const vulnerabilityResponse = await blackduckApiService.getComponentVulnerabilties(bearerToken, componentVersion)
-      vulnerabilities = vulnerabilityResponse?.result?.items
-    }
-
-    const componentReport = createComponentReport(policyViolation, componentVersion, upgradeGuidance, vulnerabilities)
-    rapidScanReport.push(componentReport)
-  }
-
-  return rapidScanReport
 }

@@ -251,6 +251,139 @@ exports.POLICY_SEVERITY = 3;
 
 /***/ }),
 
+/***/ 2198:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.createUpgradeReport = exports.createVulnerabilityReport = exports.createLicenseReport = exports.createPolicyReport = exports.createComponentVulnerabilityReports = exports.createComponentLicenseReports = exports.createComponentReport = exports.createRapidScanReport = void 0;
+const core_1 = __nccwpck_require__(2186);
+const blackduck_api_1 = __nccwpck_require__(7495);
+const inputs_1 = __nccwpck_require__(6180);
+function createRapidScanReport(policyViolations, blackduckApiService) {
+    var _a, _b;
+    return __awaiter(this, void 0, void 0, function* () {
+        const rapidScanReport = [];
+        if (blackduckApiService === undefined) {
+            blackduckApiService = new blackduck_api_1.BlackduckApiService(inputs_1.BLACKDUCK_URL, inputs_1.BLACKDUCK_API_TOKEN);
+        }
+        const bearerToken = yield blackduckApiService.getBearerToken();
+        for (const policyViolation of policyViolations) {
+            const componentIdentifier = policyViolation.componentIdentifier;
+            const componentVersionResponse = yield blackduckApiService.getComponentsMatching(bearerToken, componentIdentifier);
+            const componentVersion = (_a = componentVersionResponse === null || componentVersionResponse === void 0 ? void 0 : componentVersionResponse.result) === null || _a === void 0 ? void 0 : _a.items[0];
+            let upgradeGuidance = undefined;
+            let vulnerabilities = undefined;
+            if (componentVersion !== undefined) {
+                upgradeGuidance = yield blackduckApiService
+                    .getUpgradeGuidanceFor(bearerToken, componentVersion)
+                    .then(response => {
+                    if (response.result === null) {
+                        (0, core_1.warning)(`Could not get upgrade guidance for ${componentIdentifier}: The upgrade guidance result was empty`);
+                        return undefined;
+                    }
+                    return response.result;
+                })
+                    .catch(reason => {
+                    (0, core_1.warning)(`Could not get upgrade guidance for ${componentIdentifier}: ${reason}`);
+                    return undefined;
+                });
+                const vulnerabilityResponse = yield blackduckApiService.getComponentVulnerabilties(bearerToken, componentVersion);
+                vulnerabilities = (_b = vulnerabilityResponse === null || vulnerabilityResponse === void 0 ? void 0 : vulnerabilityResponse.result) === null || _b === void 0 ? void 0 : _b.items;
+            }
+            const componentReport = createComponentReport(policyViolation, componentVersion, upgradeGuidance, vulnerabilities);
+            rapidScanReport.push(componentReport);
+        }
+        return rapidScanReport;
+    });
+}
+exports.createRapidScanReport = createRapidScanReport;
+function createComponentReport(violation, componentVersion, upgradeGuidance, vulnerabilities) {
+    return {
+        violatedPolicies: violation.violatingPolicyNames.map(policyName => createPolicyReport(policyName)),
+        name: `${violation.componentName} ${violation.versionName}`,
+        href: componentVersion === null || componentVersion === void 0 ? void 0 : componentVersion.version,
+        licenses: createComponentLicenseReports(violation.policyViolationLicenses, componentVersion),
+        vulnerabilities: createComponentVulnerabilityReports(violation.policyViolationVulnerabilities, vulnerabilities),
+        shortTermUpgrade: createUpgradeReport(upgradeGuidance === null || upgradeGuidance === void 0 ? void 0 : upgradeGuidance.shortTerm),
+        longTermUpgrade: createUpgradeReport(upgradeGuidance === null || upgradeGuidance === void 0 ? void 0 : upgradeGuidance.longTerm)
+    };
+}
+exports.createComponentReport = createComponentReport;
+function createComponentLicenseReports(policyViolatingLicenses, componentVersion) {
+    let licenseReport = [];
+    if (componentVersion === undefined) {
+        licenseReport = policyViolatingLicenses.map(license => createLicenseReport(license.name, license._meta.href, true));
+    }
+    else {
+        const violatingPolicyLicenseNames = policyViolatingLicenses.map(license => license.name);
+        licenseReport = componentVersion.license.licenses.map(license => createLicenseReport(license.name, license.license, violatingPolicyLicenseNames.includes(license.name)));
+    }
+    return licenseReport;
+}
+exports.createComponentLicenseReports = createComponentLicenseReports;
+function createComponentVulnerabilityReports(policyViolatingVulnerabilities, componentVulnerabilities) {
+    let vulnerabilityReport = [];
+    if (componentVulnerabilities === undefined) {
+        vulnerabilityReport = policyViolatingVulnerabilities.map(vulnerability => createVulnerabilityReport(vulnerability.name, true));
+    }
+    else {
+        const violatingPolicyVulnerabilityNames = policyViolatingVulnerabilities.map(vulnerability => vulnerability.name);
+        vulnerabilityReport = componentVulnerabilities.map(vulnerability => createVulnerabilityReport(vulnerability.vulnerabilityName, violatingPolicyVulnerabilityNames.includes(vulnerability.vulnerabilityName), vulnerability._meta.href, vulnerability.baseScore, vulnerability.severity));
+    }
+    return vulnerabilityReport;
+}
+exports.createComponentVulnerabilityReports = createComponentVulnerabilityReports;
+function createPolicyReport(policyName, severity) {
+    return {
+        name: policyName,
+        severity: severity
+    };
+}
+exports.createPolicyReport = createPolicyReport;
+function createLicenseReport(name, href, violatesPolicy) {
+    return {
+        name: name,
+        href: href,
+        violatesPolicy: violatesPolicy
+    };
+}
+exports.createLicenseReport = createLicenseReport;
+function createVulnerabilityReport(name, violatesPolicy, href, cvssScore, severity) {
+    return {
+        name: name,
+        violatesPolicy: violatesPolicy,
+        href: href,
+        cvssScore: cvssScore,
+        severity: severity
+    };
+}
+exports.createVulnerabilityReport = createVulnerabilityReport;
+function createUpgradeReport(recommendedVersion) {
+    if (recommendedVersion === undefined) {
+        return undefined;
+    }
+    return {
+        name: recommendedVersion.versionName,
+        href: recommendedVersion.version,
+        vulnerabilityCount: Object.values(recommendedVersion.vulnerabilityRisk).reduce((accumulatedValues, value) => accumulatedValues + value, 0)
+    };
+}
+exports.createUpgradeReport = createUpgradeReport;
+
+
+/***/ }),
+
 /***/ 322:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
@@ -266,13 +399,10 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.createTable = exports.createRapidScanReport = exports.TABLE_HEADER = void 0;
-const core_1 = __nccwpck_require__(2186);
-const blackduck_api_1 = __nccwpck_require__(7495);
-const inputs_1 = __nccwpck_require__(6180);
+exports.createRapidScanReportString = exports.TABLE_HEADER = void 0;
+const report_1 = __nccwpck_require__(2198);
 exports.TABLE_HEADER = '| Policies Violated | Dependency | License(s) | Vulnerabilities | Short Term Recommended Upgrade | Long Term Recommended Upgrade |\r\n' + '|-|-|-|-|-|-|\r\n';
-function createRapidScanReport(policyViolations, policyCheckWillFail) {
-    var _a;
+function createRapidScanReportString(policyViolations, policyCheckWillFail) {
     return __awaiter(this, void 0, void 0, function* () {
         let message = '';
         if (policyViolations.length == 0) {
@@ -280,42 +410,16 @@ function createRapidScanReport(policyViolations, policyCheckWillFail) {
         }
         else {
             const violationSymbol = policyCheckWillFail ? ':x:' : ':warning:';
-            message = message.concat(`# ${violationSymbol} Found dependencies violating policy!\r\n`);
-            const blackduckApiService = new blackduck_api_1.BlackduckApiService(inputs_1.BLACKDUCK_URL, inputs_1.BLACKDUCK_API_TOKEN);
-            const bearerToken = yield blackduckApiService.getBearerToken();
-            const fullResultsResponse = yield blackduckApiService.get(bearerToken, policyViolations[0]._meta.href + '/full-result');
-            const fullResults = (_a = fullResultsResponse === null || fullResultsResponse === void 0 ? void 0 : fullResultsResponse.result) === null || _a === void 0 ? void 0 : _a.items;
-            if (fullResults === undefined || fullResults.length == 0) {
-                return Promise.reject(`Could not retrieve Black Duck RAPID scan results from ${policyViolations[0]._meta.href + '/full-result'}, response was ${fullResultsResponse.statusCode}`);
-            }
-            message = message.concat('\r\n');
-            const reportTable = yield createTable(blackduckApiService, bearerToken, fullResults);
+            message = message.concat(`# ${violationSymbol} Found dependencies violating policy!\r\n\r\n`);
+            const componentReports = yield (0, report_1.createRapidScanReport)(policyViolations);
+            const tableBody = componentReports.map(componentReport => createComponentRow(componentReport)).join('\r\n');
+            const reportTable = exports.TABLE_HEADER.concat(tableBody);
             message = message.concat(reportTable);
         }
         return message;
     });
 }
-exports.createRapidScanReport = createRapidScanReport;
-function createTable(blackduckApiService, bearerToken, fullResults) {
-    var _a;
-    return __awaiter(this, void 0, void 0, function* () {
-        let table = exports.TABLE_HEADER;
-        for (const violation of fullResults) {
-            if (violation.violatingPolicies.length > 0) {
-                const componentVersionResponse = yield blackduckApiService.getComponentsMatching(bearerToken, violation.componentIdentifier);
-                const componentVersion = (_a = componentVersionResponse === null || componentVersionResponse === void 0 ? void 0 : componentVersionResponse.result) === null || _a === void 0 ? void 0 : _a.items[0];
-                let upgradeGuidance = null;
-                if (componentVersion !== undefined) {
-                    const upgradeGuidanceResponse = yield blackduckApiService.getUpgradeGuidanceFor(bearerToken, componentVersion).catch(reason => (0, core_1.warning)(`Could not get upgrade guidance for ${violation.componentIdentifier}: ${reason}`));
-                    upgradeGuidance = upgradeGuidanceResponse === null || upgradeGuidanceResponse === void 0 ? void 0 : upgradeGuidanceResponse.result;
-                }
-                table = table.concat(`${createComponentRowFromFullResults(componentVersion, upgradeGuidance, violation)}\r\n`);
-            }
-        }
-        return table;
-    });
-}
-exports.createTable = createTable;
+exports.createRapidScanReportString = createRapidScanReportString;
 function createComponentRow(component) {
     const violatedPolicies = component.violatedPolicies.map(policy => `${policy.name} ${policy.severity === 'UNSPECIFIED' ? '' : `(${policy.severity})`}`).join('<br/>');
     const componentInViolation = (component === null || component === void 0 ? void 0 : component.href) ? `[${component.name}](${component.href})` : component.name;
@@ -323,33 +427,6 @@ function createComponentRow(component) {
     const vulnerabilities = component.vulnerabilities.map(vulnerability => `${vulnerability.violatesPolicy ? ':x: &nbsp; ' : ''}[${vulnerability.name}](${vulnerability.href})${vulnerability.cvssScore && vulnerability.severity ? ` ${vulnerability.severity}: CVSS ${vulnerability.cvssScore}` : ''}`).join('<br/>');
     const shortTermString = component.shortTermUpgrade ? `[${component.shortTermUpgrade.name}](${component.shortTermUpgrade.href}) (${component.shortTermUpgrade.vulnerabilityCount} known vulnerabilities)` : '';
     const longTermString = component.longTermUpgrade ? `[${component.longTermUpgrade.name}](${component.longTermUpgrade.href}) (${component.longTermUpgrade.vulnerabilityCount} known vulnerabilities)` : '';
-    return `| ${violatedPolicies} | ${componentInViolation} | ${componentLicenses} | ${vulnerabilities} | ${shortTermString} | ${longTermString} |`;
-}
-function createComponentRowFromFullResults(componentVersion, upgradeGuidance, violation) {
-    const violatingLicenseNames = violation.policyViolationLicenses.map(license => license.name);
-    const violatingVulnerabilityNames = violation.policyViolationVulnerabilities.map(vulnerability => vulnerability.name);
-    const violatedPolicies = violation.violatingPolicies.map(policy => `${policy.policyName} ${policy.policySeverity === 'UNSPECIFIED' ? '' : `(${policy.policySeverity})`}`).join('<br/>');
-    let componentInViolation = `${violation.componentName} ${violation.versionName}`;
-    if ((componentVersion === null || componentVersion === void 0 ? void 0 : componentVersion.version) !== undefined) {
-        componentInViolation = `[${violation.componentName} ${violation.versionName}](${componentVersion === null || componentVersion === void 0 ? void 0 : componentVersion.version})`;
-    }
-    const componentLicenses = violation.allLicenses.map(license => `${violatingLicenseNames.includes(license.name) ? ':x: &nbsp; ' : ''}[${license.name}](${license._meta.href}/text)`).join('<br/>');
-    const vulnerabilities = violation.allVulnerabilities.map(vulnerability => `${violatingVulnerabilityNames.includes(vulnerability.name) ? ':x: &nbsp; ' : ''}[${vulnerability.name}](${(0, blackduck_api_1.cleanUrl)(inputs_1.BLACKDUCK_URL)}/api/vulnerabilities/${vulnerability.name}) (${vulnerability.vulnSeverity}: CVSS ${vulnerability.overallScore})`).join('<br/>');
-    if (upgradeGuidance === undefined || upgradeGuidance === null) {
-        return `| ${violatedPolicies} | ${componentInViolation} | ${componentLicenses}  | ${vulnerabilities} |  |  | `;
-    }
-    let shortTermString = '';
-    let longTermString = '';
-    const shortTerm = upgradeGuidance === null || upgradeGuidance === void 0 ? void 0 : upgradeGuidance.shortTerm;
-    if (shortTerm !== undefined) {
-        const vulnerabilitiesAfterUpgrade = Object.values(shortTerm.vulnerabilityRisk).reduce((accumulatedValues, value) => accumulatedValues + value, 0);
-        shortTermString = `[${shortTerm.versionName}](${shortTerm.version}) (${vulnerabilitiesAfterUpgrade} known vulnerabilities)`;
-    }
-    const longTerm = upgradeGuidance === null || upgradeGuidance === void 0 ? void 0 : upgradeGuidance.longTerm;
-    if (longTerm !== undefined) {
-        const vulnerabilitiesAfterUpgrade = Object.values(longTerm.vulnerabilityRisk).reduce((accumulatedValues, value) => accumulatedValues + value, 0);
-        longTermString = `[${longTerm.versionName}](${longTerm.version}) (${vulnerabilitiesAfterUpgrade} known vulnerabilities)`;
-    }
     return `| ${violatedPolicies} | ${componentInViolation} | ${componentLicenses} | ${vulnerabilities} | ${shortTermString} | ${longTermString} |`;
 }
 
@@ -657,7 +734,7 @@ function runWithPolicyCheck(blackduckPolicyCheck) {
             hasPolicyViolations = policyViolations.length > 0;
             (0, core_1.debug)(`Policy Violations Present: ${hasPolicyViolations}`);
             const failureConditionsMet = detectExitCode === exit_codes_1.POLICY_SEVERITY || inputs_1.FAIL_ON_ALL_POLICY_SEVERITIES;
-            const rapidScanReport = yield (0, reporting_1.createRapidScanReport)(policyViolations, hasPolicyViolations && failureConditionsMet);
+            const rapidScanReport = yield (0, reporting_1.createRapidScanReportString)(policyViolations, hasPolicyViolations && failureConditionsMet);
             if ((0, github_context_1.isPullRequest)()) {
                 (0, core_1.info)('This is a pull request, commenting...');
                 (0, comment_1.commentOnPR)(rapidScanReport);

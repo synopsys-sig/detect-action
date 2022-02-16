@@ -69,37 +69,6 @@ export interface IRapidScanLicense {
   }
 }
 
-export interface IRapidScanFullResults {
-  componentName: string
-  versionName: string
-  componentIdentifier: string
-  violatingPolicies: {
-    policyName: string
-    description: string
-    policySeverity: string
-  }[]
-  policyViolationVulnerabilities: IRapidScanVulnerability[]
-  policyViolationLicenses: {
-    name: string
-  }[]
-  allVulnerabilities: {
-    name: string
-    description: string
-    vulnSeverity: string
-    overallScore: number
-    _meta: {
-      href: string
-    }
-  }[]
-  allLicenses: {
-    name: string
-    licenseFamilyName: string
-    _meta: {
-      href: string
-    }
-  }[]
-}
-
 export class BlackduckApiService {
   blackduckUrl: string
   blackduckApiToken: string
