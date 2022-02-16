@@ -4,14 +4,13 @@ import { BearerCredentialHandler } from 'typed-rest-client/Handlers'
 import { HttpClient } from 'typed-rest-client/HttpClient'
 import { IRestResponse, RestClient } from 'typed-rest-client/RestClient'
 import { APPLICATION_NAME } from './application-constants'
-
 export interface IBlackduckView {
   _meta: {
     href: string
   }
 }
 
-export interface IBlackduckPage<Type> extends IBlackduckView {
+export interface IBlackduckItemArray<Type> extends IBlackduckView {
   totalCount: number
   items: Array<Type>
 }
@@ -35,6 +34,15 @@ export interface IComponentVersion {
       license: string
       name: string
     }[]
+  }
+}
+
+export interface IComponentVulnerability {
+  vulnerabilityName: string
+  baseScore: number
+  severity: string
+  _meta: {
+    href: string
   }
 }
 
@@ -137,10 +145,14 @@ export class BlackduckApiService {
     return this.get(bearerToken, `${componentVersion.version}/upgrade-guidance`)
   }
 
-  async getComponentsMatching(bearerToken: string, componentIdentifier: string, limit: number = 10): Promise<IRestResponse<IBlackduckPage<IComponentVersion>>> {
+  async getComponentsMatching(bearerToken: string, componentIdentifier: string, limit: number = 10): Promise<IRestResponse<IBlackduckItemArray<IComponentVersion>>> {
     const requestPath = `/api/components?q=${componentIdentifier}`
 
     return this.requestPage(bearerToken, requestPath, 0, limit)
+  }
+
+  async getComponentVulnerabilties(bearerToken: string, componentVersion: IComponentVersion): Promise<IRestResponse<IBlackduckItemArray<IComponentVulnerability>>> {
+    return this.get(bearerToken, `${componentVersion.version}/vulnerabilities`)
   }
 
   async getPolicies(bearerToken: string, limit: number = 10, enabled?: boolean) {
@@ -150,7 +162,7 @@ export class BlackduckApiService {
     return this.requestPage(bearerToken, requestPath, 0, limit)
   }
 
-  async requestPage(bearerToken: string, requestPath: string, offset: number, limit: number): Promise<IRestResponse<IBlackduckPage<any>>> {
+  async requestPage(bearerToken: string, requestPath: string, offset: number, limit: number): Promise<IRestResponse<IBlackduckItemArray<any>>> {
     return this.get(bearerToken, `${this.blackduckUrl}${requestPath}&offset=${offset}&limit=${limit}`)
   }
 

@@ -87,6 +87,11 @@ class BlackduckApiService {
             return this.requestPage(bearerToken, requestPath, 0, limit);
         });
     }
+    getComponentVulnerabilties(bearerToken, componentVersion) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return this.get(bearerToken, `${componentVersion.version}/vulnerabilities`);
+        });
+    }
     getPolicies(bearerToken, limit = 10, enabled) {
         return __awaiter(this, void 0, void 0, function* () {
             const enabledFilter = enabled === undefined || enabled === null ? '' : `filter=policyRuleEnabled%3A${enabled}`;

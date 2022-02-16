@@ -1,6 +1,6 @@
 import { warning } from '@actions/core'
 import { IRestResponse } from 'typed-rest-client'
-import { BlackduckApiService, cleanUrl, IBlackduckPage, IComponentVersion, IRapidScanFullResults, IRapidScanResults, IUpgradeGuidance } from '../blackduck-api'
+import { BlackduckApiService, cleanUrl, IBlackduckItemArray, IComponentVersion, IRapidScanFullResults, IRapidScanResults, IUpgradeGuidance } from '../blackduck-api'
 import { BLACKDUCK_API_TOKEN, BLACKDUCK_URL } from '../inputs'
 import { IComponentReport } from './report'
 
@@ -16,7 +16,7 @@ export async function createRapidScanReport(policyViolations: IRapidScanResults[
 
     const blackduckApiService = new BlackduckApiService(BLACKDUCK_URL, BLACKDUCK_API_TOKEN)
     const bearerToken = await blackduckApiService.getBearerToken()
-    const fullResultsResponse: IRestResponse<IBlackduckPage<IRapidScanFullResults>> = await blackduckApiService.get(bearerToken, policyViolations[0]._meta.href + '/full-result')
+    const fullResultsResponse: IRestResponse<IBlackduckItemArray<IRapidScanFullResults>> = await blackduckApiService.get(bearerToken, policyViolations[0]._meta.href + '/full-result')
     const fullResults = fullResultsResponse?.result?.items
     if (fullResults === undefined || fullResults.length == 0) {
       return Promise.reject(`Could not retrieve Black Duck RAPID scan results from ${policyViolations[0]._meta.href + '/full-result'}, response was ${fullResultsResponse.statusCode}`)
