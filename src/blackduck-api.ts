@@ -27,13 +27,19 @@ export interface IRecommendedVersion {
   vulnerabilityRisk: Object
 }
 
-export interface IComponentVersion {
+export interface IComponentSearchResult {
   version: string
+}
+
+export interface IComponentVersion {
   license: {
     licenses: {
       license: string
       name: string
     }[]
+  }
+  _meta: {
+    href: string
   }
 }
 
@@ -111,17 +117,34 @@ export class BlackduckApiService {
   }
 
   async getUpgradeGuidanceFor(bearerToken: string, componentVersion: IComponentVersion): Promise<IRestResponse<IUpgradeGuidance>> {
-    return this.get(bearerToken, `${componentVersion.version}/upgrade-guidance`)
+    return this.get(bearerToken, `${componentVersion._meta.href}/upgrade-guidance`)
   }
 
-  async getComponentsMatching(bearerToken: string, componentIdentifier: string, limit: number = 10): Promise<IRestResponse<IBlackduckItemArray<IComponentVersion>>> {
+  async getComponentsMatching(bearerToken: string, componentIdentifier: string, limit: number = 10): Promise<IRestResponse<IBlackduckItemArray<IComponentSearchResult>>> {
     const requestPath = `/api/components?q=${componentIdentifier}`
 
     return this.requestPage(bearerToken, requestPath, 0, limit)
   }
 
+  async getComponentVersion(bearerToken: string, searchResult: IComponentSearchResult) {
+    return this.get(bearerToken, searchResult.version)
+  }
+
+  async getComponentVersionMatching(bearerToken: string, componentIdentifier: string, limit: number = 10): Promise<IComponentVersion | null> {
+    const componentSearchResponse = await this.getComponentsMatching(bearerToken, componentIdentifier, limit)
+    const firstMatchingComponentVersionUrl = componentSearchResponse?.result?.items[0].version
+
+    let componentVersion = null
+    if (firstMatchingComponentVersionUrl !== undefined) {
+      const componentVersionResponse: IRestResponse<IComponentVersion> = await this.get(bearerToken, firstMatchingComponentVersionUrl)
+      componentVersion = componentVersionResponse?.result
+    }
+
+    return componentVersion
+  }
+
   async getComponentVulnerabilties(bearerToken: string, componentVersion: IComponentVersion): Promise<IRestResponse<IBlackduckItemArray<IComponentVulnerability>>> {
-    return this.get(bearerToken, `${componentVersion.version}/vulnerabilities`)
+    return this.get(bearerToken, `${componentVersion._meta.href}/vulnerabilities`)
   }
 
   async getPolicies(bearerToken: string, limit: number = 10, enabled?: boolean) {

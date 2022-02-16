@@ -78,7 +78,7 @@ class BlackduckApiService {
     }
     getUpgradeGuidanceFor(bearerToken, componentVersion) {
         return __awaiter(this, void 0, void 0, function* () {
-            return this.get(bearerToken, `${componentVersion.version}/upgrade-guidance`);
+            return this.get(bearerToken, `${componentVersion._meta.href}/upgrade-guidance`);
         });
     }
     getComponentsMatching(bearerToken, componentIdentifier, limit = 10) {
@@ -87,9 +87,27 @@ class BlackduckApiService {
             return this.requestPage(bearerToken, requestPath, 0, limit);
         });
     }
+    getComponentVersion(bearerToken, searchResult) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return this.get(bearerToken, searchResult.version);
+        });
+    }
+    getComponentVersionMatching(bearerToken, componentIdentifier, limit = 10) {
+        var _a;
+        return __awaiter(this, void 0, void 0, function* () {
+            const componentSearchResponse = yield this.getComponentsMatching(bearerToken, componentIdentifier, limit);
+            const firstMatchingComponentVersionUrl = (_a = componentSearchResponse === null || componentSearchResponse === void 0 ? void 0 : componentSearchResponse.result) === null || _a === void 0 ? void 0 : _a.items[0].version;
+            let componentVersion = null;
+            if (firstMatchingComponentVersionUrl !== undefined) {
+                const componentVersionResponse = yield this.get(bearerToken, firstMatchingComponentVersionUrl);
+                componentVersion = componentVersionResponse === null || componentVersionResponse === void 0 ? void 0 : componentVersionResponse.result;
+            }
+            return componentVersion;
+        });
+    }
     getComponentVulnerabilties(bearerToken, componentVersion) {
         return __awaiter(this, void 0, void 0, function* () {
-            return this.get(bearerToken, `${componentVersion.version}/vulnerabilities`);
+            return this.get(bearerToken, `${componentVersion._meta.href}/vulnerabilities`);
         });
     }
     getPolicies(bearerToken, limit = 10, enabled) {
@@ -271,7 +289,7 @@ const core_1 = __nccwpck_require__(2186);
 const blackduck_api_1 = __nccwpck_require__(7495);
 const inputs_1 = __nccwpck_require__(6180);
 function createRapidScanReport(policyViolations, blackduckApiService) {
-    var _a, _b;
+    var _a;
     return __awaiter(this, void 0, void 0, function* () {
         const rapidScanReport = [];
         if (blackduckApiService === undefined) {
@@ -280,11 +298,10 @@ function createRapidScanReport(policyViolations, blackduckApiService) {
         const bearerToken = yield blackduckApiService.getBearerToken();
         for (const policyViolation of policyViolations) {
             const componentIdentifier = policyViolation.componentIdentifier;
-            const componentVersionResponse = yield blackduckApiService.getComponentsMatching(bearerToken, componentIdentifier);
-            const componentVersion = (_a = componentVersionResponse === null || componentVersionResponse === void 0 ? void 0 : componentVersionResponse.result) === null || _a === void 0 ? void 0 : _a.items[0];
+            const componentVersion = yield blackduckApiService.getComponentVersionMatching(bearerToken, componentIdentifier);
             let upgradeGuidance = undefined;
             let vulnerabilities = undefined;
-            if (componentVersion !== undefined) {
+            if (componentVersion !== null) {
                 upgradeGuidance = yield blackduckApiService
                     .getUpgradeGuidanceFor(bearerToken, componentVersion)
                     .then(response => {
@@ -299,9 +316,10 @@ function createRapidScanReport(policyViolations, blackduckApiService) {
                     return undefined;
                 });
                 const vulnerabilityResponse = yield blackduckApiService.getComponentVulnerabilties(bearerToken, componentVersion);
-                vulnerabilities = (_b = vulnerabilityResponse === null || vulnerabilityResponse === void 0 ? void 0 : vulnerabilityResponse.result) === null || _b === void 0 ? void 0 : _b.items;
+                vulnerabilities = (_a = vulnerabilityResponse === null || vulnerabilityResponse === void 0 ? void 0 : vulnerabilityResponse.result) === null || _a === void 0 ? void 0 : _a.items;
             }
-            const componentReport = createComponentReport(policyViolation, componentVersion, upgradeGuidance, vulnerabilities);
+            const componentVersionOrUndefined = componentVersion === null ? undefined : componentVersion;
+            const componentReport = createComponentReport(policyViolation, componentVersionOrUndefined, upgradeGuidance, vulnerabilities);
             rapidScanReport.push(componentReport);
         }
         return rapidScanReport;
@@ -312,7 +330,7 @@ function createComponentReport(violation, componentVersion, upgradeGuidance, vul
     return {
         violatedPolicies: violation.violatingPolicyNames.map(policyName => createPolicyReport(policyName)),
         name: `${violation.componentName} ${violation.versionName}`,
-        href: componentVersion === null || componentVersion === void 0 ? void 0 : componentVersion.version,
+        href: componentVersion === null || componentVersion === void 0 ? void 0 : componentVersion._meta.href,
         licenses: createComponentLicenseReports(violation.policyViolationLicenses, componentVersion),
         vulnerabilities: createComponentVulnerabilityReports(violation.policyViolationVulnerabilities, vulnerabilities),
         shortTermUpgrade: createUpgradeReport(upgradeGuidance === null || upgradeGuidance === void 0 ? void 0 : upgradeGuidance.shortTerm),

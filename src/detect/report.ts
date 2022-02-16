@@ -13,12 +13,11 @@ export async function createRapidScanReport(policyViolations: IRapidScanResults[
 
   for (const policyViolation of policyViolations) {
     const componentIdentifier = policyViolation.componentIdentifier
-    const componentVersionResponse = await blackduckApiService.getComponentsMatching(bearerToken, componentIdentifier)
-    const componentVersion = componentVersionResponse?.result?.items[0]
+    const componentVersion = await blackduckApiService.getComponentVersionMatching(bearerToken, componentIdentifier)
 
     let upgradeGuidance = undefined
     let vulnerabilities = undefined
-    if (componentVersion !== undefined) {
+    if (componentVersion !== null) {
       upgradeGuidance = await blackduckApiService
         .getUpgradeGuidanceFor(bearerToken, componentVersion)
         .then(response => {
@@ -38,7 +37,8 @@ export async function createRapidScanReport(policyViolations: IRapidScanResults[
       vulnerabilities = vulnerabilityResponse?.result?.items
     }
 
-    const componentReport = createComponentReport(policyViolation, componentVersion, upgradeGuidance, vulnerabilities)
+    const componentVersionOrUndefined = componentVersion === null ? undefined : componentVersion
+    const componentReport = createComponentReport(policyViolation, componentVersionOrUndefined, upgradeGuidance, vulnerabilities)
     rapidScanReport.push(componentReport)
   }
 
@@ -58,7 +58,7 @@ export function createComponentReport(violation: IRapidScanResults, componentVer
   return {
     violatedPolicies: violation.violatingPolicyNames.map(policyName => createPolicyReport(policyName)),
     name: `${violation.componentName} ${violation.versionName}`,
-    href: componentVersion?.version,
+    href: componentVersion?._meta.href,
     licenses: createComponentLicenseReports(violation.policyViolationLicenses, componentVersion),
     vulnerabilities: createComponentVulnerabilityReports(violation.policyViolationVulnerabilities, vulnerabilities),
     shortTermUpgrade: createUpgradeReport(upgradeGuidance?.shortTerm),
