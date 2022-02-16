@@ -69,9 +69,9 @@ export function createComponentReport(violation: IRapidScanResults, componentVer
 export function createComponentLicenseReports(policyViolatingLicenses: IRapidScanLicense[], componentVersion?: IComponentVersion): ILicenseReport[] {
   let licenseReport = []
   if (componentVersion === undefined) {
-    licenseReport = policyViolatingLicenses.map(license => createLicenseReport(license.name, license._meta.href, true))
+    licenseReport = policyViolatingLicenses.map(license => createLicenseReport(license.licenseName, license._meta.href, true))
   } else {
-    const violatingPolicyLicenseNames = policyViolatingLicenses.map(license => license.name)
+    const violatingPolicyLicenseNames = policyViolatingLicenses.map(license => license.licenseName)
     licenseReport = componentVersion.license.licenses.map(license => createLicenseReport(license.name, license.license, violatingPolicyLicenseNames.includes(license.name)))
   }
 

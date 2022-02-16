@@ -69,7 +69,7 @@ export interface IRapidScanVulnerability {
 }
 
 export interface IRapidScanLicense {
-  name: string
+  licenseName: string
   _meta: {
     href: string
   }
