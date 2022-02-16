@@ -4,67 +4,75 @@ import { BearerCredentialHandler } from 'typed-rest-client/Handlers'
 import { HttpClient } from 'typed-rest-client/HttpClient'
 import { IRestResponse, RestClient } from 'typed-rest-client/RestClient'
 import { APPLICATION_NAME } from './application-constants'
-
 export interface IBlackduckView {
   _meta: {
     href: string
   }
 }
 
-export interface IBlackduckPage<Type> extends IBlackduckView {
+export interface IBlackduckItemArray<Type> extends IBlackduckView {
   totalCount: number
   items: Array<Type>
 }
 
 export interface IUpgradeGuidance {
   version: string
-  shortTerm: {
-    version: string
-    versionName: string
-    vulnerabilityRisk: Object
-  }
-  longTerm: {
-    version: string
-    versionName: string
-    vulnerabilityRisk: Object
-  }
+  shortTerm: IRecommendedVersion
+  longTerm: IRecommendedVersion
 }
 
-export interface IComponentVersion {
+export interface IRecommendedVersion {
+  version: string
+  versionName: string
+  vulnerabilityRisk: Object
+}
+
+export interface IComponentSearchResult {
   version: string
 }
 
-export interface IRapidScanFullResults {
+export interface IComponentVersion {
+  license: {
+    licenses: {
+      license: string
+      name: string
+    }[]
+  }
+  _meta: {
+    href: string
+  }
+}
+
+export interface IComponentVulnerability {
+  vulnerabilityName: string
+  baseScore: number
+  severity: string
+  _meta: {
+    href: string
+  }
+}
+
+export interface IRapidScanResults {
   componentName: string
   versionName: string
   componentIdentifier: string
-  violatingPolicies: {
-    policyName: string
-    description: string
-    policySeverity: string
-  }[]
-  policyViolationVulnerabilities: {
-    name: string
-  }[]
-  policyViolationLicenses: {
-    name: string
-  }[]
-  allVulnerabilities: {
-    name: string
-    description: string
-    vulnSeverity: string
-    overallScore: number
-    _meta: {
-      href: string
-    }
-  }[]
-  allLicenses: {
-    name: string
-    licenseFamilyName: string
-    _meta: {
-      href: string
-    }
-  }[]
+  violatingPolicyNames: string[]
+  policyViolationVulnerabilities: IRapidScanVulnerability[]
+  policyViolationLicenses: IRapidScanLicense[]
+  _meta: {
+    href: string
+  }
+}
+
+export interface IRapidScanVulnerability {
+  name: string
+}
+
+export interface IRapidScanLicense {
+  licenseName: string
+  _meta: {
+    href: string
+  }
 }
 
 export class BlackduckApiService {
@@ -109,13 +117,34 @@ export class BlackduckApiService {
   }
 
   async getUpgradeGuidanceFor(bearerToken: string, componentVersion: IComponentVersion): Promise<IRestResponse<IUpgradeGuidance>> {
-    return this.get(bearerToken, `${componentVersion.version}/upgrade-guidance`)
+    return this.get(bearerToken, `${componentVersion._meta.href}/upgrade-guidance`)
   }
 
-  async getComponentsMatching(bearerToken: string, componentIdentifier: string, limit: number = 10): Promise<IRestResponse<IBlackduckPage<IComponentVersion>>> {
+  async getComponentsMatching(bearerToken: string, componentIdentifier: string, limit: number = 10): Promise<IRestResponse<IBlackduckItemArray<IComponentSearchResult>>> {
     const requestPath = `/api/components?q=${componentIdentifier}`
 
     return this.requestPage(bearerToken, requestPath, 0, limit)
+  }
+
+  async getComponentVersion(bearerToken: string, searchResult: IComponentSearchResult) {
+    return this.get(bearerToken, searchResult.version)
+  }
+
+  async getComponentVersionMatching(bearerToken: string, componentIdentifier: string, limit: number = 10): Promise<IComponentVersion | null> {
+    const componentSearchResponse = await this.getComponentsMatching(bearerToken, componentIdentifier, limit)
+    const firstMatchingComponentVersionUrl = componentSearchResponse?.result?.items[0].version
+
+    let componentVersion = null
+    if (firstMatchingComponentVersionUrl !== undefined) {
+      const componentVersionResponse: IRestResponse<IComponentVersion> = await this.get(bearerToken, firstMatchingComponentVersionUrl)
+      componentVersion = componentVersionResponse?.result
+    }
+
+    return componentVersion
+  }
+
+  async getComponentVulnerabilties(bearerToken: string, componentVersion: IComponentVersion): Promise<IRestResponse<IBlackduckItemArray<IComponentVulnerability>>> {
+    return this.get(bearerToken, `${componentVersion._meta.href}/vulnerabilities`)
   }
 
   async getPolicies(bearerToken: string, limit: number = 10, enabled?: boolean) {
@@ -125,7 +154,7 @@ export class BlackduckApiService {
     return this.requestPage(bearerToken, requestPath, 0, limit)
   }
 
-  async requestPage(bearerToken: string, requestPath: string, offset: number, limit: number): Promise<IRestResponse<IBlackduckPage<any>>> {
+  async requestPage(bearerToken: string, requestPath: string, offset: number, limit: number): Promise<IRestResponse<IBlackduckItemArray<any>>> {
     return this.get(bearerToken, `${this.blackduckUrl}${requestPath}&offset=${offset}&limit=${limit}`)
   }
 
