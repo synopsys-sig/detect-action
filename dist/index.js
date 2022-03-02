@@ -107,6 +107,7 @@ class BlackduckApiService {
     }
     getComponentVulnerabilties(bearerToken, componentVersion) {
         return __awaiter(this, void 0, void 0, function* () {
+            // Accept: application/vnd.blackducksoftware.vulnerability-4+json
             return this.get(bearerToken, `${componentVersion._meta.href}/vulnerabilities`);
         });
     }
@@ -357,7 +358,10 @@ function createComponentVulnerabilityReports(policyViolatingVulnerabilities, com
     }
     else {
         const violatingPolicyVulnerabilityNames = policyViolatingVulnerabilities.map(vulnerability => vulnerability.name);
-        vulnerabilityReport = componentVulnerabilities.map(vulnerability => createVulnerabilityReport(vulnerability.vulnerabilityName, violatingPolicyVulnerabilityNames.includes(vulnerability.vulnerabilityName), vulnerability._meta.href, vulnerability.baseScore, vulnerability.severity));
+        vulnerabilityReport = componentVulnerabilities.map(vulnerability => {
+            const compVulnBaseScore = vulnerability.useCvss3 ? vulnerability.cvss3.baseScore : vulnerability.cvss2.baseScore;
+            return createVulnerabilityReport(vulnerability.name, violatingPolicyVulnerabilityNames.includes(vulnerability.name), vulnerability._meta.href, compVulnBaseScore, vulnerability.severity);
+        });
     }
     return vulnerabilityReport;
 }

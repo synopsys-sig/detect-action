@@ -44,12 +44,19 @@ export interface IComponentVersion {
 }
 
 export interface IComponentVulnerability {
-  vulnerabilityName: string
-  baseScore: number
+  name: string
   severity: string
+  useCvss3: boolean
+  cvss2: ICvssView
+  cvss3: ICvssView
   _meta: {
     href: string
   }
+}
+
+export interface ICvssView {
+  baseScore: number
+  severity: string
 }
 
 export interface IRapidScanResults {
@@ -144,6 +151,7 @@ export class BlackduckApiService {
   }
 
   async getComponentVulnerabilties(bearerToken: string, componentVersion: IComponentVersion): Promise<IRestResponse<IBlackduckItemArray<IComponentVulnerability>>> {
+    // Accept: application/vnd.blackducksoftware.vulnerability-4+json
     return this.get(bearerToken, `${componentVersion._meta.href}/vulnerabilities`)
   }
 
