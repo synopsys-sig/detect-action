@@ -84,7 +84,10 @@ export function createComponentVulnerabilityReports(policyViolatingVulnerabiliti
     vulnerabilityReport = policyViolatingVulnerabilities.map(vulnerability => createVulnerabilityReport(vulnerability.name, true))
   } else {
     const violatingPolicyVulnerabilityNames = policyViolatingVulnerabilities.map(vulnerability => vulnerability.name)
-    vulnerabilityReport = componentVulnerabilities.map(vulnerability => createVulnerabilityReport(vulnerability.vulnerabilityName, violatingPolicyVulnerabilityNames.includes(vulnerability.vulnerabilityName), vulnerability._meta.href, vulnerability.baseScore, vulnerability.severity))
+    vulnerabilityReport = componentVulnerabilities.map(vulnerability => {
+      const compVulnBaseScore = vulnerability.useCvss3 ? vulnerability.cvss3.baseScore : vulnerability.cvss2.baseScore
+      return createVulnerabilityReport(vulnerability.name, violatingPolicyVulnerabilityNames.includes(vulnerability.name), vulnerability._meta.href, compVulnBaseScore, vulnerability.severity)
+    })
   }
 
   return vulnerabilityReport
