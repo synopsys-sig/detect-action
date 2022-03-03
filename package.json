@@ -1,6 +1,6 @@
 {
   "name": "detect-action",
-  "version": "0.3.2",
+  "version": "0.3.2-SNAPSHOT",
   "description": "Richly integrate Synopsys Detect and Black Duck policy into your GitHub Action pipelines",
   "main": "lib/main.js",
   "scripts": {
