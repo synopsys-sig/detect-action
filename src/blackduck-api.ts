@@ -151,8 +151,7 @@ export class BlackduckApiService {
   }
 
   async getComponentVulnerabilties(bearerToken: string, componentVersion: IComponentVersion): Promise<IRestResponse<IBlackduckItemArray<IComponentVulnerability>>> {
-    // Accept: application/vnd.blackducksoftware.vulnerability-4+json
-    return this.get(bearerToken, `${componentVersion._meta.href}/vulnerabilities`)
+    return this.get(bearerToken, `${componentVersion._meta.href}/vulnerabilities`, 'application/vnd.blackducksoftware.vulnerability-4+json')
   }
 
   async getPolicies(bearerToken: string, limit: number = 10, enabled?: boolean) {
@@ -166,11 +165,11 @@ export class BlackduckApiService {
     return this.get(bearerToken, `${this.blackduckUrl}${requestPath}&offset=${offset}&limit=${limit}`)
   }
 
-  async get<Type>(bearerToken: string, requestUrl: string): Promise<IRestResponse<Type>> {
+  async get<Type>(bearerToken: string, requestUrl: string, acceptHeader?: string): Promise<IRestResponse<Type>> {
     const bearerTokenHandler = new BearerCredentialHandler(bearerToken, true)
     const blackduckRestClient = new RestClient(APPLICATION_NAME, this.blackduckUrl, [bearerTokenHandler])
 
-    return blackduckRestClient.get(requestUrl)
+    return blackduckRestClient.get(requestUrl, { acceptHeader })
   }
 }
 

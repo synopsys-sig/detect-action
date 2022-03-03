@@ -107,8 +107,7 @@ class BlackduckApiService {
     }
     getComponentVulnerabilties(bearerToken, componentVersion) {
         return __awaiter(this, void 0, void 0, function* () {
-            // Accept: application/vnd.blackducksoftware.vulnerability-4+json
-            return this.get(bearerToken, `${componentVersion._meta.href}/vulnerabilities`);
+            return this.get(bearerToken, `${componentVersion._meta.href}/vulnerabilities`, 'application/vnd.blackducksoftware.vulnerability-4+json');
         });
     }
     getPolicies(bearerToken, limit = 10, enabled) {
@@ -123,11 +122,11 @@ class BlackduckApiService {
             return this.get(bearerToken, `${this.blackduckUrl}${requestPath}&offset=${offset}&limit=${limit}`);
         });
     }
-    get(bearerToken, requestUrl) {
+    get(bearerToken, requestUrl, acceptHeader) {
         return __awaiter(this, void 0, void 0, function* () {
             const bearerTokenHandler = new Handlers_1.BearerCredentialHandler(bearerToken, true);
             const blackduckRestClient = new RestClient_1.RestClient(application_constants_1.APPLICATION_NAME, this.blackduckUrl, [bearerTokenHandler]);
-            return blackduckRestClient.get(requestUrl);
+            return blackduckRestClient.get(requestUrl, { acceptHeader });
         });
     }
 }
