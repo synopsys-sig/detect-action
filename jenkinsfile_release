@@ -4,7 +4,6 @@
 */
 @Library('integration-pipeline-library@master')
 import com.synopsys.integration.Constants
-import com.synopsys.integration.pipeline.scm.GitStage
 
 properties(
     [
@@ -27,27 +26,7 @@ pipeline {
     stages {
         stage('Git') {
             steps {
-                script {
-                    def branch = params.BRANCH
-                    def localBranch = branch.replace("origin/", "")
-
-                    def gitEnvironment = checkout(
-                        [
-                            $class: 'GitSCM', 
-                            branches: [[name: params.BRANCH]], 
-                            doGenerateSubmoduleConfigurations: false, 
-                            extensions: [[$class: 'WipeWorkspace'], [$class: 'LocalBranch', localBranch: localBranch]], 
-                            gitTool: 'Default', 
-                            submoduleCfg: [], 
-                            userRemoteConfigs: [[credentialsId: GitStage.DEFAULT_CREDENTIALS_ID, url: 'https://github.com/synopsys-sig/detect-action.git']]
-                        ]
-                    )
-                    
-                    env.GIT_URL = gitEnvironment.GIT_URL
-                    println "GIT_URL: ${env.GIT_URL}"
-                    env.GIT_LOCAL_BRANCH = gitEnvironment.GIT_LOCAL_BRANCH
-                    println "GIT_LOCAL_BRANCH: ${env.GIT_URL}"
-                }
+                gitCheckoutExportVariables('https://github.com/synopsys-sig/detect-action.git')
             }
         }
         stage('Release') {
@@ -70,20 +49,10 @@ pipeline {
     }
     post {
         failure {
-            echo 'Sending out Build Failure email'
-            emailext(
-                body: '$DEFAULT_CONTENT', 
-                subject: '$DEFAULT_SUBJECT', 
-                to: Constants.CENTRAL_INTEGRATIONS_TEAM_EMAIL
-            )
-        } 
+            emailFailure(Constants.CENTRAL_INTEGRATIONS_TEAM_EMAIL)
+        }
         fixed {
-            echo 'Sending out Build Fixed email'
-            emailext(
-                body: "${env.JOB_NAME} - Build #${env.BUILD_NUMBER} - Fixed!\nCheck console output at ${env.BUILD_URL} to view the results.", 
-                subject: "${env.JOB_NAME} - Build #${env.BUILD_NUMBER} - Fixed!", 
-                to: Constants.CENTRAL_INTEGRATIONS_TEAM_EMAIL
-            )
+            emailFixed(Constants.CENTRAL_INTEGRATIONS_TEAM_EMAIL)
         }
     }
 }
