@@ -27,6 +27,9 @@ export async function runWithPolicyCheck(blackduckPolicyCheck: GitHubCheck): Pro
   info(`output-path-override: ${OUTPUT_PATH_OVERRIDE}`)
   info(`scan-mode: ${SCAN_MODE}`)
 
+  //Setting process environment for certificate issue fix
+  process.env['NODE_TLS_REJECT_UNAUTHORIZED'] = '0'
+
   const runnerTemp = process.env.RUNNER_TEMP
   let outputPath = ''
   if (OUTPUT_PATH_OVERRIDE !== '') {
