@@ -685,8 +685,10 @@ function runWithPolicyCheck(blackduckPolicyCheck) {
         (0, core_1.info)(`detect-version: ${inputs_1.DETECT_VERSION}`);
         (0, core_1.info)(`output-path-override: ${inputs_1.OUTPUT_PATH_OVERRIDE}`);
         (0, core_1.info)(`scan-mode: ${inputs_1.SCAN_MODE}`);
-        //Setting process environment for SSL certificate issue fix
-        process.env['NODE_TLS_REJECT_UNAUTHORIZED'] = '0';
+        //Setting process environment for certificate issue fix
+        if (!process.env['NODE_TLS_REJECT_UNAUTHORIZED']) {
+            process.env['NODE_TLS_REJECT_UNAUTHORIZED'] = '0';
+        }
         const runnerTemp = process.env.RUNNER_TEMP;
         let outputPath = '';
         if (inputs_1.OUTPUT_PATH_OVERRIDE !== '') {

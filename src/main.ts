@@ -28,7 +28,9 @@ export async function runWithPolicyCheck(blackduckPolicyCheck: GitHubCheck): Pro
   info(`scan-mode: ${SCAN_MODE}`)
 
   //Setting process environment for certificate issue fix
-  process.env['NODE_TLS_REJECT_UNAUTHORIZED'] = '0'
+  if (!process.env['NODE_TLS_REJECT_UNAUTHORIZED']) {
+    process.env['NODE_TLS_REJECT_UNAUTHORIZED'] = '0'
+  }
 
   const runnerTemp = process.env.RUNNER_TEMP
   let outputPath = ''
