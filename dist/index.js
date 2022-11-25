@@ -687,6 +687,7 @@ function runWithPolicyCheck(blackduckPolicyCheck) {
         (0, core_1.info)(`scan-mode: ${inputs_1.SCAN_MODE}`);
         //Setting process environment for certificate issue fix
         if (!process.env['NODE_TLS_REJECT_UNAUTHORIZED']) {
+            (0, core_1.info)('NODE_TLS_REJECT_UNAUTHORIZED is not set, disabling strict certificate check');
             process.env['NODE_TLS_REJECT_UNAUTHORIZED'] = '0';
         }
         const runnerTemp = process.env.RUNNER_TEMP;
