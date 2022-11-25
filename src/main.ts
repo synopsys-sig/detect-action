@@ -29,6 +29,7 @@ export async function runWithPolicyCheck(blackduckPolicyCheck: GitHubCheck): Pro
 
   //Setting process environment for certificate issue fix
   if (!process.env['NODE_TLS_REJECT_UNAUTHORIZED']) {
+    info('NODE_TLS_REJECT_UNAUTHORIZED is not set, disabling strict certificate check')
     process.env['NODE_TLS_REJECT_UNAUTHORIZED'] = '0'
   }
 
