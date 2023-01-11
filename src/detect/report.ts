@@ -1,8 +1,8 @@
 import { warning } from '@actions/core'
-import { BlackduckApiService, IComponentVersion, IComponentVulnerability, IRapidScanLicense, IRapidScanResults, IRapidScanVulnerability, IRecommendedVersion, IUpgradeGuidance } from '../blackduck-api'
+import { BlackduckApiService, ComponentVersionView, VulnerabilityView, DeveloperScansScanView, ComponentVersionUpgradeGuidanceView, DeveloperScansScanItemsPolicyViolationView, ComponentVersionUpgradeGuidanceTermView } from '../blackduck-api'
 import { BLACKDUCK_API_TOKEN, BLACKDUCK_URL } from '../inputs'
 
-export async function createRapidScanReport(policyViolations: IRapidScanResults[], blackduckApiService?: BlackduckApiService): Promise<IComponentReport[]> {
+export async function createRapidScanReport(policyViolations: DeveloperScansScanView[], blackduckApiService?: BlackduckApiService): Promise<IComponentReport[]> {
   const rapidScanReport: IComponentReport[] = []
 
   if (blackduckApiService === undefined) {
@@ -54,9 +54,9 @@ export interface IComponentReport {
   longTermUpgrade?: IUpgradeReport
 }
 
-export function createComponentReport(violation: IRapidScanResults, componentVersion?: IComponentVersion, upgradeGuidance?: IUpgradeGuidance, vulnerabilities?: IComponentVulnerability[]): IComponentReport {
+export function createComponentReport(violation: DeveloperScansScanView, componentVersion?: ComponentVersionView, upgradeGuidance?: ComponentVersionUpgradeGuidanceView, vulnerabilities?: VulnerabilityView[]): IComponentReport {
   return {
-    violatedPolicies: violation.violatingPolicyNames,
+    violatedPolicies: violation.violatingPolicies.map(x => x.policyName),
     name: `${violation.componentName} ${violation.versionName}`,
     href: componentVersion?._meta.href,
     licenses: createComponentLicenseReports(violation.policyViolationLicenses, componentVersion),
@@ -66,19 +66,19 @@ export function createComponentReport(violation: IRapidScanResults, componentVer
   }
 }
 
-export function createComponentLicenseReports(policyViolatingLicenses: IRapidScanLicense[], componentVersion?: IComponentVersion): ILicenseReport[] {
+function createComponentLicenseReports(policyViolatingLicenses: DeveloperScansScanItemsPolicyViolationView[], componentVersion?: ComponentVersionView): ILicenseReport[] {
   let licenseReport = []
   if (componentVersion === undefined) {
-    licenseReport = policyViolatingLicenses.map(license => createLicenseReport(license.licenseName, license._meta.href, true))
+    licenseReport = policyViolatingLicenses.map(license => createLicenseReport(license.name, '', true))
   } else {
-    const violatingPolicyLicenseNames = policyViolatingLicenses.map(license => license.licenseName)
+    const violatingPolicyLicenseNames = policyViolatingLicenses.map(license => license.name)
     licenseReport = componentVersion.license.licenses.map(license => createLicenseReport(license.name, license.license, violatingPolicyLicenseNames.includes(license.name)))
   }
 
   return licenseReport
 }
 
-export function createComponentVulnerabilityReports(policyViolatingVulnerabilities: IRapidScanVulnerability[], componentVulnerabilities?: IComponentVulnerability[]): IVulnerabilityReport[] {
+function createComponentVulnerabilityReports(policyViolatingVulnerabilities: DeveloperScansScanItemsPolicyViolationView[], componentVulnerabilities?: VulnerabilityView[]): IVulnerabilityReport[] {
   let vulnerabilityReport = []
   if (componentVulnerabilities === undefined) {
     vulnerabilityReport = policyViolatingVulnerabilities.map(vulnerability => createVulnerabilityReport(vulnerability.name, true))
@@ -99,7 +99,7 @@ export interface ILicenseReport {
   violatesPolicy: boolean
 }
 
-export function createLicenseReport(name: string, href: string, violatesPolicy: boolean): ILicenseReport {
+function createLicenseReport(name: string, href: string, violatesPolicy: boolean): ILicenseReport {
   return {
     name: name,
     href: href,
@@ -115,7 +115,7 @@ export interface IVulnerabilityReport {
   severity?: string
 }
 
-export function createVulnerabilityReport(name: string, violatesPolicy: boolean, href?: string, cvssScore?: number, severity?: string): IVulnerabilityReport {
+function createVulnerabilityReport(name: string, violatesPolicy: boolean, href?: string, cvssScore?: number, severity?: string): IVulnerabilityReport {
   return {
     name: name,
     violatesPolicy: violatesPolicy,
@@ -131,7 +131,7 @@ export interface IUpgradeReport {
   vulnerabilityCount: number
 }
 
-export function createUpgradeReport(recommendedVersion?: IRecommendedVersion): IUpgradeReport | undefined {
+function createUpgradeReport(recommendedVersion?: ComponentVersionUpgradeGuidanceTermView): IUpgradeReport | undefined {
   if (recommendedVersion === undefined) {
     return undefined
   }
