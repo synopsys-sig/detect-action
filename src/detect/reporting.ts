@@ -13,6 +13,7 @@ export async function createRapidScanReportString(policyViolations: IRapidScanRe
 
     const componentReports = await createRapidScanReport(policyViolations)
     const tableBody = componentReports.map(componentReport => createComponentRow(componentReport)).join('\r\n')
+    console.log("tableBody:::::" + tableBody);
     const reportTable = TABLE_HEADER.concat(tableBody)
     message = message.concat(reportTable)
   }
@@ -21,7 +22,6 @@ export async function createRapidScanReportString(policyViolations: IRapidScanRe
 }
 
 function createComponentRow(component: IComponentReport): string {
-  console.log('component:::::' + JSON.stringify(component))
   const violatedPolicies = component.violatedPolicies === undefined ? "" : component.violatedPolicies.join('<br/>')
   // console.log('component.violatedPolicies::' + violatedPolicies)
   const componentInViolation = component?.href ? `[${component.name}](${component.href})` : component.name

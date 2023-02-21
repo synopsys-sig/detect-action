@@ -41,7 +41,6 @@ export async function createRapidScanReport(policyViolations: IRapidScanResults[
     const componentReport = createComponentReport(policyViolation, componentVersionOrUndefined, upgradeGuidance, vulnerabilities)
     rapidScanReport.push(componentReport)
   }
-  console.log('rapidScanReport:::::' + JSON.stringify(rapidScanReport))
   return rapidScanReport
 }
 export interface IComponentReport {
