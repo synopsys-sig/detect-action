@@ -322,7 +322,6 @@ function createRapidScanReport(policyViolations, blackduckApiService) {
             const componentReport = createComponentReport(policyViolation, componentVersionOrUndefined, upgradeGuidance, vulnerabilities);
             rapidScanReport.push(componentReport);
         }
-        console.log('rapidScanReport:::::' + JSON.stringify(rapidScanReport));
         return rapidScanReport;
     });
 }
@@ -428,6 +427,7 @@ function createRapidScanReportString(policyViolations, policyCheckWillFail) {
             message = message.concat(`# ${violationSymbol} Found dependencies violating policy!\r\n\r\n`);
             const componentReports = yield (0, report_1.createRapidScanReport)(policyViolations);
             const tableBody = componentReports.map(componentReport => createComponentRow(componentReport)).join('\r\n');
+            console.log("tableBody:::::" + tableBody);
             const reportTable = exports.TABLE_HEADER.concat(tableBody);
             message = message.concat(reportTable);
         }
@@ -436,7 +436,6 @@ function createRapidScanReportString(policyViolations, policyCheckWillFail) {
 }
 exports.createRapidScanReportString = createRapidScanReportString;
 function createComponentRow(component) {
-    console.log('component:::::' + JSON.stringify(component));
     const violatedPolicies = component.violatedPolicies === undefined ? "" : component.violatedPolicies.join('<br/>');
     // console.log('component.violatedPolicies::' + violatedPolicies)
     const componentInViolation = (component === null || component === void 0 ? void 0 : component.href) ? `[${component.name}](${component.href})` : component.name;
