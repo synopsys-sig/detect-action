@@ -322,6 +322,7 @@ function createRapidScanReport(policyViolations, blackduckApiService) {
             const componentReport = createComponentReport(policyViolation, componentVersionOrUndefined, upgradeGuidance, vulnerabilities);
             rapidScanReport.push(componentReport);
         }
+        console.log("rapidScanReport:::::" + rapidScanReport);
         return rapidScanReport;
     });
 }
