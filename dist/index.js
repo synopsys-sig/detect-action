@@ -437,7 +437,7 @@ exports.createRapidScanReportString = createRapidScanReportString;
 function createComponentRow(component) {
     console.log('component:::::' + JSON.stringify(component));
     //const violatedPolicies = component.violatedPolicies === undefined ? "" : component.violatedPolicies.join('<br/>')
-    //console.log('component.violatedPolicies::' + component.violatedPolicies)
+    console.log('component.violatedPolicies::' + component.violatedPolicies);
     const componentInViolation = (component === null || component === void 0 ? void 0 : component.href) ? `[${component.name}](${component.href})` : component.name;
     const componentLicenses = component.licenses.map(license => `${license.violatesPolicy ? ':x: &nbsp; ' : ''}[${license.name}](${license.href})`).join('<br/>');
     const vulnerabilities = component.vulnerabilities.map(vulnerability => `${vulnerability.violatesPolicy ? ':x: &nbsp; ' : ''}[${vulnerability.name}](${vulnerability.href})${vulnerability.cvssScore && vulnerability.severity ? ` ${vulnerability.severity}: CVSS ${vulnerability.cvssScore}` : ''}`).join('<br/>');
