@@ -21,7 +21,7 @@ export async function createRapidScanReportString(policyViolations: IRapidScanRe
 }
 
 function createComponentRow(component: IComponentReport): string {
-  console.log('component:::::' + component)
+  console.log('component:::::' + JSON.stringify(component))
   console.log('component.violatedPolicies::' + component.violatedPolicies)
   const violatedPolicies = component.violatedPolicies.join('<br/>')
   console.log('component.violatedPolicies::' + component.violatedPolicies)

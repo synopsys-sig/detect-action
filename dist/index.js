@@ -435,7 +435,7 @@ function createRapidScanReportString(policyViolations, policyCheckWillFail) {
 }
 exports.createRapidScanReportString = createRapidScanReportString;
 function createComponentRow(component) {
-    console.log('component:::::' + component);
+    console.log('component:::::' + JSON.stringify(component));
     console.log('component.violatedPolicies::' + component.violatedPolicies);
     const violatedPolicies = component.violatedPolicies.join('<br/>');
     console.log('component.violatedPolicies::' + component.violatedPolicies);
