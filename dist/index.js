@@ -427,7 +427,6 @@ function createRapidScanReportString(policyViolations, policyCheckWillFail) {
             message = message.concat(`# ${violationSymbol} Found dependencies violating policy!\r\n\r\n`);
             const componentReports = yield (0, report_1.createRapidScanReport)(policyViolations);
             const tableBody = componentReports.map(componentReport => createComponentRow(componentReport)).join('\r\n');
-            console.log("tableBody:::::" + tableBody);
             const reportTable = exports.TABLE_HEADER.concat(tableBody);
             message = message.concat(reportTable);
         }
@@ -436,7 +435,7 @@ function createRapidScanReportString(policyViolations, policyCheckWillFail) {
 }
 exports.createRapidScanReportString = createRapidScanReportString;
 function createComponentRow(component) {
-    const violatedPolicies = component.violatedPolicies === undefined ? "[Not Required]" : component.violatedPolicies.join('<br/>');
+    const violatedPolicies = component.violatedPolicies === undefined ? '[Not Required]' : component.violatedPolicies.join('<br/>');
     const componentInViolation = (component === null || component === void 0 ? void 0 : component.href) ? `[${component.name}](${component.href})` : component.name;
     const componentLicenses = component.licenses.map(license => `${license.violatesPolicy ? ':x: &nbsp; ' : ''}[${license.name}](${license.href})`).join('<br/>');
     const vulnerabilities = component.vulnerabilities.map(vulnerability => `${vulnerability.violatesPolicy ? ':x: &nbsp; ' : ''}[${vulnerability.name}](${vulnerability.href})${vulnerability.cvssScore && vulnerability.severity ? ` ${vulnerability.severity}: CVSS ${vulnerability.cvssScore}` : ''}`).join('<br/>');

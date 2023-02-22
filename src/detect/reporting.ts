@@ -21,7 +21,7 @@ export async function createRapidScanReportString(policyViolations: IRapidScanRe
 }
 
 function createComponentRow(component: IComponentReport): string {
-  const violatedPolicies = component.violatedPolicies === undefined ? "[Not Required]" : component.violatedPolicies.join('<br/>')
+  const violatedPolicies = component.violatedPolicies === undefined ? '[Not Required]' : component.violatedPolicies.join('<br/>')
   const componentInViolation = component?.href ? `[${component.name}](${component.href})` : component.name
   const componentLicenses = component.licenses.map(license => `${license.violatesPolicy ? ':x: &nbsp; ' : ''}[${license.name}](${license.href})`).join('<br/>')
   const vulnerabilities = component.vulnerabilities.map(vulnerability => `${vulnerability.violatesPolicy ? ':x: &nbsp; ' : ''}[${vulnerability.name}](${vulnerability.href})${vulnerability.cvssScore && vulnerability.severity ? ` ${vulnerability.severity}: CVSS ${vulnerability.cvssScore}` : ''}`).join('<br/>')
