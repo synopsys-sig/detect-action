@@ -13,7 +13,6 @@ export async function createRapidScanReportString(policyViolations: IRapidScanRe
 
     const componentReports = await createRapidScanReport(policyViolations)
     const tableBody = componentReports.map(componentReport => createComponentRow(componentReport)).join('\r\n')
-    console.log("tableBody:::::" + tableBody);
     const reportTable = TABLE_HEADER.concat(tableBody)
     message = message.concat(reportTable)
   }
