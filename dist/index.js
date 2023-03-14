@@ -807,10 +807,10 @@ function runWithPolicyCheck(blackduckPolicyCheck) {
 exports.runWithPolicyCheck = runWithPolicyCheck;
 run().catch(error => {
     if (error.message != undefined) {
-        (0, core_1.setFailed)('Workflow failed! '.concat(error.message));
+        (0, core_1.setFailed)(error.message);
     }
     else {
-        (0, core_1.setFailed)('Workflow failed! '.concat(error));
+        (0, core_1.setFailed)(error);
     }
 });
 
