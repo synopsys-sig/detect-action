@@ -157,8 +157,8 @@ export async function runWithPolicyCheck(blackduckPolicyCheck: GitHubCheck): Pro
 
 run().catch(error => {
   if (error.message != undefined) {
-    setFailed('Workflow failed! '.concat(error.message))
+    setFailed(error.message)
   } else {
-    setFailed('Workflow failed! '.concat(error))
+    setFailed(error)
   }
 })
