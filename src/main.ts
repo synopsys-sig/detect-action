@@ -14,7 +14,12 @@ import { uploadArtifact } from './github/upload-artifacts'
 import { CHECK_NAME } from './application-constants'
 
 export async function run() {
-  const blackduckPolicyCheck = await createCheck(CHECK_NAME)
+  let blackduckPolicyCheck: any
+  try {
+    blackduckPolicyCheck = await createCheck(CHECK_NAME)
+  } catch (error) {
+    throw error
+  }
   runWithPolicyCheck(blackduckPolicyCheck).catch(unhandledError => {
     debug('Canceling policy check because of an unhandled error.')
     blackduckPolicyCheck.cancelCheck()
@@ -150,4 +155,10 @@ export async function runWithPolicyCheck(blackduckPolicyCheck: GitHubCheck): Pro
   }
 }
 
-run()
+run().catch(error => {
+  if (error.message != undefined) {
+    setFailed('Workflow failed! '.concat(error.message))
+  } else {
+    setFailed('Workflow failed! '.concat(error))
+  }
+})
