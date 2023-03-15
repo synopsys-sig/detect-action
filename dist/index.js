@@ -758,7 +758,7 @@ function runWithPolicyCheck(blackduckPolicyCheck) {
             (0, core_1.debug)(`Policy Violations Present: ${hasPolicyViolations}`);
             const failureConditionsMet = detectExitCode === exit_codes_1.POLICY_SEVERITY || inputs_1.FAIL_ON_ALL_POLICY_SEVERITIES;
             const rapidScanReport = yield (0, reporting_1.createRapidScanReportString)(policyViolations, hasPolicyViolations && failureConditionsMet);
-            (0, core_1.info)(rapidScanReport);
+            (0, core_1.debug)(`Policy Violations policyViolations: ${policyViolations}`);
             if ((0, github_context_1.isPullRequest)()) {
                 (0, core_1.info)('This is a pull request, commenting...');
                 (0, comment_1.commentOnPR)(rapidScanReport);

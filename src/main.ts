@@ -111,7 +111,7 @@ export async function runWithPolicyCheck(blackduckPolicyCheck: GitHubCheck): Pro
 
     const failureConditionsMet = detectExitCode === POLICY_SEVERITY || FAIL_ON_ALL_POLICY_SEVERITIES
     const rapidScanReport = await createRapidScanReportString(policyViolations, hasPolicyViolations && failureConditionsMet)
-    info(rapidScanReport)
+    debug(`Policy Violations policyViolations: ${policyViolations}`)
     if (isPullRequest()) {
       info('This is a pull request, commenting...')
       commentOnPR(rapidScanReport)
