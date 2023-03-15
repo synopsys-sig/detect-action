@@ -1,4 +1,5 @@
 import { IRapidScanResults } from '../blackduck-api'
+import { info, warning, setFailed, debug } from '@actions/core'
 import { createRapidScanReport, IComponentReport } from './report'
 
 export const TABLE_HEADER = '| Policies Violated | Dependency | License(s) | Vulnerabilities | Short Term Recommended Upgrade | Long Term Recommended Upgrade |\r\n' + '|-|-|-|-|-|-|\r\n'
@@ -21,7 +22,7 @@ export async function createRapidScanReportString(policyViolations: IRapidScanRe
 }
 
 function createComponentRow(component: IComponentReport): string {
-  console.log('component' + JSON.stringify(component))
+  info('component' + JSON.stringify(component))
   const violatedPolicies = component.violatedPolicies.join('<br/>')
   const componentInViolation = component?.href ? `[${component.name}](${component.href})` : component.name
   const componentLicenses = component.licenses.map(license => `${license.violatesPolicy ? ':x: &nbsp; ' : ''}[${license.name}](${license.href})`).join('<br/>')

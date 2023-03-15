@@ -414,6 +414,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.createRapidScanReportString = exports.TABLE_HEADER = void 0;
+const core_1 = __nccwpck_require__(2186);
 const report_1 = __nccwpck_require__(2198);
 exports.TABLE_HEADER = '| Policies Violated | Dependency | License(s) | Vulnerabilities | Short Term Recommended Upgrade | Long Term Recommended Upgrade |\r\n' + '|-|-|-|-|-|-|\r\n';
 function createRapidScanReportString(policyViolations, policyCheckWillFail) {
@@ -435,8 +436,8 @@ function createRapidScanReportString(policyViolations, policyCheckWillFail) {
 }
 exports.createRapidScanReportString = createRapidScanReportString;
 function createComponentRow(component) {
+    (0, core_1.info)('component' + JSON.stringify(component));
     const violatedPolicies = component.violatedPolicies.join('<br/>');
-    console.log('violatedPolicies' + violatedPolicies);
     const componentInViolation = (component === null || component === void 0 ? void 0 : component.href) ? `[${component.name}](${component.href})` : component.name;
     const componentLicenses = component.licenses.map(license => `${license.violatesPolicy ? ':x: &nbsp; ' : ''}[${license.name}](${license.href})`).join('<br/>');
     const vulnerabilities = component.vulnerabilities.map(vulnerability => `${vulnerability.violatesPolicy ? ':x: &nbsp; ' : ''}[${vulnerability.name}](${vulnerability.href})${vulnerability.cvssScore && vulnerability.severity ? ` ${vulnerability.severity}: CVSS ${vulnerability.cvssScore}` : ''}`).join('<br/>');
@@ -756,10 +757,10 @@ function runWithPolicyCheck(blackduckPolicyCheck) {
             const rawdata = fs_1.default.readFileSync(scanJsonPath);
             const policyViolations = JSON.parse(rawdata.toString());
             hasPolicyViolations = policyViolations.length > 0;
+            (0, core_1.info)(`Policy Violations policyViolations: ${JSON.stringify(policyViolations)}`);
             (0, core_1.debug)(`Policy Violations Present: ${hasPolicyViolations}`);
             const failureConditionsMet = detectExitCode === exit_codes_1.POLICY_SEVERITY || inputs_1.FAIL_ON_ALL_POLICY_SEVERITIES;
             const rapidScanReport = yield (0, reporting_1.createRapidScanReportString)(policyViolations, hasPolicyViolations && failureConditionsMet);
-            (0, core_1.info)(`Policy Violations policyViolations: ${JSON.stringify(policyViolations)}`);
             if ((0, github_context_1.isPullRequest)()) {
                 (0, core_1.info)('This is a pull request, commenting...');
                 (0, comment_1.commentOnPR)(rapidScanReport);
