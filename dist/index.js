@@ -670,7 +670,13 @@ const upload_artifacts_1 = __nccwpck_require__(1003);
 const application_constants_1 = __nccwpck_require__(9717);
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
-        const blackduckPolicyCheck = yield (0, check_1.createCheck)(application_constants_1.CHECK_NAME);
+        let blackduckPolicyCheck;
+        try {
+            blackduckPolicyCheck = yield (0, check_1.createCheck)(application_constants_1.CHECK_NAME);
+        }
+        catch (error) {
+            throw error;
+        }
         runWithPolicyCheck(blackduckPolicyCheck).catch(unhandledError => {
             (0, core_1.debug)('Canceling policy check because of an unhandled error.');
             blackduckPolicyCheck.cancelCheck();
@@ -799,7 +805,14 @@ function runWithPolicyCheck(blackduckPolicyCheck) {
     });
 }
 exports.runWithPolicyCheck = runWithPolicyCheck;
-run();
+run().catch(error => {
+    if (error.message != undefined) {
+        (0, core_1.setFailed)(error.message);
+    }
+    else {
+        (0, core_1.setFailed)(error);
+    }
+});
 
 
 /***/ }),
