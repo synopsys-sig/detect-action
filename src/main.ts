@@ -119,7 +119,7 @@ export async function runWithPolicyCheck(blackduckPolicyCheck: GitHubCheck): Pro
 
     if (isPullRequest()) {
       info('This is a pull request, commenting...')
-      commentOnPR(rapidScanReport)
+      commentOnPR(rapidScanReport, hasPolicyViolations)
       info('Successfully commented on PR.')
     }
 
