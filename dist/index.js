@@ -748,6 +748,7 @@ function runWithPolicyCheck(blackduckPolicyCheck) {
         }
         else if (detectExitCode > 0 && detectExitCode != exit_codes_1.POLICY_SEVERITY) {
             (0, core_1.setFailed)(`Detect failed with exit code: ${detectExitCode}. Check the logs for more information.`);
+            blackduckPolicyCheck.cancelCheck();
             return;
         }
         (0, core_1.info)(`${detect_manager_1.TOOL_NAME} executed successfully.`);
@@ -801,6 +802,9 @@ function runWithPolicyCheck(blackduckPolicyCheck) {
         }
         else if (detectExitCode === exit_codes_1.SUCCESS) {
             (0, core_1.info)('None of your dependencies violate your Black Duck policies!');
+        }
+        if (inputs_1.SCAN_MODE !== 'RAPID' && detectExitCode > 0) {
+            (0, core_1.setFailed)(`Detect exited with code ${detectExitCode}. See Detect output for more information.`);
         }
     });
 }
