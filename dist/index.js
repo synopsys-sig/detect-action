@@ -284,7 +284,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.createUpgradeReport = exports.createVulnerabilityReport = exports.createLicenseReport = exports.createComponentVulnerabilityReports = exports.createComponentLicenseReports = exports.createComponentReport = exports.createRapidScanReport = void 0;
+exports.createComponentReport = exports.createRapidScanReport = void 0;
 const core_1 = __nccwpck_require__(2186);
 const blackduck_api_1 = __nccwpck_require__(7495);
 const inputs_1 = __nccwpck_require__(6180);
@@ -328,7 +328,7 @@ function createRapidScanReport(policyViolations, blackduckApiService) {
 exports.createRapidScanReport = createRapidScanReport;
 function createComponentReport(violation, componentVersion, upgradeGuidance, vulnerabilities) {
     return {
-        violatedPolicies: violation.violatingPolicyNames,
+        violatedPolicies: violation.violatingPolicies.map(x => x.policyName),
         name: `${violation.componentName} ${violation.versionName}`,
         href: componentVersion === null || componentVersion === void 0 ? void 0 : componentVersion._meta.href,
         licenses: createComponentLicenseReports(violation.policyViolationLicenses, componentVersion),
@@ -341,15 +341,14 @@ exports.createComponentReport = createComponentReport;
 function createComponentLicenseReports(policyViolatingLicenses, componentVersion) {
     let licenseReport = [];
     if (componentVersion === undefined) {
-        licenseReport = policyViolatingLicenses.map(license => createLicenseReport(license.licenseName, license._meta.href, true));
+        licenseReport = policyViolatingLicenses.map(license => createLicenseReport(license.name, '', true));
     }
     else {
-        const violatingPolicyLicenseNames = policyViolatingLicenses.map(license => license.licenseName);
+        const violatingPolicyLicenseNames = policyViolatingLicenses.map(license => license.name);
         licenseReport = componentVersion.license.licenses.map(license => createLicenseReport(license.name, license.license, violatingPolicyLicenseNames.includes(license.name)));
     }
     return licenseReport;
 }
-exports.createComponentLicenseReports = createComponentLicenseReports;
 function createComponentVulnerabilityReports(policyViolatingVulnerabilities, componentVulnerabilities) {
     let vulnerabilityReport = [];
     if (componentVulnerabilities === undefined) {
@@ -364,7 +363,6 @@ function createComponentVulnerabilityReports(policyViolatingVulnerabilities, com
     }
     return vulnerabilityReport;
 }
-exports.createComponentVulnerabilityReports = createComponentVulnerabilityReports;
 function createLicenseReport(name, href, violatesPolicy) {
     return {
         name: name,
@@ -372,7 +370,6 @@ function createLicenseReport(name, href, violatesPolicy) {
         violatesPolicy: violatesPolicy
     };
 }
-exports.createLicenseReport = createLicenseReport;
 function createVulnerabilityReport(name, violatesPolicy, href, cvssScore, severity) {
     return {
         name: name,
@@ -382,7 +379,6 @@ function createVulnerabilityReport(name, violatesPolicy, href, cvssScore, severi
         severity: severity
     };
 }
-exports.createVulnerabilityReport = createVulnerabilityReport;
 function createUpgradeReport(recommendedVersion) {
     if (recommendedVersion === undefined) {
         return undefined;
@@ -393,7 +389,6 @@ function createUpgradeReport(recommendedVersion) {
         vulnerabilityCount: Object.values(recommendedVersion.vulnerabilityRisk).reduce((accumulatedValues, value) => accumulatedValues + value, 0)
     };
 }
-exports.createUpgradeReport = createUpgradeReport;
 
 
 /***/ }),
@@ -437,7 +432,12 @@ exports.createRapidScanReportString = createRapidScanReportString;
 function createComponentRow(component) {
     const violatedPolicies = component.violatedPolicies.join('<br/>');
     const componentInViolation = (component === null || component === void 0 ? void 0 : component.href) ? `[${component.name}](${component.href})` : component.name;
-    const componentLicenses = component.licenses.map(license => `${license.violatesPolicy ? ':x: &nbsp; ' : ''}[${license.name}](${license.href})`).join('<br/>');
+    const componentLicenses = component.licenses
+        .map(license => {
+        const name = license.href ? `[${license.name}](${license.href})` : license.name;
+        return `${license.violatesPolicy ? ':x: &nbsp; ' : ''}${name}`;
+    })
+        .join('<br/>');
     const vulnerabilities = component.vulnerabilities.map(vulnerability => `${vulnerability.violatesPolicy ? ':x: &nbsp; ' : ''}[${vulnerability.name}](${vulnerability.href})${vulnerability.cvssScore && vulnerability.severity ? ` ${vulnerability.severity}: CVSS ${vulnerability.cvssScore}` : ''}`).join('<br/>');
     const shortTermString = component.shortTermUpgrade ? `[${component.shortTermUpgrade.name}](${component.shortTermUpgrade.href}) (${component.shortTermUpgrade.vulnerabilityCount} known vulnerabilities)` : '';
     const longTermString = component.longTermUpgrade ? `[${component.longTermUpgrade.name}](${component.longTermUpgrade.href}) (${component.longTermUpgrade.vulnerabilityCount} known vulnerabilities)` : '';
@@ -741,6 +741,7 @@ function runWithPolicyCheck(blackduckPolicyCheck) {
         const detectExitCode = yield (0, detect_manager_1.runDetect)(detectPath, detectArgs).catch(reason => {
             (0, core_1.setFailed)(`Could not execute ${detect_manager_1.TOOL_NAME} ${inputs_1.DETECT_VERSION}: ${reason}`);
         });
+        (0, core_1.debug)(`Detect exited with code ${detectExitCode}`);
         if (detectExitCode === undefined) {
             (0, core_1.debug)(`Could not determine ${detect_manager_1.TOOL_NAME} exit code. Canceling policy check.`);
             blackduckPolicyCheck.cancelCheck();

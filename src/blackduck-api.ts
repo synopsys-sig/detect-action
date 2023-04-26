@@ -4,82 +4,119 @@ import { BearerCredentialHandler } from 'typed-rest-client/Handlers'
 import { HttpClient } from 'typed-rest-client/HttpClient'
 import { IRestResponse, RestClient } from 'typed-rest-client/RestClient'
 import { APPLICATION_NAME } from './application-constants'
-export interface IBlackduckView {
-  _meta: {
-    href: string
-  }
+
+export interface BlackDuckView {
+  _meta: ResourceMetadata
 }
 
-export interface IBlackduckItemArray<Type> extends IBlackduckView {
-  totalCount: number
+export interface ResourceMetadata {
+  href: string
+}
+
+export interface BlackDuckPageResponse<Type> {
   items: Array<Type>
+  totalCount: number
 }
 
-export interface IUpgradeGuidance {
+export interface ComponentVersionUpgradeGuidanceView {
+  longTerm: ComponentVersionUpgradeGuidanceTermView
+  shortTerm: ComponentVersionUpgradeGuidanceTermView
   version: string
-  shortTerm: IRecommendedVersion
-  longTerm: IRecommendedVersion
 }
 
-export interface IRecommendedVersion {
+/*
+Note that this consolidates original API
+ComponentVersionUpgradeGuidanceLongTermView and
+ComponentVersionUpgradeGuidanceShortTermView since
+we only need common attributes
+ */
+export interface ComponentVersionUpgradeGuidanceTermView {
   version: string
   versionName: string
-  vulnerabilityRisk: Object
+  vulnerabilityRisk: ComponentVersionUpgradeGuidanceVulnerabilityRiskView
 }
 
-export interface IComponentSearchResult {
+/*
+Note that this consolidates original API
+ComponentVersionUpgradeGuidanceLongTermVulnerabilityRiskView and
+ComponentVersionUpgradeGuidanceShortTermVulnerabilityRiskView since
+we only need common attributes
+ */
+export interface ComponentVersionUpgradeGuidanceVulnerabilityRiskView {
+  critical: number
+  high: number
+  low: number
+  medium: number
+}
+
+export interface ComponentsView {
   version: string
+  versionName: string
 }
 
-export interface IComponentVersion {
-  license: {
-    licenses: {
-      license: string
-      name: string
-    }[]
-  }
-  _meta: {
-    href: string
-  }
+export interface ComponentVersionView extends BlackDuckView {
+  license: ComponentVersionLicenseView
 }
 
-export interface IComponentVulnerability {
+export interface ComponentVersionLicenseView extends BlackDuckView {
+  licenses: ComponentVersionLicenseLicensesView[]
+}
+
+export interface ComponentVersionLicenseLicensesView extends BlackDuckView {
+  license: string
+  name: string
+}
+
+export interface VulnerabilityView extends BlackDuckView {
+  cvss2: VulnerabilityCvssView
+  cvss3: VulnerabilityCvssView
   name: string
   severity: string
   useCvss3: boolean
-  cvss2: ICvssView
-  cvss3: ICvssView
-  _meta: {
-    href: string
-  }
 }
 
-export interface ICvssView {
+/*
+Note that this consolidates original API
+VulnerabilityCvss2View and
+VulnerabilityCvss3View since
+we only need common attributes
+ */
+export interface VulnerabilityCvssView {
   baseScore: number
   severity: string
 }
 
-export interface IRapidScanResults {
-  componentName: string
-  versionName: string
+export interface DeveloperScansScanView extends BlackDuckView {
   componentIdentifier: string
-  violatingPolicyNames: string[]
-  policyViolationVulnerabilities: IRapidScanVulnerability[]
-  policyViolationLicenses: IRapidScanLicense[]
-  _meta: {
-    href: string
-  }
+  componentName: string
+  policyViolationLicenses: DeveloperScansScanItemsPolicyViolationView[]
+  policyViolationVulnerabilities: DeveloperScansScanItemsPolicyViolationView[]
+  versionName: string
+  violatingPolicies: DeveloperScansScanItemsViolatingPoliciesView[]
 }
 
-export interface IRapidScanVulnerability {
+/*
+Note that this consolidates original API
+DeveloperScansScanItemsPolicyViolationLicensesViolatingPoliciesView,
+DeveloperScansScanItemsPolicyViolationVulnerabilitiesViolatingPoliciesView and
+DeveloperScansScanItemsViolatingPoliciesView since
+we only need common attributes
+ */
+export interface DeveloperScansScanItemsViolatingPoliciesView {
+  description: string
+  policyName: string
+  policySeverity: string
+  policyStatus: string
+}
+
+/*
+Note that this consolidates original API
+DeveloperScansScanItemsPolicyViolationLicensesView and
+DeveloperScansScanItemsPolicyViolationVulnerabilitiesView since
+we only need common attributes
+ */
+export interface DeveloperScansScanItemsPolicyViolationView {
   name: string
-}
-
-export interface IRapidScanLicense {
-  licenseName: string
-  _meta: {
-    href: string
-  }
 }
 
 export class BlackduckApiService {
@@ -123,34 +160,34 @@ export class BlackduckApiService {
     })
   }
 
-  async getUpgradeGuidanceFor(bearerToken: string, componentVersion: IComponentVersion): Promise<IRestResponse<IUpgradeGuidance>> {
+  async getUpgradeGuidanceFor(bearerToken: string, componentVersion: ComponentVersionView): Promise<IRestResponse<ComponentVersionUpgradeGuidanceView>> {
     return this.get(bearerToken, `${componentVersion._meta.href}/upgrade-guidance`)
   }
 
-  async getComponentsMatching(bearerToken: string, componentIdentifier: string, limit: number = 10): Promise<IRestResponse<IBlackduckItemArray<IComponentSearchResult>>> {
+  async getComponentsMatching(bearerToken: string, componentIdentifier: string, limit: number = 10): Promise<IRestResponse<BlackDuckPageResponse<ComponentsView>>> {
     const requestPath = `/api/components?q=${componentIdentifier}`
 
     return this.requestPage(bearerToken, requestPath, 0, limit)
   }
 
-  async getComponentVersion(bearerToken: string, searchResult: IComponentSearchResult) {
+  async getComponentVersion(bearerToken: string, searchResult: ComponentsView) {
     return this.get(bearerToken, searchResult.version)
   }
 
-  async getComponentVersionMatching(bearerToken: string, componentIdentifier: string, limit: number = 10): Promise<IComponentVersion | null> {
+  async getComponentVersionMatching(bearerToken: string, componentIdentifier: string, limit: number = 10): Promise<ComponentVersionView | null> {
     const componentSearchResponse = await this.getComponentsMatching(bearerToken, componentIdentifier, limit)
     const firstMatchingComponentVersionUrl = componentSearchResponse?.result?.items[0].version
 
     let componentVersion = null
     if (firstMatchingComponentVersionUrl !== undefined) {
-      const componentVersionResponse: IRestResponse<IComponentVersion> = await this.get(bearerToken, firstMatchingComponentVersionUrl)
+      const componentVersionResponse: IRestResponse<ComponentVersionView> = await this.get(bearerToken, firstMatchingComponentVersionUrl)
       componentVersion = componentVersionResponse?.result
     }
 
     return componentVersion
   }
 
-  async getComponentVulnerabilties(bearerToken: string, componentVersion: IComponentVersion): Promise<IRestResponse<IBlackduckItemArray<IComponentVulnerability>>> {
+  async getComponentVulnerabilties(bearerToken: string, componentVersion: ComponentVersionView): Promise<IRestResponse<BlackDuckPageResponse<VulnerabilityView>>> {
     return this.get(bearerToken, `${componentVersion._meta.href}/vulnerabilities`, 'application/vnd.blackducksoftware.vulnerability-4+json')
   }
 
@@ -161,7 +198,7 @@ export class BlackduckApiService {
     return this.requestPage(bearerToken, requestPath, 0, limit)
   }
 
-  async requestPage(bearerToken: string, requestPath: string, offset: number, limit: number): Promise<IRestResponse<IBlackduckItemArray<any>>> {
+  async requestPage(bearerToken: string, requestPath: string, offset: number, limit: number): Promise<IRestResponse<BlackDuckPageResponse<any>>> {
     return this.get(bearerToken, `${this.blackduckUrl}${requestPath}&offset=${offset}&limit=${limit}`)
   }
 

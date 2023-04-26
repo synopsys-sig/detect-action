@@ -2,7 +2,7 @@ import { info, warning, setFailed, debug } from '@actions/core'
 import { create } from '@actions/glob'
 import path from 'path'
 import fs from 'fs'
-import { BlackduckApiService, IBlackduckView, IRapidScanResults } from './blackduck-api'
+import { BlackduckApiService, BlackDuckView, DeveloperScansScanView } from './blackduck-api'
 import { createCheck, GitHubCheck } from './github/check'
 import { commentOnPR } from './comment'
 import { POLICY_SEVERITY, SUCCESS } from './detect/exit-codes'
@@ -87,6 +87,8 @@ export async function runWithPolicyCheck(blackduckPolicyCheck: GitHubCheck): Pro
     setFailed(`Could not execute ${TOOL_NAME} ${DETECT_VERSION}: ${reason}`)
   })
 
+  debug(`Detect exited with code ${detectExitCode}`)
+
   if (detectExitCode === undefined) {
     debug(`Could not determine ${TOOL_NAME} exit code. Canceling policy check.`)
     blackduckPolicyCheck.cancelCheck()
@@ -109,7 +111,7 @@ export async function runWithPolicyCheck(blackduckPolicyCheck: GitHubCheck): Pro
 
     const scanJsonPath = scanJsonPaths[0]
     const rawdata = fs.readFileSync(scanJsonPath)
-    const policyViolations = JSON.parse(rawdata.toString()) as IRapidScanResults[]
+    const policyViolations = JSON.parse(rawdata.toString()) as DeveloperScansScanView[]
 
     hasPolicyViolations = policyViolations.length > 0
     debug(`Policy Violations Present: ${hasPolicyViolations}`)
