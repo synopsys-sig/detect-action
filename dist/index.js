@@ -741,6 +741,7 @@ function runWithPolicyCheck(blackduckPolicyCheck) {
         const detectExitCode = yield (0, detect_manager_1.runDetect)(detectPath, detectArgs).catch(reason => {
             (0, core_1.setFailed)(`Could not execute ${detect_manager_1.TOOL_NAME} ${inputs_1.DETECT_VERSION}: ${reason}`);
         });
+        (0, core_1.debug)(`Detect exited with code ${detectExitCode}`);
         if (detectExitCode === undefined) {
             (0, core_1.debug)(`Could not determine ${detect_manager_1.TOOL_NAME} exit code. Canceling policy check.`);
             blackduckPolicyCheck.cancelCheck();

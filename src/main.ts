@@ -87,6 +87,8 @@ export async function runWithPolicyCheck(blackduckPolicyCheck: GitHubCheck): Pro
     setFailed(`Could not execute ${TOOL_NAME} ${DETECT_VERSION}: ${reason}`)
   })
 
+  debug(`Detect exited with code ${detectExitCode}`)
+
   if (detectExitCode === undefined) {
     debug(`Could not determine ${TOOL_NAME} exit code. Canceling policy check.`)
     blackduckPolicyCheck.cancelCheck()
