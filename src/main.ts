@@ -1,4 +1,4 @@
-import { info, warning, setFailed, debug } from '@actions/core'
+import { info, warning, setFailed, debug, error } from '@actions/core'
 import { create } from '@actions/glob'
 import path from 'path'
 import fs from 'fs'
@@ -93,6 +93,7 @@ export async function runWithPolicyCheck(blackduckPolicyCheck: GitHubCheck): Pro
     return
   } else if (detectExitCode > 0 && detectExitCode != POLICY_SEVERITY) {
     setFailed(`Detect failed with exit code: ${detectExitCode}. Check the logs for more information.`)
+    blackduckPolicyCheck.cancelCheck()
     return
   }
 
@@ -152,6 +153,10 @@ export async function runWithPolicyCheck(blackduckPolicyCheck: GitHubCheck): Pro
     warning('Dependency check failed! See Detect output for more information.')
   } else if (detectExitCode === SUCCESS) {
     info('None of your dependencies violate your Black Duck policies!')
+  }
+
+  if (SCAN_MODE !== 'RAPID' && detectExitCode > 0) {
+    setFailed(`Detect exited with code ${detectExitCode}. See Detect output for more information.`)
   }
 }
 
