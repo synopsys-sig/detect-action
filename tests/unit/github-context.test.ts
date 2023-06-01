@@ -3,16 +3,16 @@ describe('PR events', () => {
 
   beforeAll(() => {
     jest.resetModules()
+  })
+
+  it.each(['pull_request', 'pull_request_target', 'pull_request_review', 'pull_request_review_comment'])('isPullRequest() returns true for event %p', eventName => {
     jest.mock('@actions/github', () => {
       return {
         context: {
-          eventName: 'pull_request'
+          eventName: eventName
         }
       }
     })
-  })
-
-  test('isPullRequest() returns true', () => {
     ghContext = require('../../src/github/github-context')
     expect(ghContext.isPullRequest()).toBeTruthy()
   })
