@@ -80,9 +80,9 @@ export class GitHubCheck {
   private async truncateCheckText(text: string) {
     debug('Checking text size...')
     let truncated = ''
-    if (text.length > 65536) {
-      debug('Text size exceeds 65536 characters, truncating...')
-      truncated = text.slice(0, 65536)
+    if (text.length > 65535) {
+      debug('Text size exceeds 65535 characters, truncating...')
+      truncated = text.slice(0, 65535)
     } else {
       debug('Text size is within limits.')
       truncated = text
