@@ -33,22 +33,12 @@ export async function commentOnPR(report: string): Promise<void> {
     }
   }
 
-  debug('Checking comment size...')
-  let truncatedMessage = ''
-  if (message.length > 65536) {
-    debug('Comment size exceeds 65536 characters, truncating...')
-    truncatedMessage = message.slice(0, 65536)
-  } else {
-    debug('Comment size is within limits.')
-    truncatedMessage = message
-  }
-
   debug('Creating a new comment...')
   octokit.rest.issues.createComment({
     issue_number: contextIssue,
     owner: contextOwner,
     repo: contextRepo,
-    body: truncatedMessage
+    body: message
   })
   debug('Successfully created a new comment!')
 }

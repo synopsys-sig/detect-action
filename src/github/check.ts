@@ -36,10 +36,12 @@ export class GitHubCheck {
   }
 
   async passCheck(summary: string, text: string) {
+    text = await this.truncateCheckText(text)
     return this.finishCheck('success', summary, text)
   }
 
   async failCheck(summary: string, text: string) {
+    text = await this.truncateCheckText(text)
     return this.finishCheck('failure', summary, text)
   }
 
@@ -73,5 +75,18 @@ export class GitHubCheck {
     } else {
       info(`${this.checkName} updated`)
     }
+  }
+
+  private async truncateCheckText(text: string) {
+    debug('Checking text size...')
+    let truncated = ''
+    if (text.length > 65536) {
+      debug('Text size exceeds 65536 characters, truncating...')
+      truncated = text.slice(0, 65536)
+    } else {
+      debug('Text size is within limits.')
+      truncated = text
+    }
+    return truncated
   }
 }
