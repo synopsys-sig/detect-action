@@ -188,22 +188,12 @@ function commentOnPR(report) {
                 });
             }
         }
-        (0, core_1.debug)('Checking comment size...');
-        let truncatedMessage = '';
-        if (message.length > 65536) {
-            (0, core_1.debug)('Comment size exceeds 65536 characters, truncating...');
-            truncatedMessage = message.slice(0, 65536);
-        }
-        else {
-            (0, core_1.debug)('Comment size is within limits.');
-            truncatedMessage = message;
-        }
         (0, core_1.debug)('Creating a new comment...');
         octokit.rest.issues.createComment({
             issue_number: contextIssue,
             owner: contextOwner,
             repo: contextRepo,
-            body: truncatedMessage
+            body: message
         });
         (0, core_1.debug)('Successfully created a new comment!');
     });
@@ -506,11 +496,13 @@ class GitHubCheck {
     }
     passCheck(summary, text) {
         return __awaiter(this, void 0, void 0, function* () {
+            text = yield this.truncateCheckText(text);
             return this.finishCheck('success', summary, text);
         });
     }
     failCheck(summary, text) {
         return __awaiter(this, void 0, void 0, function* () {
+            text = yield this.truncateCheckText(text);
             return this.finishCheck('failure', summary, text);
         });
     }
@@ -546,6 +538,21 @@ class GitHubCheck {
             else {
                 (0, core_1.info)(`${this.checkName} updated`);
             }
+        });
+    }
+    truncateCheckText(text) {
+        return __awaiter(this, void 0, void 0, function* () {
+            (0, core_1.debug)('Checking text size...');
+            let truncated = '';
+            if (text.length > 65536) {
+                (0, core_1.debug)('Text size exceeds 65536 characters, truncating...');
+                truncated = text.slice(0, 65536);
+            }
+            else {
+                (0, core_1.debug)('Text size is within limits.');
+                truncated = text;
+            }
+            return truncated;
         });
     }
 }
