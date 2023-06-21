@@ -544,9 +544,9 @@ class GitHubCheck {
         return __awaiter(this, void 0, void 0, function* () {
             (0, core_1.debug)('Checking text size...');
             let truncated = '';
-            if (text.length > 65536) {
-                (0, core_1.debug)('Text size exceeds 65536 characters, truncating...');
-                truncated = text.slice(0, 65536);
+            if (text.length > 65535) {
+                (0, core_1.debug)('Text size exceeds 65535 characters, truncating...');
+                truncated = text.slice(0, 65535);
             }
             else {
                 (0, core_1.debug)('Text size is within limits.');
