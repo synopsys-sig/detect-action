@@ -22,6 +22,8 @@
 > 
 > In this fork we decided to continue the developments on detect-action, which focus only on Black Duck tool.
 
+> ⚠️ From v0.4.0 onwards this action is only compatible with detect v8
+
 ![GitHub tag (latest SemVer)][github-tag]
 
 Richly integrate Synopsys Detect into GitHub action workflows.
@@ -273,7 +275,7 @@ Set the scan mode to:
         with:
             scan-mode: RAPID # Can be omitted, since this is the default value
             github-token: ${{ secrets.GITHUB_TOKEN }}
-            detect-version: 7.9.0
+            detect-version: 8.11.0
             blackduck-url: ${{ secrets.BLACKDUCK_URL }}
             blackduck-api-token: ${{ secrets.BLACKDUCK_API_TOKEN }}
   ```
@@ -294,7 +296,7 @@ Set the scan mode to:
         with:
             scan-mode: INTELLIGENT
             github-token: ${{ secrets.GITHUB_TOKEN }}
-            detect-version: 7.9.0
+            detect-version: 8.11.0
             blackduck-url: ${{ secrets.BLACKDUCK_URL }}
             blackduck-api-token: ${{ secrets.BLACKDUCK_API_TOKEN }}
   ```
