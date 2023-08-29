@@ -1,62 +1,93 @@
-import { debug, info, warning } from '@actions/core'
-import { context, getOctokit } from '@actions/github'
-import { getSha } from './github-context'
-import { GITHUB_TOKEN } from '../inputs'
+import * as core from '@actions/core'
+import { ContextExtensions } from './utils'
+import { GitHub } from '@actions/github/lib/utils'
+import { Context } from '@actions/github/lib/context'
 
-export async function createCheck(checkName: string): Promise<GitHubCheck> {
-  const octokit = getOctokit(GITHUB_TOKEN)
+export class GitHubCheckCreator {
+  private readonly octokit: InstanceType<typeof GitHub>
+  private readonly context: Context
 
-  const head_sha = getSha()
-
-  info(`Creating ${checkName}...`)
-  const response = await octokit.rest.checks.create({
-    owner: context.repo.owner,
-    repo: context.repo.repo,
-    name: checkName,
-    head_sha
-  })
-
-  if (response.status !== 201) {
-    warning(`Unexpected status code recieved when creating ${checkName}: ${response.status}`)
-    debug(JSON.stringify(response, null, 2))
-  } else {
-    info(`${checkName} created`)
+  constructor(octokit: InstanceType<typeof GitHub>, context: Context) {
+    this.octokit = octokit
+    this.context = context
   }
 
-  return new GitHubCheck(checkName, response.data.id)
+  async create(name: string): Promise<GitHubCheck> {
+    const head_sha = ContextExtensions.of(this.context).getSha()
+
+    core.info(`Creating ${name}...`)
+
+    const payload = {
+      owner: this.context.repo.owner,
+      repo: this.context.repo.repo,
+      name,
+      head_sha
+    }
+
+    core.debug(`Check payload: ${JSON.stringify(payload)}.`)
+
+    const response = await this.octokit.rest.checks.create(payload)
+
+    if (response.status !== 201) {
+      core.warning(
+        `Unexpected status code received when creating ${name}: ${response.status}.`
+      )
+      core.debug(JSON.stringify(response, null, 2))
+    } else {
+      core.info(`${name} created.`)
+      core.debug(`Check response: ${JSON.stringify(response.data)}.`)
+    }
+
+    return new GitHubCheck(this.octokit, this.context, name, response.data.id)
+  }
 }
 
 export class GitHubCheck {
-  checkName: string
-  checkRunId: number
+  private readonly octokit: InstanceType<typeof GitHub>
+  private readonly context: Context
+  private readonly checkName: string
+  private readonly checkRunId: number
 
-  constructor(checkName: string, checkRunId: number) {
+  constructor(
+    octokit: InstanceType<typeof GitHub>,
+    context: Context,
+    checkName: string,
+    checkRunId: number
+  ) {
+    this.octokit = octokit
+    this.context = context
     this.checkName = checkName
     this.checkRunId = checkRunId
   }
 
-  async passCheck(summary: string, text: string) {
-    return this.finishCheck('success', summary, text)
+  async pass(summary: string, text: string): Promise<void> {
+    return this.finish('success', summary, text)
   }
 
-  async failCheck(summary: string, text: string) {
-    return this.finishCheck('failure', summary, text)
+  async fail(summary: string, text: string): Promise<void> {
+    return this.finish('failure', summary, text)
   }
 
-  async skipCheck() {
-    return this.finishCheck('skipped', `${this.checkName} was skipped`, '')
+  async skip(): Promise<void> {
+    return this.finish('skipped', `${this.checkName} was skipped`, '')
   }
 
-  async cancelCheck() {
-    return this.finishCheck('cancelled', `${this.checkName} Check could not be completed`, `Something went wrong and the ${this.checkName} could not be completed. Check your action logs for more details.`)
+  async cancel(): Promise<void> {
+    return this.finish(
+      'cancelled',
+      `${this.checkName} Check could not be completed`,
+      `Something went wrong and the ${this.checkName} could not be completed. Check your action logs for more details.`
+    )
   }
 
-  private async finishCheck(conclusion: string, summary: string, text: string) {
-    const octokit = getOctokit(GITHUB_TOKEN)
-
-    const response = await octokit.rest.checks.update({
-      owner: context.repo.owner,
-      repo: context.repo.repo,
+  private async finish(
+    conclusion: string,
+    summary: string,
+    text: string
+  ): Promise<void> {
+    const response = await this.octokit.rest.checks.update({
+      owner: this.context.repo.owner,
+      repo: this.context.repo.repo,
       check_run_id: this.checkRunId,
       status: 'completed',
       conclusion,
@@ -68,10 +99,12 @@ export class GitHubCheck {
     })
 
     if (response.status !== 200) {
-      warning(`Unexpected status code recieved when creating check: ${response.status}`)
-      debug(JSON.stringify(response, null, 2))
+      core.warning(
+        `Unexpected status code received when creating check: ${response.status}.`
+      )
+      core.debug(JSON.stringify(response, null, 2))
     } else {
-      info(`${this.checkName} updated`)
+      core.info(`${this.checkName} updated.`)
     }
   }
 }

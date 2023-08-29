@@ -17,19 +17,26 @@ inputs:
     description: 'API Token for Black Duck instance'
     required: true
   scan-mode:
-    description: 'Either RAPID or INTELLIGENT, configures how Detect is invoked. RAPID will not persist the results and disables select Detect functionality for faster results. INTELLIGENT persists the results and permits all features of Detect.'
+    description: |
+      Either RAPID or INTELLIGENT, configures how Detect is invoked.
+      RAPID will not persist the results and disables select Detect functionality for faster results.
+      INTELLIGENT persists the results and permits all features of Detect.
     required: false
     default: 'RAPID'
-  fail-on-all-policy-severities:
-    description: 'By default, Detect will only fail on policy violations with BLOCKER or CRITICAL severities. This flag will cause the action to fail on all policy severities.'
-    required: false
-    default: false
   output-path-override:
     description: 'Override for where to output Detect files, default is $RUNNER_TEMP/blackduck/'
     required: false
   detect-trust-cert:
-    description: 'Acceptable Values: TRUE, FALSE. If TRUE, Detect will trust the Black Duck certificate even if the certificate is not in the keystore.'
-    default: 'TRUE'
+    description: |
+      When set to true Detect will trust the Black Duck certificate
+      even if the certificate is not in the keystore.
+    default: 'true'
+    required: false
+outputs:
+  detect-exit-code:
+    description: 'A number indicating Detect exit code'
+  detect-exit-code-name:
+    description: 'The corresponding human name of the error code'
 runs:
-  using: 'node12'
+  using: 'node16'
   main: 'dist/index.js'
