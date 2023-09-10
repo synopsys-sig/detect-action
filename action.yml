@@ -1,8 +1,8 @@
-name: 'Detect Rapid Scan Action'
+name: 'Detect Scan Action'
 branding:
   icon: 'shield'
   color: 'purple'
-description: 'A GitHub action to perform a Detect rapid scan and record the results'
+description: 'A GitHub action to perform a Detect scan and record the results'
 inputs:
   github-token:
     description: 'Your GitHub token'
