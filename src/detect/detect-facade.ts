@@ -5,23 +5,23 @@ import * as glob from '@actions/glob'
 import * as core from '@actions/core'
 import { TOOL_NAME } from './detect-tool-downloader'
 import {
-  NODE_TLS_REJECT_UNAUTHORIZED,
+  DetectEnvironmentProperties,
   RAPID_SCAN,
   RUNNER_DEFAULT_OUTPUT_DIRECTORY
 } from './constants'
 import { uploadArtifact } from '../github/upload-artifacts'
 import { ExitCode, getExitCodeName } from './exit-code'
-import { ContextExtensions } from '../github/utils'
 import { Detect } from './detect'
 import { Output } from '../output/outputs'
 import path from 'path'
 import { BlackDuckReportGenerator } from '../report/blackduck-report-generator'
 import { CommentReporter } from '../report/comment-reporter'
 import { CheckReporter } from '../report/check-reporter'
-import { Context } from '@actions/github/lib/context'
 import { GitHub } from '@actions/github/lib/utils'
 import { GitHubPRCommenter } from '../github/comment'
 import { BlackDuckScanReportGenerator } from '../report/blackduck-scan-report-generator'
+import { ActionsEnvironmentProperties } from '../action/constants'
+import { ExtendedContext } from '../github/extended-context'
 
 const MAX_REPORT_SIZE = 65535
 
@@ -31,7 +31,7 @@ export class DetectFacade {
   private readonly inputs: Inputs
   private readonly gitHubCheck: GitHubCheck
   private readonly blackDuckApiService: BlackDuckApiService
-  private readonly context: ContextExtensions
+  private readonly context: ExtendedContext
 
   private readonly blackDuckReportGenerator: BlackDuckReportGenerator
   private readonly commentReporter: CommentReporter
@@ -43,7 +43,7 @@ export class DetectFacade {
     detectPath: string,
     gitHubCheck: GitHubCheck,
     octokit: InstanceType<typeof GitHub>,
-    context: Context
+    context: ExtendedContext
   ) {
     this.applicationName = applicationName
     this.inputs = inputs
@@ -53,7 +53,7 @@ export class DetectFacade {
       this.inputs.blackDuckUrl,
       this.inputs.blackDuckApiToken
     )
-    this.context = ContextExtensions.of(context)
+    this.context = context
     this.commentReporter = new CommentReporter(
       new GitHubPRCommenter(this.applicationName, octokit, context)
     )
@@ -65,16 +65,19 @@ export class DetectFacade {
 
   private setNodeTlsRejectUnauthorized(): void {
     //Setting process environment for certificate issue fix
-    if (!process.env[NODE_TLS_REJECT_UNAUTHORIZED]) {
+    if (
+      !process.env[DetectEnvironmentProperties.NODE_TLS_REJECT_UNAUTHORIZED]
+    ) {
       core.info(
-        `${NODE_TLS_REJECT_UNAUTHORIZED} is not set, disabling strict certificate check.`
+        `${DetectEnvironmentProperties.NODE_TLS_REJECT_UNAUTHORIZED} is not set, disabling strict certificate check.`
       )
-      process.env[NODE_TLS_REJECT_UNAUTHORIZED] = '0'
+      process.env[DetectEnvironmentProperties.NODE_TLS_REJECT_UNAUTHORIZED] =
+        '0'
     }
   }
 
   private getOutputPath(): string {
-    const runnerTemp = process.env.RUNNER_TEMP
+    const runnerTemp = process.env[ActionsEnvironmentProperties.RUNNER_TEMP]
     let outputPath: string | undefined = undefined
     if (this.inputs.outputPathOverride) {
       outputPath = this.inputs.outputPathOverride
@@ -90,7 +93,7 @@ export class DetectFacade {
 
   private getDetectArguments(outputPath: string): string[] {
     // noinspection SpellCheckingInspection
-    return [
+    const detectArguments = [
       `--blackduck.trust.cert=${this.inputs.detectTrustCertificate}`,
       `--blackduck.url=${this.inputs.blackDuckUrl}`,
       `--blackduck.api.token=${this.inputs.blackDuckApiToken}`,
@@ -98,13 +101,21 @@ export class DetectFacade {
       `--detect.output.path=${outputPath}`,
       `--detect.scan.output.path=${outputPath}`
     ]
+    if (core.isDebug()) {
+      detectArguments.push('--logging.level.detect=DEBUG')
+    }
+    return detectArguments
   }
 
   private isDiagnosticModeEnabled(): boolean {
     const diagnosticMode =
-      process.env.DETECT_DIAGNOSTIC?.toLowerCase() === 'true'
+      process.env[
+        DetectEnvironmentProperties.DETECT_DIAGNOSTIC
+      ]?.toLowerCase() === 'true'
     const extendedDiagnosticMode =
-      process.env.DETECT_DIAGNOSTIC_EXTENDED?.toLowerCase() === 'true'
+      process.env[
+        DetectEnvironmentProperties.DETECT_DIAGNOSTIC_EXTENDED
+      ]?.toLowerCase() === 'true'
     return diagnosticMode || extendedDiagnosticMode
   }
 

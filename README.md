@@ -38,7 +38,11 @@ the Black Duck Policy Check and [_Branch Protection Rules_][branch-protection-ru
 
 ![Black Duck Policy Check screenshot](.github/policyCheck.png)
 
-# Recommended Usage
+## Changelog
+
+For a detailed list of changes and releases, please refer to the [Changelog](CHANGELOG.md).
+
+## Recommended Usage
 
 To get the most out of this action, we recommend using _RAPID_ scan-mode for all Pull Requests.
 
@@ -47,7 +51,7 @@ from at least one daily scan, while a less active repository might only need to 
 still important that low-activity repositories be scanned regularly because new vulnerabilities can be discovered for
 existing dependencies and source-code.
 
-# Set Up Workflow
+## Set Up Workflow
 
 To start using this action, you'll need to create a _job_ within a GitHub Workflow. You can either
 [create a new GitHub Workflow][create-new-github-workflow] or use an existing one if appropriate for your use-case.
@@ -67,7 +71,7 @@ on:
     - cron: '0 0 * * *'
 ```
 
-# Set Up Job
+## Set Up Job
 
 Once you have set up a GitHub Workflow with event triggers, you will need to create a _job_ in which the _Detect Action_
 will run. Your job will look something like this if all configuration options are used:
@@ -99,7 +103,7 @@ jobs:
           policy-name: 'My Black Duck Policy For GitHub Actions'
           no-fail-if-policy-exists: true
       - name: Run Synopsys Detect
-        uses: mercedesbenzio/detect-action@v0.4.0
+        uses: mercedesbenzio/detect-action@v1
         env:
           NODE_EXTRA_CA_CERTS: ${{ secrets.LOCAL_CA_CERT_PATH }}
         with:
@@ -109,17 +113,17 @@ jobs:
           blackduck-api-token: ${{ secrets.BLACKDUCK_API_TOKEN }}
 ```
 
-## Runners: Self-Hosted
+### Runners: Self-Hosted
 
 Using a self-hosted runner provides more flexibility in managing your build environment.
 
-### Java
+#### Java
 
 It is possible to skip the [Set Up Java](#set-up-java) step below if you already have Java 17 on your self-hosted
 runner. Ensure that the _Detect Action_ has access to the correct version of Java on its `$PATH` or within the
 [_GitHub Tool Cache_][github-tool-cache].
 
-### Certificates: Self-Hosted
+#### Certificates: Self-Hosted
 
 If your Black Duck server is on a private network, the self-hosted runner has access to that network, and the Black Duck
 server uses custom certificates, then you will likely need to provide a custom certificate to the _Detect Action_.
@@ -130,7 +134,7 @@ To do this:
 
     ```yaml
         - name: Run Synopsys Detect
-          uses: mercedesbenzio/detect-action@v0.4.0
+          uses: mercedesbenzio/detect-action@v1
           env:
             NODE_EXTRA_CA_CERTS: /certificates/my_custom_cert.pem
           with:
@@ -142,15 +146,15 @@ To do this:
 Please reference the section [_Include Custom Certificates (Optional)_](#include-custom-certificates-optional) for more
 information.
 
-### More Info
+#### More Info
 
 For more information on self-hosted runners, please visit [GitHub's documentation][self-hosted-runners-documentation].
 
-## Runners: GitHub-Hosted
+### Runners: GitHub-Hosted
 
 GitHub hosted runners are convenient, but can require extra setup when managing sensitive information.
 
-### Certificates: GitHub-Hosted
+#### Certificates: GitHub-Hosted
 
 Because a GitHub-hosted runner starts with a clean file-system each run, if custom certificate files are needed, they
 must be created in your workflow. There are many ways to do this, two possible ways are:
@@ -173,14 +177,14 @@ Action step:
 
 ```yaml
     - name: Run Synopsys Detect
-      uses: mercedesbenzio/detect-action@v0.4.0
+      uses: mercedesbenzio/detect-action@v1
       env:
         NODE_EXTRA_CA_CERTS: ./my-cert.pem
       with:
         #...
 ```
 
-## Checkout
+### Checkout
 
 Checkout the source-code onto your GitHub Runner with the following _step_:
 
@@ -188,7 +192,7 @@ Checkout the source-code onto your GitHub Runner with the following _step_:
     - uses: actions/checkout@v3
 ```
 
-## Build Your Project
+### Build Your Project
 
 Detect is meant to be run post-build. You should add steps necessary to build your project before invoking the _Detect
 Action_. For example, here is how this might be done in a Gradle project:
@@ -203,7 +207,7 @@ Action_. For example, here is how this might be done in a Gradle project:
 In the example job above, this needed to be done _after_ setting up Java because Gradle requires Java. If your project
 does not use Java, this step can be done before setting up Java.
 
-## Set Up Java
+### Set Up Java
 
 Detect runs using Java. Configure the _step_ it as follows:
 
@@ -215,7 +219,7 @@ Detect runs using Java. Configure the _step_ it as follows:
         distribution: 'temurin'
 ```
 
-## Create Black Duck Policy (Optional)
+### Create Black Duck Policy (Optional)
 
 In order to run Detect using RAPID mode (which is the default mode for the _Detect Action_), the Black Duck server
 Detect connects to must have at least one _policy_ and that policy must be enabled. You can create a policy within your
@@ -240,7 +244,7 @@ The most basic usage of the action looks something like this:
 Please refer to [that action's documentation](https://github.com/blackducksoftware/create-policy-action) for more
 information on available parameters, certificate management, and troubleshooting.
 
-## Set Up Detect Action
+### Set Up Detect Action
 
 Once your project is checked-out, built, and Java is configured, the _Detect Action_ can be run. At minimum for Detect
 to run, provide:
@@ -251,7 +255,7 @@ to run, provide:
 - Your _GITHUB\_TOKEN_ (`github-token`) to comment on Pull Requests or hook into GitHub Checks  (in most cases, this
   is `${{ secrets.GITHUB_TOKEN }}`)
 
-### Choose your Scanning Mode
+#### Choose your Scanning Mode
 
 The _Detect Action_ can be configured either to monitor your commits for policy violations or upload the status of your
 repository to Black Duck as a project through use of the `scan-mode` option.
@@ -269,7 +273,7 @@ Set the scan mode to:
     push:
   #...
       - name: Run Synopsys Detect
-        uses: mercedesbenzio/detect-action@v0.4.0
+        uses: mercedesbenzio/detect-action@v1
         env:
           NODE_EXTRA_CA_CERTS: ${{ secrets.LOCAL_CA_CERT_PATH }}
         with:
@@ -290,7 +294,7 @@ Set the scan mode to:
       - cron:  '0 0 * * *'
   #...
       - name: Run Synopsys Detect
-        uses: mercedesbenzio/detect-action@v0.4.0
+        uses: mercedesbenzio/detect-action@v1
         env:
           NODE_EXTRA_CA_CERTS: ${{ secrets.LOCAL_CA_CERT_PATH }}
         with:
@@ -306,12 +310,12 @@ functionality for faster results. INTELLIGENT persists the results and permits a
 
 See also: [Detect Documentation of Rapid Scan][rapid-scan-documentation].
 
-### Additional Action Parameters
+#### Additional Action Parameters
 
 - `output-path-override`: Override for where to output Detect files
   - Default: $RUNNER_TEMP/blackduck/
 
-### Additional Detect Properties
+#### Additional Detect Properties
 
 Passing additional [Detect properties][detect-properties-documentation] can be done in several ways:
 
@@ -321,7 +325,7 @@ Passing additional [Detect properties][detect-properties-documentation] can be d
 
     ```yaml
         - name: Synopsys Detect
-          uses: mercedesbenzio/detect-action@v0.4.0
+          uses: mercedesbenzio/detect-action@v1
           env:
             DETECT_TOOLS: DOCKER
             DETECT_DOCKER_IMAGE_ID: abc123
@@ -336,7 +340,7 @@ Passing additional [Detect properties][detect-properties-documentation] can be d
 
     ```yaml
         - name: Synopsys Detect
-          uses: mercedesbenzio/detect-action@v0.4.0
+          uses: mercedesbenzio/detect-action@v1
           env:
             SPRING_APPLICATION_JSON: '{"detect.tools":"DOCKER","detect.docker.image.id":"abc123","detect.docker.path.required":"TRUE"}'
           with:
@@ -348,13 +352,13 @@ Passing additional [Detect properties][detect-properties-documentation] can be d
 
     Please refer to the [Detect documentation on this topic][detect-properties-options] for more information.
 
-### Detect Diagnostic Zip
+#### Detect Diagnostic Zip
 
 When passing the properties `DETECT_DIAGNOSTIC` or `DETECT_DIAGNOSTIC_EXTENDED` as environment variables, the action
 will helpfully upload the zip as a build artifact for convenient troubleshooting. Note: These properties must be set
 to `true` or `false` (rather than `1`) when using the action.
 
-### Detect Exit Code output
+#### Detect Exit Code output
 
 After running detect this action will set the following output variables with detect exit code information:
 
@@ -364,7 +368,7 @@ After running detect this action will set the following output variables with de
 Note that if Detect is not called these variables are not populated. Also, if a mapping for the exit code number is not
 found on our side `detect-exit-code-name` we will set it to `UNKOWN`.
 
-## Include Custom Certificates (Optional)
+### Include Custom Certificates (Optional)
 
 To include one or more certificates, set `NODE_EXTRA_CA_CERTS` to the certificate file-path(s) in the environment.
 Notes:
@@ -376,14 +380,14 @@ Notes:
 
 ```yaml
   - name: Synopsys Detect
-    uses: mercedesbenzio/detect-action@v0.4.0
+    uses: mercedesbenzio/detect-action@v1
     env:
       NODE_EXTRA_CA_CERTS: ${{ secrets.LOCAL_CA_CERT_PATH }}
     with:
       #...
 ```
 
-### Troubleshooting Certificates
+#### Troubleshooting Certificates
 
 - Problem: An error saying the file-path to the certificate cannot be read.
   - Solution: Ensure whitespace and other special characters are properly escaped based on your runner's OS.
@@ -391,8 +395,20 @@ Notes:
   - Solution: You may only be including the server's certificate and not the _root CA certificate_. Ensure you are
         using the _root CA certificate_.
 
-# Policy Checks
+## Policy Checks
 
 When the _Detect Action_ runs in RAPID mode, it creates a 'Black Duck Policy Check'. This check can be used within
 [_Branch Protection Rules_][branch-protection-rules-documentation] to prevent merging Pull Requests that would introduce
 Black Duck Policy Violations.
+
+## License
+
+This project is licensed under the Apache License 2.0 - see the [License](LICENSE) file for details.
+
+## Contributing and Code of Conduct
+
+Please refer to our [Contribution Guidelines](CONTRIBUTING.md) for detailed information on how to propose changes,
+submit pull requests, and ensure a smooth collaboration process within the team. Also, don't forget to read and respect
+our established [Code of Conduct](CODE_OF_CONDUCT.md) in all your interactions and contributions.
+
+If you have any questions or require clarification on our guidelines, please reach out!

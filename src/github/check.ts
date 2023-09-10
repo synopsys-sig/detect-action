@@ -1,19 +1,19 @@
 import * as core from '@actions/core'
-import { ContextExtensions } from './utils'
 import { GitHub } from '@actions/github/lib/utils'
 import { Context } from '@actions/github/lib/context'
+import { ExtendedContext } from './extended-context'
 
 export class GitHubCheckCreator {
   private readonly octokit: InstanceType<typeof GitHub>
-  private readonly context: Context
+  private readonly context: ExtendedContext
 
-  constructor(octokit: InstanceType<typeof GitHub>, context: Context) {
+  constructor(octokit: InstanceType<typeof GitHub>, context: ExtendedContext) {
     this.octokit = octokit
     this.context = context
   }
 
   async create(name: string): Promise<GitHubCheck> {
-    const head_sha = ContextExtensions.of(this.context).getSha()
+    const head_sha = this.context.getSha()
 
     core.info(`Creating ${name}...`)
 
@@ -24,18 +24,18 @@ export class GitHubCheckCreator {
       head_sha
     }
 
-    core.debug(`Check payload: ${JSON.stringify(payload)}.`)
+    core.debug(`Check payload: ${JSON.stringify(payload)}`)
 
     const response = await this.octokit.rest.checks.create(payload)
 
     if (response.status !== 201) {
       core.warning(
-        `Unexpected status code received when creating ${name}: ${response.status}.`
+        `Unexpected status code received when creating ${name}: ${response.status}`
       )
       core.debug(JSON.stringify(response, null, 2))
     } else {
-      core.info(`${name} created.`)
-      core.debug(`Check response: ${JSON.stringify(response.data)}.`)
+      core.info(`${name} created`)
+      core.debug(`Check response: ${JSON.stringify(response.data)}`)
     }
 
     return new GitHubCheck(this.octokit, this.context, name, response.data.id)
@@ -100,11 +100,11 @@ export class GitHubCheck {
 
     if (response.status !== 200) {
       core.warning(
-        `Unexpected status code received when creating check: ${response.status}.`
+        `Unexpected status code received when creating check: ${response.status}`
       )
       core.debug(JSON.stringify(response, null, 2))
     } else {
-      core.info(`${this.checkName} updated.`)
+      core.info(`${this.checkName} updated`)
     }
   }
 }

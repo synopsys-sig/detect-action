@@ -6,6 +6,7 @@ import * as core from '@actions/core'
 import { GitHub } from '@actions/github/lib/utils'
 import { DetectToolDownloader } from '../detect/detect-tool-downloader'
 import { DetectFacade } from '../detect/detect-facade'
+import { extendedContext } from '../github/extended-context'
 
 export class ActionOrchestrator {
   private gitHubCheck: GitHubCheck | null = null
@@ -19,7 +20,10 @@ export class ActionOrchestrator {
     this.inputs = inputs
     try {
       const octokit = this.getOctokit()
-      const gitHubCheckCreator = new GitHubCheckCreator(octokit, github.context)
+      const gitHubCheckCreator = new GitHubCheckCreator(
+        octokit,
+        extendedContext
+      )
       this.gitHubCheck = await gitHubCheckCreator.create(CHECK_NAME)
       await this.doExecute(octokit)
     } catch (e) {
@@ -46,7 +50,7 @@ export class ActionOrchestrator {
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       this.gitHubCheck!,
       octokit,
-      github.context
+      extendedContext
     )
 
     await detectFacade.run()
