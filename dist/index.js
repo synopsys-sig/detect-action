@@ -25234,7 +25234,7 @@ class ActionOrchestrator {
         core.info(`${inputs_1.Input.DETECT_VERSION}: ${this.inputs.detectVersion}.`);
         core.info(`${inputs_1.Input.OUTPUT_PATH_OVERRIDE}: ${this.inputs.outputPathOverride}.`);
         core.info(`${inputs_1.Input.SCAN_MODE}: ${this.inputs.scanMode}.`);
-        const detectPath = await new detect_tool_downloader_1.DetectToolDownloader(this.inputs.detectVersion).download();
+        const detectPath = await detect_tool_downloader_1.DetectToolDownloader.getInstance().download(this.inputs.detectVersion);
         const detectFacade = new detect_facade_1.DetectFacade(constants_1.APPLICATION_NAME, this.inputs, detectPath, 
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         this.gitHubCheck, octokit, extended_context_1.extendedContext);
@@ -25680,26 +25680,65 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.DetectToolDownloader = exports.TOOL_NAME = void 0;
 const toolCache = __importStar(__nccwpck_require__(7784));
 const path_1 = __importDefault(__nccwpck_require__(1017));
+const HttpClient_1 = __nccwpck_require__(5538);
+const constants_1 = __nccwpck_require__(2706);
 const DETECT_BINARY_REPO_URL = 'https://sig-repo.synopsys.com';
 exports.TOOL_NAME = 'detect';
 class DetectToolDownloader {
-    version;
-    constructor(version) {
-        this.version = version;
+    async getDetectVersions() {
+        const authenticationClient = new HttpClient_1.HttpClient(constants_1.APPLICATION_NAME);
+        const headers = {
+            'X-Result-Detail': 'info'
+        };
+        const httpClientResponse = await authenticationClient.get(`${DETECT_BINARY_REPO_URL}/api/storage/bds-integrations-release/com/synopsys/integration/synopsys-detect?properties`, headers);
+        const responseBody = await httpClientResponse.readBody();
+        return JSON.parse(responseBody);
     }
-    getDetectDownloadUrl() {
-        return `${DETECT_BINARY_REPO_URL}/bds-integrations-release/com/synopsys/integration/synopsys-detect/${this.version}/synopsys-detect-${this.version}.jar`;
-    }
-    async download() {
-        const jarName = `synopsys-detect-${this.version}.jar`;
-        const cachedDetect = toolCache.find(exports.TOOL_NAME, this.version);
-        if (cachedDetect) {
-            return path_1.default.resolve(cachedDetect, jarName);
+    async findDetectVersion(version) {
+        if (version?.match(/^[0-9]+.[0-9]+.[0-9]+$/)) {
+            return {
+                url: `${DETECT_BINARY_REPO_URL}/bds-integrations-release/com/synopsys/integration/synopsys-detect/${version}/synopsys-detect-${version}.jar`,
+                version,
+                jarName: `synopsys-detect-${version}.jar`
+            };
         }
-        const detectDownloadUrl = this.getDetectDownloadUrl();
-        const detectDownloadPath = await toolCache.downloadTool(detectDownloadUrl);
-        const cachedFolder = await toolCache.cacheFile(detectDownloadPath, jarName, exports.TOOL_NAME, this.version);
-        return path_1.default.resolve(cachedFolder, jarName);
+        let detectVersionKey = 'DETECT_LATEST_';
+        if (version?.match(/^[0-9]+/)) {
+            detectVersionKey = `DETECT_LATEST_${version}`;
+        }
+        else if (version) {
+            throw new Error(`Invalid input version '${version}'`);
+        }
+        const detectVersions = await this.getDetectVersions();
+        const keys = Object.keys(detectVersions.properties);
+        const key = keys.filter(x => x.match(detectVersionKey)).at(-1);
+        if (!key) {
+            throw new Error(`Cannot find matching key ${detectVersionKey} on detect versions!`);
+        }
+        const url = detectVersions.properties[key].at(-1);
+        if (!url) {
+            throw new Error(`Cannot find url for property ${key} on detect versions!`);
+        }
+        const jarName = url.substring(url.lastIndexOf('/') + 1);
+        const resultVersion = jarName.substring(jarName.lastIndexOf('-') + 1, jarName.length - 4);
+        return { url, version: resultVersion, jarName };
+    }
+    async download(version) {
+        const detectVersion = await this.findDetectVersion(version);
+        const cachedDetect = toolCache.find(exports.TOOL_NAME, detectVersion.version);
+        if (cachedDetect) {
+            return path_1.default.resolve(cachedDetect, detectVersion.jarName);
+        }
+        const detectDownloadPath = await toolCache.downloadTool(detectVersion.url);
+        const cachedFolder = await toolCache.cacheFile(detectDownloadPath, detectVersion.jarName, exports.TOOL_NAME, detectVersion.version);
+        return path_1.default.resolve(cachedFolder, detectVersion.jarName);
+    }
+    static instance;
+    static getInstance() {
+        if (!DetectToolDownloader.instance) {
+            DetectToolDownloader.instance = new DetectToolDownloader();
+        }
+        return DetectToolDownloader.instance;
     }
 }
 exports.DetectToolDownloader = DetectToolDownloader;
@@ -26207,7 +26246,7 @@ function getInputBlackDuckApiToken() {
     return core.getInput(Input.BLACKDUCK_API_TOKEN, { required: true });
 }
 function getInputDetectVersion() {
-    return core.getInput(Input.DETECT_VERSION, { required: true });
+    return core.getInput(Input.DETECT_VERSION) ?? undefined;
 }
 function getInputScanMode() {
     return core.getInput(Input.SCAN_MODE).toUpperCase();

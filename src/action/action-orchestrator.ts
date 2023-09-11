@@ -39,9 +39,9 @@ export class ActionOrchestrator {
     )
     core.info(`${Input.SCAN_MODE}: ${this.inputs.scanMode}.`)
 
-    const detectPath = await new DetectToolDownloader(
+    const detectPath = await DetectToolDownloader.getInstance().download(
       this.inputs.detectVersion
-    ).download()
+    )
 
     const detectFacade = new DetectFacade(
       APPLICATION_NAME,

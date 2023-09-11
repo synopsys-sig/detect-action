@@ -4,7 +4,7 @@ export interface Inputs {
   token: string
   blackDuckUrl: string
   blackDuckApiToken: string
-  detectVersion: string
+  detectVersion?: string
   scanMode: string
   outputPathOverride: string
   detectTrustCertificate: string
@@ -52,8 +52,8 @@ function getInputBlackDuckApiToken(): string {
   return core.getInput(Input.BLACKDUCK_API_TOKEN, { required: true })
 }
 
-function getInputDetectVersion(): string {
-  return core.getInput(Input.DETECT_VERSION, { required: true })
+function getInputDetectVersion(): string | undefined {
+  return core.getInput(Input.DETECT_VERSION) ?? undefined
 }
 
 function getInputScanMode(): string {

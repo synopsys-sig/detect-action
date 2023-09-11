@@ -8,8 +8,13 @@ inputs:
     description: 'Your GitHub token'
     required: true
   detect-version:
-    description: 'The version of Detect to download'
-    required: true
+    description: |-
+      Detect version to be used on Black Duck scan.
+      The following input patterns are allowed:
+        - A full version (e.g. 8.4.0) to scan using that exact version.
+        - A major version (e.g. 8) to scan using the latest version of the given major.
+        - Empty or not specified, to scan using the latest version of Detect.
+    required: false
   blackduck-url:
     description: 'Url of Black Duck instance'
     required: true
@@ -17,17 +22,17 @@ inputs:
     description: 'API Token for Black Duck instance'
     required: true
   scan-mode:
-    description: |
-      Either RAPID or INTELLIGENT, configures how Detect is invoked.
-      RAPID will not persist the results and disables select Detect functionality for faster results.
-      INTELLIGENT persists the results and permits all features of Detect.
+    description: |-
+      Configures how Detect is invoked. When specified use one of the following:
+        - RAPID: will not persist the results and disables selected Detect functionality for faster results.
+        - INTELLIGENT: persists the results and allows all features of Detect.
     required: false
     default: 'RAPID'
   output-path-override:
     description: 'Override for where to output Detect files, default is $RUNNER_TEMP/blackduck/'
     required: false
   detect-trust-cert:
-    description: |
+    description: |-
       When set to true Detect will trust the Black Duck certificate
       even if the certificate is not in the keystore.
     default: 'true'

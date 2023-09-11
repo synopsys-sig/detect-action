@@ -251,7 +251,7 @@ to run, provide:
 
 - Black Duck URL (`blackduck-url`)
 - Black Duck API Token (`blackduck-api-token`)
-- Your desired Detect Version (`detect-version`) to execute
+- Your desired Detect Version (`detect-version`), or empty if you want to scan using the latest version
 - Your _GITHUB\_TOKEN_ (`github-token`) to comment on Pull Requests or hook into GitHub Checks  (in most cases, this
   is `${{ secrets.GITHUB_TOKEN }}`)
 
@@ -366,7 +366,7 @@ After running detect this action will set the following output variables with de
 - `detect-exit-code-name` - The corresponding human name of the error code.
 
 Note that if Detect is not called these variables are not populated. Also, if a mapping for the exit code number is not
-found on our side `detect-exit-code-name` we will set it to `UNKOWN`.
+found on our side `detect-exit-code-name` we will set it to `UNKNOWN`.
 
 ### Include Custom Certificates (Optional)
 
