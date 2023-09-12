@@ -6,8 +6,10 @@ export interface Inputs {
   blackDuckApiToken: string
   detectVersion?: string
   scanMode: string
+  failOnAllPolicySeverities: boolean
   outputPathOverride: string
   detectTrustCertificate: string
+  failIfDetectFails: boolean
 }
 
 export enum Input {
@@ -17,8 +19,10 @@ export enum Input {
   BLACKDUCK_API_TOKEN = 'blackduck-api-token',
   DETECT_VERSION = 'detect-version',
   SCAN_MODE = 'scan-mode',
+  FAIL_ON_ALL_POLICY_SEVERITIES = 'fail-on-all-policy-severities',
   OUTPUT_PATH_OVERRIDE = 'output-path-override',
-  DETECT_TRUST_CERTIFICATE = 'detect-trust-cert'
+  DETECT_TRUST_CERTIFICATE = 'detect-trust-cert',
+  FAIL_IF_DETECT_FAILS = 'fail-if-detect-fails'
 }
 
 export function gatherInputs(): Inputs {
@@ -27,16 +31,20 @@ export function gatherInputs(): Inputs {
   const blackDuckApiToken = getInputBlackDuckApiToken()
   const detectVersion = getInputDetectVersion()
   const scanMode = getInputScanMode()
+  const failOnAllPolicySeverities = getInputFailOnAllPolicySeverities()
   const outputPathOverride = getInputOutputPathOverride()
   const detectTrustCertificate = getInputDetectTrustCertificate()
+  const failIfDetectFails = getInputFailIfDetectFails()
   return {
     token,
     blackDuckUrl,
     blackDuckApiToken,
     detectVersion,
     scanMode,
+    failOnAllPolicySeverities,
     outputPathOverride,
-    detectTrustCertificate
+    detectTrustCertificate,
+    failIfDetectFails
   }
 }
 
@@ -60,10 +68,18 @@ function getInputScanMode(): string {
   return core.getInput(Input.SCAN_MODE).toUpperCase()
 }
 
+function getInputFailOnAllPolicySeverities(): boolean {
+  return core.getBooleanInput(Input.FAIL_ON_ALL_POLICY_SEVERITIES)
+}
+
 function getInputOutputPathOverride(): string {
   return core.getInput(Input.OUTPUT_PATH_OVERRIDE)
 }
 
 function getInputDetectTrustCertificate(): string {
   return core.getInput(Input.DETECT_TRUST_CERTIFICATE)
+}
+
+function getInputFailIfDetectFails(): boolean {
+  return core.getBooleanInput(Input.FAIL_IF_DETECT_FAILS)
 }

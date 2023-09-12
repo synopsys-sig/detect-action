@@ -102,9 +102,15 @@ export class DetectFacade {
       `--detect.scan.output.path=${outputPath}`
     ]
     if (core.isDebug()) {
-      detectArguments.push('--logging.level.detect=DEBUG')
+      detectArguments.push('--logging.level.com.synopsys.integration=DEBUG')
     }
     return detectArguments
+  }
+
+  private enableDiagnosticModeIfDebugEnabled(): void {
+    if (core.isDebug()) {
+      process.env[DetectEnvironmentProperties.DETECT_DIAGNOSTIC] = 'true'
+    }
   }
 
   private isDiagnosticModeEnabled(): boolean {
@@ -136,7 +142,7 @@ export class DetectFacade {
   }
 
   private async processRapidScanResult(
-    exitedWithFailurePolicyViolation: boolean,
+    failureConditionsMet: boolean,
     outputPath: string
   ): Promise<boolean> {
     core.info(
@@ -149,7 +155,7 @@ export class DetectFacade {
     const reportResult = await this.blackDuckReportGenerator.generateReport(
       scanJsonPaths[0],
       {
-        failureConditionsMet: exitedWithFailurePolicyViolation,
+        failureConditionsMet,
         maxSize: MAX_REPORT_SIZE
       }
     )
@@ -172,7 +178,7 @@ export class DetectFacade {
 
   private async processDetectResult(
     outputPath: string,
-    exitedWithFailurePolicyViolation: boolean
+    failureConditionsMet: boolean
   ): Promise<boolean> {
     core.info(`${TOOL_NAME} executed successfully.`)
 
@@ -180,7 +186,7 @@ export class DetectFacade {
 
     if (this.inputs.scanMode === RAPID_SCAN) {
       hasPolicyViolations = await this.processRapidScanResult(
-        exitedWithFailurePolicyViolation,
+        failureConditionsMet,
         outputPath
       )
     }
@@ -228,6 +234,7 @@ export class DetectFacade {
   }
 
   async run(): Promise<void> {
+    this.enableDiagnosticModeIfDebugEnabled()
     this.setNodeTlsRejectUnauthorized()
 
     const outputPath = this.getOutputPath()
@@ -254,7 +261,8 @@ export class DetectFacade {
     if (isSuccessOrPolicyFailure) {
       const hasPolicyViolations = await this.processDetectResult(
         outputPath,
-        detectExitCode === ExitCode.FAILURE_POLICY_VIOLATION
+        detectExitCode === ExitCode.FAILURE_POLICY_VIOLATION ||
+          this.inputs.failOnAllPolicySeverities
       )
 
       if (hasPolicyViolations) {
@@ -271,7 +279,14 @@ export class DetectFacade {
     const isFailureAndNotRapidScan =
       detectExitCode !== ExitCode.SUCCESS && this.inputs.scanMode !== RAPID_SCAN
 
-    if (!isSuccessOrPolicyFailure || isFailureAndNotRapidScan) {
+    const isFailureAndFailIfDetectFails =
+      detectExitCode !== ExitCode.SUCCESS && this.inputs.failIfDetectFails
+
+    if (
+      isFailureAndFailIfDetectFails ||
+      !isSuccessOrPolicyFailure ||
+      isFailureAndNotRapidScan
+    ) {
       throw new Error(
         `Detect failed with exit code: ${detectExitCode} - ${getExitCodeName(
           detectExitCode

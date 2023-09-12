@@ -28,6 +28,12 @@ inputs:
         - INTELLIGENT: persists the results and allows all features of Detect.
     required: false
     default: 'RAPID'
+  fail-on-all-policy-severities:
+    description: |-
+      By default, Detect will only fail on policy violations with BLOCKER or CRITICAL severities.
+      This flag will cause the action to fail on all policy severities.
+    required: false
+    default: 'false'
   output-path-override:
     description: 'Override for where to output Detect files, default is $RUNNER_TEMP/blackduck/'
     required: false
@@ -35,8 +41,12 @@ inputs:
     description: |-
       When set to true Detect will trust the Black Duck certificate
       even if the certificate is not in the keystore.
-    default: 'true'
     required: false
+    default: 'true'
+  fail-if-detect-fails:
+    description: 'Fail the action if detect exits with an error code'
+    required: false
+    default: 'false'
 outputs:
   detect-exit-code:
     description: 'A number indicating Detect exit code'
