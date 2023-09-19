@@ -47,6 +47,10 @@ inputs:
     description: 'Fail the action if detect exits with an error code'
     required: false
     default: 'false'
+  comment-pr-on-success:
+    description: 'Comment pull requests if no violations found'
+    required: false
+    default: 'true'
 outputs:
   detect-exit-code:
     description: 'A number indicating Detect exit code'

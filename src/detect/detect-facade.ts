@@ -160,8 +160,12 @@ export class DetectFacade {
       }
     )
 
-    if (this.context.isPullRequest()) {
-      core.info('This is a pull request, commenting...')
+    const commentInContext =
+      (this.inputs.commentPrOnSuccess && !reportResult.failed) ||
+      reportResult.failed
+
+    if (this.context.isPullRequest() && commentInContext) {
+      core.info('Commenting pull request...')
       await this.commentReporter.report(reportResult)
       core.info('Successfully commented on PR.')
     }

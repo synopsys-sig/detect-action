@@ -25571,8 +25571,10 @@ class DetectFacade {
             failureConditionsMet,
             maxSize: MAX_REPORT_SIZE
         });
-        if (this.context.isPullRequest()) {
-            core.info('This is a pull request, commenting...');
+        const commentInContext = (this.inputs.commentPrOnSuccess && !reportResult.failed) ||
+            reportResult.failed;
+        if (this.context.isPullRequest() && commentInContext) {
+            core.info('Commenting pull request...');
             await this.commentReporter.report(reportResult);
             core.info('Successfully commented on PR.');
         }
@@ -26228,6 +26230,7 @@ var Input;
     Input["OUTPUT_PATH_OVERRIDE"] = "output-path-override";
     Input["DETECT_TRUST_CERTIFICATE"] = "detect-trust-cert";
     Input["FAIL_IF_DETECT_FAILS"] = "fail-if-detect-fails";
+    Input["COMMENT_PR_ON_SUCCESS"] = "comment-pr-on-success";
 })(Input || (exports.Input = Input = {}));
 function gatherInputs() {
     const token = getInputGitHubToken();
@@ -26239,6 +26242,7 @@ function gatherInputs() {
     const outputPathOverride = getInputOutputPathOverride();
     const detectTrustCertificate = getInputDetectTrustCertificate();
     const failIfDetectFails = getInputFailIfDetectFails();
+    const commentPrOnSuccess = getInputCommentPrOnSuccess();
     return {
         token,
         blackDuckUrl,
@@ -26248,7 +26252,8 @@ function gatherInputs() {
         failOnAllPolicySeverities,
         outputPathOverride,
         detectTrustCertificate,
-        failIfDetectFails
+        failIfDetectFails,
+        commentPrOnSuccess
     };
 }
 exports.gatherInputs = gatherInputs;
@@ -26278,6 +26283,9 @@ function getInputDetectTrustCertificate() {
 }
 function getInputFailIfDetectFails() {
     return core.getBooleanInput(Input.FAIL_IF_DETECT_FAILS);
+}
+function getInputCommentPrOnSuccess() {
+    return core.getBooleanInput(Input.COMMENT_PR_ON_SUCCESS);
 }
 
 
