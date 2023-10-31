@@ -763,7 +763,9 @@ function runWithPolicyCheck(blackduckPolicyCheck) {
             const policyViolations = JSON.parse(rawdata.toString());
             hasPolicyViolations = policyViolations.length > 0;
             (0, core_1.debug)(`Policy Violations Present: ${hasPolicyViolations}`);
+            (0, core_1.info)(`Policy Violations Present: ${hasPolicyViolations}`);
             const failureConditionsMet = detectExitCode === exit_codes_1.POLICY_SEVERITY || inputs_1.FAIL_ON_ALL_POLICY_SEVERITIES;
+            (0, core_1.info)(`Policy Violations policyViolations: ${JSON.stringify(policyViolations)}`);
             const rapidScanReport = yield (0, reporting_1.createRapidScanReportString)(policyViolations, hasPolicyViolations && failureConditionsMet);
             if ((0, github_context_1.isPullRequest)()) {
                 (0, core_1.info)('This is a pull request, commenting...');
