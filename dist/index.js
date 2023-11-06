@@ -435,7 +435,6 @@ function createRapidScanReportString(policyViolations, policyCheckWillFail) {
 }
 exports.createRapidScanReportString = createRapidScanReportString;
 function createComponentRow(component) {
-    console.log(`component.violatedPolicies :: ${component.violatedPolicies}`);
     const violatedPolicies = component.violatedPolicies === undefined ? '' : component.violatedPolicies.join('<br/>');
     const componentInViolation = (component === null || component === void 0 ? void 0 : component.href) ? `[${component.name}](${component.href})` : component.name;
     const componentLicenses = component.licenses.map(license => `${license.violatesPolicy ? ':x: &nbsp; ' : ''}[${license.name}](${license.href})`).join('<br/>');
@@ -763,9 +762,7 @@ function runWithPolicyCheck(blackduckPolicyCheck) {
             const policyViolations = JSON.parse(rawdata.toString());
             hasPolicyViolations = policyViolations.length > 0;
             (0, core_1.debug)(`Policy Violations Present: ${hasPolicyViolations}`);
-            (0, core_1.info)(`Policy Violations Present: ${hasPolicyViolations}`);
             const failureConditionsMet = detectExitCode === exit_codes_1.POLICY_SEVERITY || inputs_1.FAIL_ON_ALL_POLICY_SEVERITIES;
-            (0, core_1.info)(`Policy Violations policyViolations: ${JSON.stringify(policyViolations)}`);
             const rapidScanReport = yield (0, reporting_1.createRapidScanReportString)(policyViolations, hasPolicyViolations && failureConditionsMet);
             if ((0, github_context_1.isPullRequest)()) {
                 (0, core_1.info)('This is a pull request, commenting...');
