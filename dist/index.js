@@ -296,6 +296,7 @@ function createRapidScanReport(policyViolations, blackduckApiService) {
             blackduckApiService = new blackduck_api_1.BlackduckApiService(inputs_1.BLACKDUCK_URL, inputs_1.BLACKDUCK_API_TOKEN);
         }
         const bearerToken = yield blackduckApiService.getBearerToken();
+        console.log(`policyViolations :: ${policyViolations}`);
         for (const policyViolation of policyViolations) {
             const componentIdentifier = policyViolation.componentIdentifier;
             const componentVersion = yield blackduckApiService.getComponentVersionMatching(bearerToken, componentIdentifier);

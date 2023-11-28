@@ -10,7 +10,7 @@ export async function createRapidScanReport(policyViolations: IRapidScanResults[
   }
 
   const bearerToken = await blackduckApiService.getBearerToken()
-
+  console.log(`policyViolations :: ${policyViolations}`)
   for (const policyViolation of policyViolations) {
     const componentIdentifier = policyViolation.componentIdentifier
     const componentVersion = await blackduckApiService.getComponentVersionMatching(bearerToken, componentIdentifier)
