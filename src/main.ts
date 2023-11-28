@@ -105,9 +105,12 @@ export async function runWithPolicyCheck(blackduckPolicyCheck: GitHubCheck): Pro
 
     const jsonGlobber = await create(`${outputPath}/*.json`)
     const scanJsonPaths = await jsonGlobber.glob()
+    console.log(`scanJsonPaths :: ${JSON.stringify(scanJsonPaths)}`)
     uploadArtifact('Rapid Scan JSON', outputPath, scanJsonPaths)
 
     const scanJsonPath = scanJsonPaths[0]
+    console.log(`scanJsonPath [0]:: ${scanJsonPath}`)
+    console.log(`scanJsonPath [0]:: ${JSON.stringify(scanJsonPath)}`)
     const rawdata = fs.readFileSync(scanJsonPath)
     const policyViolations = JSON.parse(rawdata.toString()) as IRapidScanResults[]
 

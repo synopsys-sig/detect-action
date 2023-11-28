@@ -760,8 +760,11 @@ function runWithPolicyCheck(blackduckPolicyCheck) {
             (0, core_1.info)(`${detect_manager_1.TOOL_NAME} executed in RAPID mode. Beginning reporting...`);
             const jsonGlobber = yield (0, glob_1.create)(`${outputPath}/*.json`);
             const scanJsonPaths = yield jsonGlobber.glob();
+            console.log(`scanJsonPaths :: ${JSON.stringify(scanJsonPaths)}`);
             (0, upload_artifacts_1.uploadArtifact)('Rapid Scan JSON', outputPath, scanJsonPaths);
             const scanJsonPath = scanJsonPaths[0];
+            console.log(`scanJsonPath [0]:: ${scanJsonPath}`);
+            console.log(`scanJsonPath [0]:: ${JSON.stringify(scanJsonPath)}`);
             const rawdata = fs_1.default.readFileSync(scanJsonPath);
             const policyViolations = JSON.parse(rawdata.toString());
             hasPolicyViolations = policyViolations.length > 0;
