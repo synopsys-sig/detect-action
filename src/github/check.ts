@@ -36,10 +36,12 @@ export class GitHubCheck {
   }
 
   async passCheck(summary: string, text: string) {
+    text = await this.truncateIfCharacterLimitExceeds(text)
     return this.finishCheck('success', summary, text)
   }
 
   async failCheck(summary: string, text: string) {
+    text = await this.truncateIfCharacterLimitExceeds(text)
     return this.finishCheck('failure', summary, text)
   }
 
@@ -49,6 +51,17 @@ export class GitHubCheck {
 
   async cancelCheck() {
     return this.finishCheck('cancelled', `${this.checkName} Check could not be completed`, `Something went wrong and the ${this.checkName} could not be completed. Check your action logs for more details.`)
+  }
+
+  private async truncateIfCharacterLimitExceeds(text: string) {
+    const maxLength = 65535
+
+    if (text.length > maxLength) {
+      warning(`Text size exceeds ${maxLength} bytes. Truncating the text within ${maxLength} bytes limit`)
+      return text.slice(0, maxLength)
+    }
+
+    return text
   }
 
   private async finishCheck(conclusion: string, summary: string, text: string) {

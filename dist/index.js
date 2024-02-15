@@ -496,11 +496,13 @@ class GitHubCheck {
     }
     passCheck(summary, text) {
         return __awaiter(this, void 0, void 0, function* () {
+            text = yield this.truncateIfCharacterLimitExceeds(text);
             return this.finishCheck('success', summary, text);
         });
     }
     failCheck(summary, text) {
         return __awaiter(this, void 0, void 0, function* () {
+            text = yield this.truncateIfCharacterLimitExceeds(text);
             return this.finishCheck('failure', summary, text);
         });
     }
@@ -512,6 +514,16 @@ class GitHubCheck {
     cancelCheck() {
         return __awaiter(this, void 0, void 0, function* () {
             return this.finishCheck('cancelled', `${this.checkName} Check could not be completed`, `Something went wrong and the ${this.checkName} could not be completed. Check your action logs for more details.`);
+        });
+    }
+    truncateIfCharacterLimitExceeds(text) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const maxLength = 65535;
+            if (text.length > maxLength) {
+                (0, core_1.warning)(`Text size exceeds ${maxLength} bytes. Truncating the text within ${maxLength} bytes limit`);
+                return text.slice(0, maxLength);
+            }
+            return text;
         });
     }
     finishCheck(conclusion, summary, text) {
