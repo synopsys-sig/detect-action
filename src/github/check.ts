@@ -57,7 +57,7 @@ export class GitHubCheck {
     const maxLength = 65535
 
     if (text.length > maxLength) {
-      warning(`Text size exceeds ${maxLength} bytes. Truncating the text within ${maxLength} bytes limit`)
+      warning(`Text size ${text.length} bytes exceeds maximum limit ${maxLength} bytes. Truncating the text within ${maxLength} bytes`)
       return text.slice(0, maxLength)
     }
 
