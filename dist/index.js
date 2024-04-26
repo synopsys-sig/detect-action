@@ -435,7 +435,7 @@ function createRapidScanReportString(policyViolations, policyCheckWillFail) {
 }
 exports.createRapidScanReportString = createRapidScanReportString;
 function createComponentRow(component) {
-    const violatedPolicies = component.violatedPolicies.join('<br/>');
+    const violatedPolicies = component.violatedPolicies === undefined ? '' : component.violatedPolicies.join('<br/>');
     const componentInViolation = (component === null || component === void 0 ? void 0 : component.href) ? `[${component.name}](${component.href})` : component.name;
     const componentLicenses = component.licenses.map(license => `${license.violatesPolicy ? ':x: &nbsp; ' : ''}[${license.name}](${license.href})`).join('<br/>');
     const vulnerabilities = component.vulnerabilities.map(vulnerability => `${vulnerability.violatesPolicy ? ':x: &nbsp; ' : ''}[${vulnerability.name}](${vulnerability.href})${vulnerability.cvssScore && vulnerability.severity ? ` ${vulnerability.severity}: CVSS ${vulnerability.cvssScore}` : ''}`).join('<br/>');
@@ -496,11 +496,13 @@ class GitHubCheck {
     }
     passCheck(summary, text) {
         return __awaiter(this, void 0, void 0, function* () {
+            text = yield this.truncateIfCharacterLimitExceeds(text);
             return this.finishCheck('success', summary, text);
         });
     }
     failCheck(summary, text) {
         return __awaiter(this, void 0, void 0, function* () {
+            text = yield this.truncateIfCharacterLimitExceeds(text);
             return this.finishCheck('failure', summary, text);
         });
     }
@@ -512,6 +514,16 @@ class GitHubCheck {
     cancelCheck() {
         return __awaiter(this, void 0, void 0, function* () {
             return this.finishCheck('cancelled', `${this.checkName} Check could not be completed`, `Something went wrong and the ${this.checkName} could not be completed. Check your action logs for more details.`);
+        });
+    }
+    truncateIfCharacterLimitExceeds(text) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const maxLength = 65535;
+            if (text.length > maxLength) {
+                (0, core_1.warning)(`Text size ${text.length} bytes exceeds maximum limit ${maxLength} bytes. Truncating the text within ${maxLength} bytes`);
+                return text.slice(0, maxLength);
+            }
+            return text;
         });
     }
     finishCheck(conclusion, summary, text) {
