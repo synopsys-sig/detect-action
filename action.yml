@@ -30,6 +30,14 @@ inputs:
   detect-trust-cert:
     description: 'Acceptable Values: TRUE, FALSE. If TRUE, Detect will trust the Black Duck certificate even if the certificate is not in the keystore.'
     default: 'TRUE'
+  detect-binary-repo-url:
+    description: 'Repository which the detect binary will be obtained from'
+    default: 'https://sig-repo.synopsys.com'
+    required: false
+  detect-binary-repo-path:
+    description: 'Path in the repository where the detect binary versions are located'
+    default: 'bds-integrations-release/com/synopsys/integration/synopsys-detect'
+    required: false
 runs:
   using: 'node12'
   main: 'dist/index.js'
