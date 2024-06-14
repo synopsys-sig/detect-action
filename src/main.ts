@@ -1,11 +1,11 @@
-import { info, warning, setFailed, debug } from '@actions/core'
+import { info, warning, setFailed, debug, setOutput } from '@actions/core'
 import { create } from '@actions/glob'
 import path from 'path'
 import fs from 'fs'
 import { BlackduckApiService, IBlackduckView, IRapidScanResults } from './blackduck-api'
 import { createCheck, GitHubCheck } from './github/check'
 import { commentOnPR } from './comment'
-import { POLICY_SEVERITY, SUCCESS } from './detect/exit-codes'
+import { DETECT_EXIT_CODES } from './detect/exit-codes'
 import { TOOL_NAME, findOrDownloadDetect, runDetect } from './detect/detect-manager'
 import { isPullRequest } from './github/github-context'
 import { BLACKDUCK_API_TOKEN, BLACKDUCK_URL, DETECT_TRUST_CERT, DETECT_VERSION, FAIL_ON_ALL_POLICY_SEVERITIES, OUTPUT_PATH_OVERRIDE, SCAN_MODE } from './inputs'
@@ -23,8 +23,14 @@ export async function run() {
   runWithPolicyCheck(blackduckPolicyCheck).catch(unhandledError => {
     debug('Canceling policy check because of an unhandled error.')
     blackduckPolicyCheck.cancelCheck()
-    setFailed(`Failed due to an unhandled error: '${unhandledError}'`)
+    setFailedInternal(`Failed due to an unhandled error: '${unhandledError}'`)
   })
+}
+
+function setFailedInternal(message: string, detectExitCode: DETECT_EXIT_CODES = DETECT_EXIT_CODES.NO_DETECT_EXIT_CODE): void {
+  setFailed(message)
+  setOutput('detect-exit-code', detectExitCode)
+  setOutput('detect-exit-code-name', DETECT_EXIT_CODES[detectExitCode])
 }
 
 export async function runWithPolicyCheck(blackduckPolicyCheck: GitHubCheck): Promise<void> {
@@ -43,7 +49,7 @@ export async function runWithPolicyCheck(blackduckPolicyCheck: GitHubCheck): Pro
   if (OUTPUT_PATH_OVERRIDE !== '') {
     outputPath = OUTPUT_PATH_OVERRIDE
   } else if (runnerTemp === undefined) {
-    setFailed('$RUNNER_TEMP is not defined and output-path-override was not set. Cannot determine where to store output files.')
+    setFailedInternal('$RUNNER_TEMP is not defined and output-path-override was not set. Cannot determine where to store output files.')
     blackduckPolicyCheck.cancelCheck()
     return
   } else {
@@ -55,8 +61,8 @@ export async function runWithPolicyCheck(blackduckPolicyCheck: GitHubCheck): Pro
 
     const blackduckApiService = new BlackduckApiService(BLACKDUCK_URL, BLACKDUCK_API_TOKEN)
     const blackDuckBearerToken = await blackduckApiService.getBearerToken()
-    let policiesExist: boolean | void = await blackduckApiService.checkIfEnabledBlackduckPoliciesExist(blackDuckBearerToken).catch(reason => {
-      setFailed(`Could not verify whether policies existed: ${reason}`)
+    const policiesExist: boolean | void = await blackduckApiService.checkIfEnabledBlackduckPoliciesExist(blackDuckBearerToken).catch(reason => {
+      setFailedInternal(`Could not verify whether policies existed: ${reason}`)
     })
 
     if (policiesExist === undefined) {
@@ -64,7 +70,7 @@ export async function runWithPolicyCheck(blackduckPolicyCheck: GitHubCheck): Pro
       blackduckPolicyCheck.cancelCheck()
       return
     } else if (!policiesExist) {
-      setFailed(`Could not run ${TOOL_NAME} using ${SCAN_MODE} scan mode. No enabled policies found on the specified Black Duck server.`)
+      setFailedInternal(`Could not run ${TOOL_NAME} using ${SCAN_MODE} scan mode. No enabled policies found on the specified Black Duck server.`)
       return
     } else {
       info(`You have at least one enabled policy, executing ${TOOL_NAME} in ${SCAN_MODE} scan mode...`)
@@ -74,7 +80,7 @@ export async function runWithPolicyCheck(blackduckPolicyCheck: GitHubCheck): Pro
   const detectArgs = [`--blackduck.trust.cert=${DETECT_TRUST_CERT}`, `--blackduck.url=${BLACKDUCK_URL}`, `--blackduck.api.token=${BLACKDUCK_API_TOKEN}`, `--detect.blackduck.scan.mode=${SCAN_MODE}`, `--detect.output.path=${outputPath}`, `--detect.scan.output.path=${outputPath}`]
 
   const detectPath = await findOrDownloadDetect().catch(reason => {
-    setFailed(`Could not download ${TOOL_NAME} ${DETECT_VERSION}: ${reason}`)
+    setFailedInternal(`Could not download ${TOOL_NAME} ${DETECT_VERSION}: ${reason}`)
   })
 
   if (detectPath === undefined) {
@@ -84,15 +90,15 @@ export async function runWithPolicyCheck(blackduckPolicyCheck: GitHubCheck): Pro
   }
 
   const detectExitCode = await runDetect(detectPath, detectArgs).catch(reason => {
-    setFailed(`Could not execute ${TOOL_NAME} ${DETECT_VERSION}: ${reason}`)
+    setFailedInternal(`Could not execute ${TOOL_NAME} ${DETECT_VERSION}: ${reason}`)
   })
 
   if (detectExitCode === undefined) {
     debug(`Could not determine ${TOOL_NAME} exit code. Canceling policy check.`)
     blackduckPolicyCheck.cancelCheck()
     return
-  } else if (detectExitCode > 0 && detectExitCode != POLICY_SEVERITY) {
-    setFailed(`Detect failed with exit code: ${detectExitCode}. Check the logs for more information.`)
+  } else if (detectExitCode > 0 && detectExitCode != DETECT_EXIT_CODES.FAILURE_POLICY_VIOLATION) {
+    setFailedInternal(`Detect failed with exit code: ${detectExitCode}. Check the logs for more information.`, detectExitCode)
     return
   }
 
@@ -114,7 +120,7 @@ export async function runWithPolicyCheck(blackduckPolicyCheck: GitHubCheck): Pro
     hasPolicyViolations = policyViolations.length > 0
     debug(`Policy Violations Present: ${hasPolicyViolations}`)
 
-    const failureConditionsMet = detectExitCode === POLICY_SEVERITY || FAIL_ON_ALL_POLICY_SEVERITIES
+    const failureConditionsMet = detectExitCode === DETECT_EXIT_CODES.FAILURE_POLICY_VIOLATION || FAIL_ON_ALL_POLICY_SEVERITIES
     const rapidScanReport = await createRapidScanReportString(policyViolations, hasPolicyViolations && failureConditionsMet)
 
     if (isPullRequest()) {
@@ -150,7 +156,7 @@ export async function runWithPolicyCheck(blackduckPolicyCheck: GitHubCheck): Pro
     warning('Found dependencies violating policy!')
   } else if (detectExitCode > 0) {
     warning('Dependency check failed! See Detect output for more information.')
-  } else if (detectExitCode === SUCCESS) {
+  } else if (detectExitCode === DETECT_EXIT_CODES.SUCCESS) {
     info('None of your dependencies violate your Black Duck policies!')
   }
 }
