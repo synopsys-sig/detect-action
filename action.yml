@@ -31,5 +31,5 @@ inputs:
     description: 'Acceptable Values: TRUE, FALSE. If TRUE, Detect will trust the Black Duck certificate even if the certificate is not in the keystore.'
     default: 'TRUE'
 runs:
-  using: 'node12'
+  using: 'node20'
   main: 'dist/index.js'
