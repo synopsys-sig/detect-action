@@ -66,7 +66,7 @@ jobs:
         policy-name: 'My Black Duck Policy For GitHub Actions'
         no-fail-if-policy-exists: true
     - name: Run Synopsys Detect
-      uses: synopsys-sig/detect-action@v0.3.0
+      uses: synopsys-sig/detect-action@v0.3.5
       env:
         NODE_EXTRA_CA_CERTS: ${{ secrets.LOCAL_CA_CERT_PATH }}
       with:
@@ -90,7 +90,7 @@ To do this:
 
 ```yaml
     - name: Run Synopsys Detect
-      uses: synopsys-sig/detect-action@v0.3.0
+      uses: synopsys-sig/detect-action@v0.3.5
       env:
         NODE_EXTRA_CA_CERTS: /certificates/my_custom_cert.pem
       with:
@@ -122,7 +122,7 @@ The file created through one of those options can then be provided as a value fo
 
 ```yaml
     - name: Run Synopsys Detect
-      uses: synopsys-sig/detect-action@v0.3.0
+      uses: synopsys-sig/detect-action@v0.3.5
       env:
         NODE_EXTRA_CA_CERTS: ./my-cert.pem
       with:
@@ -199,7 +199,7 @@ Set the scan mode to:
     push:
   ...
       - name: Run Synopsys Detect
-        uses: synopsys-sig/detect-action@v0.3.0
+        uses: synopsys-sig/detect-action@v0.3.5
         env:
           NODE_EXTRA_CA_CERTS: ${{ secrets.LOCAL_CA_CERT_PATH }}
         with:
@@ -221,7 +221,7 @@ Set the scan mode to:
       - cron:  '0 0 * * *'
   ...
       - name: Run Synopsys Detect
-        uses: synopsys-sig/detect-action@v0.3.0
+        uses: synopsys-sig/detect-action@v0.3.5
         env:
           NODE_EXTRA_CA_CERTS: ${{ secrets.LOCAL_CA_CERT_PATH }}
         with:
@@ -251,7 +251,7 @@ Passing additional [Detect properties](https://community.synopsys.com/s/document
 **Example**:
 ```yaml
     - name: Synopsys Detect
-      uses: synopsys-sig/detect-action@v0.3.0
+      uses: synopsys-sig/detect-action@v0.3.5
       env:
         DETECT_TOOLS: DOCKER
         DETECT_DOCKER_IMAGE_ID: abc123
@@ -264,7 +264,7 @@ Passing additional [Detect properties](https://community.synopsys.com/s/document
 **Example**:
 ```yaml
     - name: Synopsys Detect
-      uses: synopsys-sig/detect-action@v0.3.0
+      uses: synopsys-sig/detect-action@v0.3.5
       env:
         SPRING_APPLICATION_JSON: '{"detect.tools":"DOCKER","detect.docker.image.id":"abc123","detect.docker.path.required":"TRUE"}'
       with:
