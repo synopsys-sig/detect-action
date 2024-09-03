@@ -24,7 +24,7 @@ function createComponentRow(component: IComponentReport): string {
   const violatedPolicies = component.violatedPolicies === undefined ? '' : component.violatedPolicies.join('<br/>')
   const componentInViolation = component?.href ? `[${component.name}](${component.href})` : component.name
   const componentLicenses = component.licenses.map(license => `${license.violatesPolicy ? ':x: &nbsp; ' : ''}[${license.name}](${license.href})`).join('<br/>')
-  const vulnerabilities = component.vulnerabilities.map(vulnerability => `${vulnerability.violatesPolicy ? ':x: &nbsp; ' : ''}[${vulnerability.name}](${vulnerability.href})${vulnerability.cvssScore && vulnerability.severity ? ` ${vulnerability.severity}: CVSS ${vulnerability.cvssScore}` : ''}`).join('<br/>')
+  const vulnerabilities = component.vulnerabilities.map(vulnerability => `${vulnerability.violatesPolicy ? (['BLOCKER', 'CRITICAL'].includes(vulnerability.severity) ? ':x:' : ':warning:')) + ' &nbsp; ' : ''}[${vulnerability.name}](${vulnerability.href})${vulnerability.cvssScore && vulnerability.severity ? ` ${vulnerability.severity}: CVSS ${vulnerability.cvssScore}` : ''}`).join('<br/>')
   const shortTermString = component.shortTermUpgrade ? `[${component.shortTermUpgrade.name}](${component.shortTermUpgrade.href}) (${component.shortTermUpgrade.vulnerabilityCount} known vulnerabilities)` : ''
   const longTermString = component.longTermUpgrade ? `[${component.longTermUpgrade.name}](${component.longTermUpgrade.href}) (${component.longTermUpgrade.vulnerabilityCount} known vulnerabilities)` : ''
 
