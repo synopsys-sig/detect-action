@@ -1,9 +1,8 @@
 import { find, downloadTool, cacheFile } from '@actions/tool-cache'
 import { exec } from '@actions/exec'
 import path from 'path'
-import { DETECT_VERSION } from '../inputs'
+import { DETECT_VERSION, DETECT_BINARY_REPO_URL, DETECT_BINARY_REPO_PATH } from '../inputs'
 
-const DETECT_BINARY_REPO_URL = 'https://sig-repo.synopsys.com'
 export const TOOL_NAME = 'detect'
 
 export async function findOrDownloadDetect(): Promise<string> {
@@ -29,5 +28,5 @@ export async function runDetect(detectPath: string, detectArguments: string[]): 
 }
 
 function createDetectDownloadUrl(repoUrl = DETECT_BINARY_REPO_URL): string {
-  return `${repoUrl}/bds-integrations-release/com/synopsys/integration/synopsys-detect/${DETECT_VERSION}/synopsys-detect-${DETECT_VERSION}.jar`
+  return `${repoUrl}/${DETECT_BINARY_REPO_PATH}/${DETECT_VERSION}/synopsys-detect-${DETECT_VERSION}.jar`
 }
