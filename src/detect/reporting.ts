@@ -9,7 +9,7 @@ export async function createRapidScanReportString(policyViolations: IRapidScanRe
     message = message.concat('# :white_check_mark: None of your dependencies violate your Black Duck policies!')
   } else {
     const violationSymbol = policyCheckWillFail ? ':x:' : ':warning:'
-    message = message.concat(`# ${violationSymbol} Found dependencies violating policy!\r\n\r\n`)
+    message = message.concat(`# ${violationSymbol} Found dependencies violating your Black Duck policy!\r\n\r\n`)
 
     const componentReports = await createRapidScanReport(policyViolations)
     const tableBody = componentReports.map(componentReport => createComponentRow(componentReport)).join('\r\n')
