@@ -6,7 +6,7 @@ export const TABLE_HEADER = '| Policies Violated | Dependency | License(s) | Vul
 export async function createRapidScanReportString(policyViolations: IRapidScanResults[], policyCheckWillFail: boolean): Promise<string> {
   let message = ''
   if (policyViolations.length == 0) {
-    message = message.concat('# :white_check_mark: None of your dependencies violate policy!')
+    message = message.concat('# :white_check_mark: None of your dependencies violate your Black Duck policies!')
   } else {
     const violationSymbol = policyCheckWillFail ? ':x:' : ':warning:'
     message = message.concat(`# ${violationSymbol} Found dependencies violating policy!\r\n\r\n`)
