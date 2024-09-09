@@ -8,7 +8,7 @@ import { commentOnPR } from './comment'
 import { POLICY_SEVERITY, SUCCESS } from './detect/exit-codes'
 import { TOOL_NAME, findOrDownloadDetect, runDetect } from './detect/detect-manager'
 import { isPullRequest } from './github/github-context'
-import { BLACKDUCK_API_TOKEN, BLACKDUCK_URL, DETECT_TRUST_CERT, DETECT_VERSION, FAIL_ON_ALL_POLICY_SEVERITIES, OUTPUT_PATH_OVERRIDE, SCAN_MODE } from './inputs'
+import { BLACKDUCK_API_TOKEN, BLACKDUCK_URL, DETECT_TRUST_CERT, DETECT_VERSION, FAIL_ON_ALL_POLICY_SEVERITIES, OUTPUT_PATH_OVERRIDE, SCAN_MODE, IGNORE_PR_COMMENT_WHEN_PASSED } from './inputs'
 import { createRapidScanReportString } from './detect/reporting'
 import { uploadArtifact } from './github/upload-artifacts'
 import { CHECK_NAME } from './application-constants'
@@ -116,8 +116,9 @@ export async function runWithPolicyCheck(blackduckPolicyCheck: GitHubCheck): Pro
 
     const failureConditionsMet = detectExitCode === POLICY_SEVERITY || FAIL_ON_ALL_POLICY_SEVERITIES
     const rapidScanReport = await createRapidScanReportString(policyViolations, hasPolicyViolations && failureConditionsMet)
-
-    if (isPullRequest()) {
+    const shouldCommentOnPr = hasPolicyViolations || (!hasPolicyViolations && !IGNORE_PR_COMMENT_WHEN_PASSED)
+    
+    if (isPullRequest() && shouldCommentOnPr) {
       info('This is a pull request, commenting...')
       commentOnPR(rapidScanReport)
       info('Successfully commented on PR.')
