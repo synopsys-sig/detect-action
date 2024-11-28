@@ -2,7 +2,7 @@ name: 'Detect Rapid Scan Action'
 branding:
   icon: 'shield'
   color: 'purple'
-description: 'A GitHub action to perform a Detect rapid scan and record the results'
+description: 'Deprecated:Please use Black Duck Security Scan <marketplace new url>'
 inputs:
   github-token:
     description: 'Your GitHub token'
