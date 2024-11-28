@@ -1,4 +1,6 @@
-# Detect Action
+# DEPRECATED: Detect Action
+
+**NOTE:** This action is deprecated and no longer supported. It is recommended that you install or migrate to the newer, supported version, <a href="#">Black Duck Security Scan</a>.
 
 ![GitHub tag (latest SemVer)](https://img.shields.io/github/v/tag/synopsys-sig/detect-action?color=blue&label=Latest%20Version&sort=semver)
 
