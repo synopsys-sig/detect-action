@@ -1,7 +1,7 @@
 # DEPRECATED: Detect Action
 
 **NOTE:** This plugin has been deprecated and is no longer supported. It is recommended that you move to our
-new and supported <a href="https://github.com/marketplace/actions/black-duck-security-scan">Black Duck Security Scan.</a>Instructions can be found at <a href="https://documentation.blackduck.com/bundle/bridge/page/documentation/c_using-github-action.html">BlackDuckDoc's</a>.
+new and supported <a href="https://github.com/marketplace/actions/black-duck-security-scan">Black Duck Security Scan.</a>
 
 
 ![GitHub tag (latest SemVer)](https://img.shields.io/github/v/tag/synopsys-sig/detect-action?color=blue&label=Latest%20Version&sort=semver)
